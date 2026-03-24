@@ -20,15 +20,38 @@ const colors = {
   vibrant: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#a855f7'],
 };
 
-// Computed values
-const securedRate = computed(() => {
-  const total = metrics.value?.totalProspects || 0;
-  return total ? Math.round(((metrics.value?.securedJobs || 0) / total) * 100) : 0;
+// Combined funnel rates (Campaign + Total Needs)
+const combinedApproaches = computed(() =>
+  (metrics.value?.campaignFunnel?.approaches || 0) + (metrics.value?.totalNeedsFunnel?.approaches || 0)
+);
+const combinedMeetings = computed(() =>
+  (metrics.value?.campaignFunnel?.meetings || 0) + (metrics.value?.totalNeedsFunnel?.meetings || 0)
+);
+const combinedProposals = computed(() =>
+  (metrics.value?.campaignFunnel?.proposals || 0) + (metrics.value?.totalNeedsFunnel?.proposals || 0)
+);
+const combinedSecured = computed(() =>
+  (metrics.value?.campaignFunnel?.secured || 0) + (metrics.value?.totalNeedsFunnel?.secured || 0)
+);
+
+const combinedMeetingRate = computed(() => {
+  const approaches = combinedApproaches.value;
+  return approaches ? Math.round((combinedMeetings.value / approaches) * 100) : 0;
 });
 
-const conversionRate = computed(() => {
-  const total = metrics.value?.totalReferrals || 0;
-  return total ? Math.round(((metrics.value?.totalConverted || 0) / total) * 100) : 0;
+const combinedProposalRate = computed(() => {
+  const meetings = combinedMeetings.value;
+  return meetings ? Math.round((combinedProposals.value / meetings) * 100) : 0;
+});
+
+const combinedSecuredRate = computed(() => {
+  const proposals = combinedProposals.value;
+  return proposals ? Math.round((combinedSecured.value / proposals) * 100) : 0;
+});
+
+const combinedOverallRate = computed(() => {
+  const approaches = combinedApproaches.value;
+  return approaches ? Math.round((combinedSecured.value / approaches) * 100) : 0;
 });
 
 // Campaign funnel rates
@@ -147,6 +170,28 @@ const coiIndustryBarData = computed(() => ({
     backgroundColor: colors.warm,
     borderRadius: 8,
     borderSkipped: false,
+  }]
+}));
+
+const coiPerformanceBarData = computed(() => ({
+  labels: ['Could We', 'How Would We', 'Will We', 'Test/Review'],
+  datasets: [{
+    label: 'COI Status',
+    data: [
+      metrics.value?.coiPerformance.couldWe || 0,
+      metrics.value?.coiPerformance.howWouldWe || 0,
+      metrics.value?.coiPerformance.willWe || 0,
+      metrics.value?.coiPerformance.testReview || 0
+    ],
+    backgroundColor: [
+      '#f97316', // Orange - Could We
+      '#eab308', // Yellow - How Would We
+      '#22c55e', // Green - Will We
+      '#06b6d4'  // Cyan - Test/Review
+    ],
+    borderRadius: 6,
+    borderSkipped: false,
+    barThickness: 24,
   }]
 }));
 
@@ -334,70 +379,60 @@ onMounted(loadMetrics);
     </div>
 
     <template v-if="metrics">
-      <!-- Primary KPI Cards -->
-      <section class="kpi-section primary">
-        <div class="kpi-card highlight purple">
-          <div class="kpi-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Approaches Made</span>
-            <strong class="kpi-value">{{ metrics.approaches }}</strong>
-          </div>
-        </div>
-
-        <div class="kpi-card highlight blue">
-          <div class="kpi-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Meetings Secured</span>
-            <strong class="kpi-value">{{ metrics.meetingsSecured }}</strong>
-          </div>
-        </div>
-
-        <div class="kpi-card highlight teal">
-          <div class="kpi-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Proposals Sent</span>
-            <strong class="kpi-value">{{ metrics.proposalsSent }}</strong>
-          </div>
-        </div>
-
-        <div class="kpi-card highlight green">
-          <div class="kpi-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Work Secured</span>
-            <strong class="kpi-value">{{ money.format(metrics.workSecured) }}</strong>
-          </div>
-        </div>
-      </section>
-
-      <!-- Secondary Stats Grid -->
+      <!-- Combined Performance Stats -->
       <section class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Total Prospects</span>
+            <span class="stat-label">Total Pipeline Prospects</span>
             <span class="stat-badge blue">Pipeline</span>
           </div>
           <strong class="stat-value">{{ metrics.totalProspects }}</strong>
           <div class="stat-footer">
-            <span class="stat-active">{{ metrics.activeProspects }} active</span>
+            <span class="stat-sub">{{ metrics.activeProspects }} active</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Jobs Secured</span>
-            <span class="stat-badge green">Won</span>
+            <span class="stat-label">Approach → Meeting</span>
+            <span class="stat-badge purple">Combined</span>
           </div>
-          <strong class="stat-value">{{ metrics.securedJobs }}</strong>
+          <strong class="stat-value">{{ combinedMeetingRate }}%</strong>
           <div class="stat-footer">
-            <span class="stat-rate">{{ securedRate }}% win rate</span>
+            <span class="stat-sub">{{ combinedMeetings }}/{{ combinedApproaches }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Meeting → Proposal</span>
+            <span class="stat-badge blue">Combined</span>
+          </div>
+          <strong class="stat-value">{{ combinedProposalRate }}%</strong>
+          <div class="stat-footer">
+            <span class="stat-sub">{{ combinedProposals }}/{{ combinedMeetings }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Proposal → Secured</span>
+            <span class="stat-badge teal">Combined</span>
+          </div>
+          <strong class="stat-value">{{ combinedSecuredRate }}%</strong>
+          <div class="stat-footer">
+            <span class="stat-sub">{{ combinedSecured }}/{{ combinedProposals }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Overall Win Rate</span>
+            <span class="stat-badge green">Combined</span>
+          </div>
+          <strong class="stat-value">{{ combinedOverallRate }}%</strong>
+          <div class="stat-footer">
+            <span class="stat-sub">{{ combinedSecured }}/{{ combinedApproaches }}</span>
           </div>
         </div>
 
@@ -414,34 +449,12 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Total Secured</span>
-            <span class="stat-badge teal">Revenue</span>
+            <span class="stat-label">Work Secured</span>
+            <span class="stat-badge green">Revenue</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalSecuredValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">Closed value</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">COI Relationships</span>
-            <span class="stat-badge orange">Network</span>
-          </div>
-          <strong class="stat-value">{{ metrics.totalCoi }}</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ metrics.totalReferrals }} referrals</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">Referral Conversions</span>
-            <span class="stat-badge pink">Converted</span>
-          </div>
-          <strong class="stat-value">{{ metrics.totalConverted }}</strong>
-          <div class="stat-footer">
-            <span class="stat-rate">{{ conversionRate }}% conversion</span>
+            <span class="stat-sub">Total closed value</span>
           </div>
         </div>
       </section>
@@ -612,6 +625,54 @@ onMounted(loadMetrics);
         </div>
       </section>
 
+      <!-- COI Performance -->
+      <section class="rates-section coi-performance">
+        <h2 class="section-title">
+          <span class="title-icon teal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          COI Performance
+        </h2>
+        <div class="coi-panel-grid">
+          <div class="coi-chart-box">
+            <h4>Status Progression</h4>
+            <div class="coi-chart-inner">
+              <Bar :data="coiPerformanceBarData" :options="verticalBarOptions" />
+            </div>
+          </div>
+
+          <div class="coi-stats-table">
+            <div class="coi-stat-row">
+              <span class="coi-stat-label">Total COIs</span>
+              <strong class="coi-stat-value">{{ metrics.coiPerformance.total }}</strong>
+            </div>
+            <div class="coi-stat-row">
+              <span class="coi-stat-label">Referrals</span>
+              <strong class="coi-stat-value">{{ metrics.coiPerformance.totalReferrals }}</strong>
+            </div>
+            <div class="coi-stat-row">
+              <span class="coi-stat-label">Converted</span>
+              <strong class="coi-stat-value">{{ metrics.coiPerformance.totalConverted }}</strong>
+            </div>
+            <div class="coi-stat-row">
+              <span class="coi-stat-label">Proposal Fee Value</span>
+              <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalProposalFeeValue) }}</strong>
+            </div>
+            <div class="coi-stat-row">
+              <span class="coi-stat-label">Secured Fee Value</span>
+              <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalSecuredFeeValue) }}</strong>
+            </div>
+          </div>
+
+          <div class="coi-chart-box">
+            <h4>By Industry</h4>
+            <div class="coi-chart-inner">
+              <Bar :data="coiIndustryBarData" :options="verticalBarOptions" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Charts Row 1 -->
       <section class="charts-row">
         <div class="chart-card">
@@ -640,20 +701,12 @@ onMounted(loadMetrics);
       </section>
 
       <!-- Charts Row 2 -->
-      <section class="charts-row">
+      <section class="charts-row single">
         <div class="chart-card wide">
           <h3>Work Secured by Team Member</h3>
           <p class="chart-subtitle">Individual performance breakdown</p>
           <div class="chart-container bar-h">
             <Bar :data="staffBarData" :options="horizontalBarOptions" />
-          </div>
-        </div>
-
-        <div class="chart-card">
-          <h3>COI by Industry</h3>
-          <p class="chart-subtitle">Relationship network distribution</p>
-          <div class="chart-container bar-v">
-            <Bar :data="coiIndustryBarData" :options="verticalBarOptions" />
           </div>
         </div>
       </section>
@@ -816,7 +869,7 @@ onMounted(loadMetrics);
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 1rem;
 }
 
@@ -926,6 +979,89 @@ onMounted(loadMetrics);
 
 .rates-section.total-needs {
   border-left: 4px solid #f97316;
+}
+
+.rates-section.coi-performance {
+  border-left: 4px solid #14b8a6;
+}
+
+.title-icon.teal {
+  background: linear-gradient(135deg, #ccfbf1, #99f6e4);
+  color: #0d9488;
+}
+
+.coi-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.coi-stats-table {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+  border-radius: 14px;
+  min-width: 160px;
+}
+
+.coi-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(13, 148, 136, 0.1);
+}
+
+.coi-stat-row:last-child {
+  border-bottom: none;
+}
+
+.coi-stat-label {
+  font-size: 0.85rem;
+  color: #0d9488;
+  font-weight: 500;
+}
+
+.coi-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.coi-chart-box {
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.coi-chart-box h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0d9488;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.coi-chart-inner {
+  flex: 1;
+  min-height: 100px;
+}
+
+.stat-card-inline.teal {
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+}
+
+.stat-card-inline.teal .stat-icon {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+  color: white;
 }
 
 .funnel-grid {
@@ -1062,6 +1198,10 @@ onMounted(loadMetrics);
   grid-template-columns: 2fr 1.5fr;
 }
 
+.charts-row.single {
+  grid-template-columns: 1fr;
+}
+
 .chart-card {
   background: white;
   border-radius: 20px;
@@ -1169,6 +1309,10 @@ onMounted(loadMetrics);
   .funnel-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  .coi-panel-grid {
+    grid-template-columns: 1fr auto 1fr;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1178,6 +1322,25 @@ onMounted(loadMetrics);
 
   .funnel-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .coi-panel-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .coi-stats-table {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
+
+  .coi-stat-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+    border-bottom: none;
+    padding: 0.5rem 1rem;
   }
 
   .charts-row,

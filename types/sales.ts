@@ -69,6 +69,18 @@ export type FunnelMetrics = {
   avgDaysElapsed: number;
 };
 
+export type CoiPerformanceMetrics = {
+  total: number;
+  couldWe: number;
+  howWouldWe: number;
+  willWe: number;
+  testReview: number;
+  totalReferrals: number;
+  totalConverted: number;
+  totalProposalFeeValue: number;
+  totalSecuredFeeValue: number;
+};
+
 export type DashboardMetrics = {
   approaches: number;
   meetingsSecured: number;
@@ -89,4 +101,5 @@ export type DashboardMetrics = {
   coiIndustryBreakdown: Array<{ industry: string; relationships: number }>;
   campaignFunnel: FunnelMetrics;
   totalNeedsFunnel: FunnelMetrics;
+  coiPerformance: CoiPerformanceMetrics;
 };

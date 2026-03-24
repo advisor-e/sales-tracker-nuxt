@@ -33,7 +33,15 @@ export default defineEventHandler(async (event) => {
     campaignSecuredEntries,
     totalNeedsSecuredEntries,
     // Stored config values
-    appConfigRows
+    appConfigRows,
+    // COI Performance
+    coiCouldWe,
+    coiHowWouldWe,
+    coiWillWe,
+    coiTestReview,
+    // COI referrals/conversions from pipeline
+    validCoiRows,
+    coiPipelineEntries
   ] = await Promise.all([
     prisma.pipelineEntry.count({ where: { userId: user.id } }),
     prisma.pipelineEntry.count({ where: { userId: user.id, prospectStatus: "Active" } }),
@@ -73,6 +81,18 @@ export default defineEventHandler(async (event) => {
     // Get stored avg days from AppConfig
     prisma.appConfig.findMany({
       where: { userId: user.id, configKey: { in: ["campaignAvgDays", "totalNeedsAvgDays"] } }
+    }),
+    // COI Performance metrics (relationship progress from COI entries)
+    prisma.coiEntry.count({ where: { userId: user.id, couldWe: { gt: 0 } } }),
+    prisma.coiEntry.count({ where: { userId: user.id, howWouldWe: { gt: 0 } } }),
+    prisma.coiEntry.count({ where: { userId: user.id, willWe: { gt: 0 } } }),
+    prisma.coiEntry.count({ where: { userId: user.id, testReview: { gt: 0 } } }),
+    // Get valid COI names from directory
+    prisma.coiEntry.findMany({ where: { userId: user.id }, select: { coiName: true } }),
+    // Get all pipeline entries with COI involved for filtering
+    prisma.pipelineEntry.findMany({
+      where: { userId: user.id, coiInvolved: { not: null } },
+      select: { coiInvolved: true, jobSecured: true, jobSecuredValue: true, proposalValue: true }
     })
   ]);
 
@@ -153,6 +173,26 @@ export default defineEventHandler(async (event) => {
   const storedCampaignAvgDays = parseFloat(configMap.get("campaignAvgDays") || "0");
   const storedTotalNeedsAvgDays = parseFloat(configMap.get("totalNeedsAvgDays") || "0");
 
+  // Calculate COI referrals/conversions - only count pipeline entries with valid COI names
+  const validCoiNames = new Set(validCoiRows.map((c: { coiName: string }) => c.coiName.toLowerCase()));
+  let coiReferralsCount = 0;
+  let coiConvertedCount = 0;
+  let coiProposalFeeValue = 0;
+  let coiSecuredFeeValue = 0;
+
+  for (const entry of coiPipelineEntries) {
+    const coiName = String(entry.coiInvolved || "").trim();
+    if (!coiName || !validCoiNames.has(coiName.toLowerCase())) continue;
+
+    coiReferralsCount += 1;
+    coiProposalFeeValue += Number(entry.proposalValue || 0);
+
+    if (entry.jobSecured) {
+      coiConvertedCount += 1;
+      coiSecuredFeeValue += Number(entry.jobSecuredValue || 0);
+    }
+  }
+
   return {
     approaches: approachCount,
     meetingsSecured: meetingCount,
@@ -188,6 +228,19 @@ export default defineEventHandler(async (event) => {
       secured: totalNeedsSecured,
       avgFee: totalNeedsStats.avgFee,
       avgDaysElapsed: storedTotalNeedsAvgDays || totalNeedsStats.avgDaysElapsed
+    },
+    // COI Performance data
+    coiPerformance: {
+      total: totalCoi,
+      couldWe: coiCouldWe,
+      howWouldWe: coiHowWouldWe,
+      willWe: coiWillWe,
+      testReview: coiTestReview,
+      // Referrals/conversions from pipeline entries with valid COI involved
+      totalReferrals: coiReferralsCount,
+      totalConverted: coiConvertedCount,
+      totalProposalFeeValue: coiProposalFeeValue,
+      totalSecuredFeeValue: coiSecuredFeeValue
     }
   };
 });
