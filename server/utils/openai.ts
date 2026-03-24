@@ -45,8 +45,12 @@ export async function generateDraft(payload: BlogDraftRequest): Promise<{ text: 
     })
     .join("\n");
 
-  const system = "You are an expert financial content writer producing substantive markdown blog outlines.";
-  const user = `Create a blog outline in markdown.\nTopic: ${payload.topic}\nAudience: ${payload.audience}\nObjective: ${payload.objective}\nTone: ${payload.tone}\nLength: ${payload.length}\nCTA: ${payload.cta}\n\nUse these principles:\n${principleLines}`;
+  const authorLine = payload.author ? `\nAuthor: ${payload.author}` : "";
+  const wordCountLine = payload.wordCount ? `\nTarget word count: ${payload.wordCount} words` : "";
+  const referencesLine = payload.references ? `\n\nReference materials to incorporate:\n${payload.references}` : "";
+
+  const system = "You are an expert financial content writer producing substantive markdown blog outlines. When reference materials are provided, incorporate their key insights and information into the outline.";
+  const user = `Create a blog outline in markdown.\nTopic: ${payload.topic}\nAudience: ${payload.audience}\nObjective: ${payload.objective}\nTone: ${payload.tone}\nLength: ${payload.length}${wordCountLine}${authorLine}\nCTA: ${payload.cta}\n\nUse these principles:\n${principleLines}${referencesLine}`;
 
   try {
     const response = await client.chat.completions.create({
@@ -76,8 +80,9 @@ export async function generateFinal(payload: BlogFinalRequest): Promise<{ text: 
     return { text: buildFinalTemplate(payload), source: "template", error: "OpenAI key not configured" };
   }
 
-  const system = "You are an elite financial content writer. Convert outlines into polished markdown articles without filler.";
-  const user = `Turn this outline into a complete markdown article.\nTopic: ${payload.topic}\nAudience: ${payload.audience}\nObjective: ${payload.objective}\nTone: ${payload.tone}\nPolish level: ${payload.polishLevel}\nCTA: ${payload.cta}\n\nOutline:\n${payload.outlineText}`;
+  const wordCountLine = payload.wordCount ? `\nTarget word count: ${payload.wordCount} words` : "";
+  const system = "You are an elite financial content writer. Convert outlines into polished markdown articles without filler. When a target word count is specified, expand the content appropriately to meet that target.";
+  const user = `Turn this outline into a complete markdown article.\nTopic: ${payload.topic}\nAudience: ${payload.audience}\nObjective: ${payload.objective}\nTone: ${payload.tone}\nPolish level: ${payload.polishLevel}${wordCountLine}\nCTA: ${payload.cta}\n\nOutline:\n${payload.outlineText}`;
 
   try {
     const response = await client.chat.completions.create({

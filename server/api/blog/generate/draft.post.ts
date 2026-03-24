@@ -8,8 +8,11 @@ const schema = z.object({
   objective: z.string().min(1),
   tone: z.enum(["Professional", "Friendly", "Confident", "Educational"]),
   length: z.enum(["Short", "Medium", "Long"]),
+  wordCount: z.string().optional(),
   cta: z.string().min(1),
-  principles: z.array(z.object({ title: z.string(), details: z.array(z.string()) })).min(1)
+  author: z.string().optional(),
+  principles: z.array(z.object({ title: z.string(), details: z.array(z.string()) })).min(1),
+  references: z.string().optional()
 });
 
 export default defineEventHandler(async (event) => {
