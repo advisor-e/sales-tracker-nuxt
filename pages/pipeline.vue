@@ -36,7 +36,6 @@ interface PipelineEntry {
 }
 
 const search = ref("");
-const statusFilter = ref("");
 const ownerFilter = ref("");
 const items = ref<PipelineEntry[]>([]);
 const errorText = ref("");
@@ -204,6 +203,118 @@ function loadHeaderLabels(): Record<string, string> {
 // Header labels for editing
 const headerLabels = ref<Record<string, string>>(loadHeaderLabels());
 
+// Default column order
+const defaultColumnOrder = [
+  'prospect', 'business', 'partner', 'leadStaff', 'status', 'relationship', 'source',
+  'coi', 'industry', 'approachDate', 'approachStyle', 'meeting', 'quizDone', 'salesStyle',
+  'meetingDate', 'followUp', 'followUpDate', 'tnStage', 'proposal', 'proposalValue',
+  'secured', 'dateSecured', 'securedValue', 'additionalWork', 'comments'
+];
+
+// Load saved column order from localStorage
+function loadColumnOrder(): string[] {
+  if (typeof window === "undefined") return [...defaultColumnOrder];
+  try {
+    const saved = localStorage.getItem("pipeline-column-order");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate that all default columns are present
+      if (Array.isArray(parsed) && defaultColumnOrder.every(col => parsed.includes(col))) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return [...defaultColumnOrder];
+}
+
+// Column order for drag reordering
+const columnOrder = ref<string[]>(loadColumnOrder());
+
+// Drag state for column reordering
+const draggingColumn = ref<string | null>(null);
+const dragOverColumn = ref<string | null>(null);
+
+function onDragStart(col: string, event: DragEvent) {
+  draggingColumn.value = col;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', col);
+  }
+}
+
+function onDragOver(col: string, event: DragEvent) {
+  event.preventDefault();
+  if (draggingColumn.value && draggingColumn.value !== col) {
+    dragOverColumn.value = col;
+  }
+}
+
+function onDragLeave() {
+  dragOverColumn.value = null;
+}
+
+function onDrop(col: string, event: DragEvent) {
+  event.preventDefault();
+  if (!draggingColumn.value || draggingColumn.value === col) {
+    draggingColumn.value = null;
+    dragOverColumn.value = null;
+    return;
+  }
+
+  const order = [...columnOrder.value];
+  const fromIndex = order.indexOf(draggingColumn.value);
+  const toIndex = order.indexOf(col);
+
+  if (fromIndex !== -1 && toIndex !== -1) {
+    order.splice(fromIndex, 1);
+    order.splice(toIndex, 0, draggingColumn.value);
+    columnOrder.value = order;
+
+    // Save to localStorage
+    try {
+      localStorage.setItem("pipeline-column-order", JSON.stringify(order));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  draggingColumn.value = null;
+  dragOverColumn.value = null;
+}
+
+function onDragEnd() {
+  draggingColumn.value = null;
+  dragOverColumn.value = null;
+}
+
+// Get CSS class for a cell based on column type
+function getCellClass(col: string): string[] {
+  const classes: string[] = [];
+
+  // First column is sticky
+  if (col === columnOrder.value[0]) {
+    classes.push('sticky-col');
+  }
+
+  // Checkbox columns are centered
+  if (['meeting', 'quizDone', 'followUp', 'proposal', 'secured'].includes(col)) {
+    classes.push('center');
+  }
+
+  // Money columns
+  if (['proposalValue', 'additionalWork'].includes(col)) {
+    classes.push('money-cell');
+  }
+
+  if (col === 'securedValue') {
+    classes.push('money-cell', 'secured');
+  }
+
+  return classes;
+}
+
 // Save header label on edit
 function saveHeaderLabel(col: string, event: Event) {
   const target = event.target as HTMLElement;
@@ -275,7 +386,6 @@ async function loadItems() {
     const res = await $fetch<{ items: PipelineEntry[] }>("/api/pipeline", {
       query: {
         search: search.value || undefined,
-        status: statusFilter.value || undefined,
         owner: ownerFilter.value || undefined
       }
     });
@@ -334,9 +444,10 @@ async function removeItem(item: PipelineEntry) {
 }
 
 onMounted(async () => {
-  // Load column widths and header labels from localStorage on client
+  // Load column widths, header labels, and column order from localStorage on client
   Object.assign(columnWidths.value, loadColumnWidths());
   Object.assign(headerLabels.value, loadHeaderLabels());
+  columnOrder.value = loadColumnOrder();
   await fetchLists();
   await Promise.all([loadItems(), loadCoiEntries()]);
 });
@@ -473,7 +584,10 @@ onMounted(async () => {
         </div>
         <div class="form-group">
           <label>COI Involved</label>
-          <input v-model="draft.coiInvolved" placeholder="N/A" />
+          <select v-model="draft.coiInvolved" :disabled="draft.prospectSource !== 'Referral'">
+            <option value="">{{ draft.prospectSource === 'Referral' ? 'Select COI...' : 'N/A' }}</option>
+            <option v-for="opt in coiOptions" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
         </div>
         <div class="form-group full-width">
           <label>Comments</label>
@@ -489,10 +603,6 @@ onMounted(async () => {
     <!-- Filters -->
     <section class="filters-bar">
       <input v-model="search" placeholder="Search prospects..." @keyup.enter="loadItems" />
-      <select v-model="statusFilter" @change="loadItems">
-        <option value="">All Statuses</option>
-        <option v-for="opt in statusOptions" :key="opt" :value="opt">{{ opt }}</option>
-      </select>
       <input v-model="ownerFilter" placeholder="Filter by owner..." @keyup.enter="loadItems" />
       <button class="btn-secondary" @click="loadItems">Apply</button>
     </section>
@@ -506,214 +616,91 @@ onMounted(async () => {
       <table class="data-table" :class="{ resizing: resizing }">
         <thead>
           <tr>
-            <th class="sticky-col resizable" :style="{ width: columnWidths.prospect + 'px', minWidth: columnWidths.prospect + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('prospect', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.prospect }}</span>
-              <span class="resize-handle" @mousedown="startResize('prospect', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.business + 'px', minWidth: columnWidths.business + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('business', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.business }}</span>
-              <span class="resize-handle" @mousedown="startResize('business', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.partner + 'px', minWidth: columnWidths.partner + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('partner', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.partner }}</span>
-              <span class="resize-handle" @mousedown="startResize('partner', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.leadStaff + 'px', minWidth: columnWidths.leadStaff + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('leadStaff', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.leadStaff }}</span>
-              <span class="resize-handle" @mousedown="startResize('leadStaff', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.status + 'px', minWidth: columnWidths.status + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('status', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.status }}</span>
-              <span class="resize-handle" @mousedown="startResize('status', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.relationship + 'px', minWidth: columnWidths.relationship + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('relationship', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.relationship }}</span>
-              <span class="resize-handle" @mousedown="startResize('relationship', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.source + 'px', minWidth: columnWidths.source + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('source', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.source }}</span>
-              <span class="resize-handle" @mousedown="startResize('source', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.coi + 'px', minWidth: columnWidths.coi + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('coi', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.coi }}</span>
-              <span class="resize-handle" @mousedown="startResize('coi', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.industry + 'px', minWidth: columnWidths.industry + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('industry', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.industry }}</span>
-              <span class="resize-handle" @mousedown="startResize('industry', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.approachDate + 'px', minWidth: columnWidths.approachDate + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('approachDate', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.approachDate }}</span>
-              <span class="resize-handle" @mousedown="startResize('approachDate', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.approachStyle + 'px', minWidth: columnWidths.approachStyle + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('approachStyle', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.approachStyle }}</span>
-              <span class="resize-handle" @mousedown="startResize('approachStyle', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.meeting + 'px', minWidth: columnWidths.meeting + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('meeting', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.meeting }}</span>
-              <span class="resize-handle" @mousedown="startResize('meeting', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.quizDone + 'px', minWidth: columnWidths.quizDone + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('quizDone', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.quizDone }}</span>
-              <span class="resize-handle" @mousedown="startResize('quizDone', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.salesStyle + 'px', minWidth: columnWidths.salesStyle + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('salesStyle', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.salesStyle }}</span>
-              <span class="resize-handle" @mousedown="startResize('salesStyle', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.meetingDate + 'px', minWidth: columnWidths.meetingDate + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('meetingDate', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.meetingDate }}</span>
-              <span class="resize-handle" @mousedown="startResize('meetingDate', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.followUp + 'px', minWidth: columnWidths.followUp + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('followUp', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.followUp }}</span>
-              <span class="resize-handle" @mousedown="startResize('followUp', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.followUpDate + 'px', minWidth: columnWidths.followUpDate + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('followUpDate', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.followUpDate }}</span>
-              <span class="resize-handle" @mousedown="startResize('followUpDate', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.tnStage + 'px', minWidth: columnWidths.tnStage + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('tnStage', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.tnStage }}</span>
-              <span class="resize-handle" @mousedown="startResize('tnStage', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.proposal + 'px', minWidth: columnWidths.proposal + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('proposal', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.proposal }}</span>
-              <span class="resize-handle" @mousedown="startResize('proposal', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.proposalValue + 'px', minWidth: columnWidths.proposalValue + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('proposalValue', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.proposalValue }}</span>
-              <span class="resize-handle" @mousedown="startResize('proposalValue', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.secured + 'px', minWidth: columnWidths.secured + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('secured', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.secured }}</span>
-              <span class="resize-handle" @mousedown="startResize('secured', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.dateSecured + 'px', minWidth: columnWidths.dateSecured + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('dateSecured', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.dateSecured }}</span>
-              <span class="resize-handle" @mousedown="startResize('dateSecured', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.securedValue + 'px', minWidth: columnWidths.securedValue + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('securedValue', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.securedValue }}</span>
-              <span class="resize-handle" @mousedown="startResize('securedValue', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.additionalWork + 'px', minWidth: columnWidths.additionalWork + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('additionalWork', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.additionalWork }}</span>
-              <span class="resize-handle" @mousedown="startResize('additionalWork', $event)"></span>
-            </th>
-            <th class="resizable" :style="{ width: columnWidths.comments + 'px', minWidth: columnWidths.comments + 'px' }">
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel('comments', $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels.comments }}</span>
-              <span class="resize-handle" @mousedown="startResize('comments', $event)"></span>
+            <th
+              v-for="col in columnOrder"
+              :key="col"
+              :class="['resizable', { 'sticky-col': col === columnOrder[0], 'dragging': draggingColumn === col, 'drag-over': dragOverColumn === col }]"
+              :style="{ width: columnWidths[col] + 'px', minWidth: columnWidths[col] + 'px' }"
+              draggable="true"
+              @dragstart="onDragStart(col, $event)"
+              @dragover="onDragOver(col, $event)"
+              @dragleave="onDragLeave"
+              @drop="onDrop(col, $event)"
+              @dragend="onDragEnd"
+            >
+              <span class="drag-handle" title="Drag to reorder">⠿</span>
+              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels[col] }}</span>
+              <span class="resize-handle" @mousedown="startResize(col, $event)"></span>
             </th>
             <th class="actions-col" :style="{ width: columnWidths.actions + 'px' }"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.id" :class="['status-' + item.prospectStatus.toLowerCase().replace(/\s+/g, '-')]">
-            <td class="sticky-col">
-              <input v-model="item.prospectName" class="cell-input" @blur="updateField(item, 'prospectName', item.prospectName)" />
-            </td>
-            <td>
-              <input v-model="item.businessName" class="cell-input" @blur="updateField(item, 'businessName', item.businessName)" />
-            </td>
-            <td>
-              <select v-model="item.partner" class="cell-select" @change="updateField(item, 'partner', item.partner)">
+            <td v-for="col in columnOrder" :key="col" :class="getCellClass(col)">
+              <!-- Text inputs -->
+              <input v-if="col === 'prospect'" v-model="item.prospectName" class="cell-input" @blur="updateField(item, 'prospectName', item.prospectName)" />
+              <input v-else-if="col === 'business'" v-model="item.businessName" class="cell-input" @blur="updateField(item, 'businessName', item.businessName)" />
+              <input v-else-if="col === 'comments'" v-model="item.comments" class="cell-input wide" @blur="updateField(item, 'comments', item.comments)" />
+
+              <!-- Select dropdowns -->
+              <select v-else-if="col === 'partner'" v-model="item.partner" class="cell-select" @change="updateField(item, 'partner', item.partner)">
                 <option value="">-</option>
                 <option v-for="opt in partnerOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <select v-model="item.leadStaff" class="cell-select" @change="updateField(item, 'leadStaff', item.leadStaff)">
+              <select v-else-if="col === 'leadStaff'" v-model="item.leadStaff" class="cell-select" @change="updateField(item, 'leadStaff', item.leadStaff)">
                 <option value="">-</option>
                 <option v-for="opt in leadStaffOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <select v-model="item.prospectStatus" class="cell-select" @change="updateField(item, 'prospectStatus', item.prospectStatus)">
+              <select v-else-if="col === 'status'" v-model="item.prospectStatus" class="cell-select" @change="updateField(item, 'prospectStatus', item.prospectStatus)">
                 <option v-for="opt in statusOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <select v-model="item.relationshipType" class="cell-select" @change="updateField(item, 'relationshipType', item.relationshipType)">
+              <select v-else-if="col === 'relationship'" v-model="item.relationshipType" class="cell-select" @change="updateField(item, 'relationshipType', item.relationshipType)">
                 <option value="">-</option>
                 <option v-for="opt in relationshipOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <select v-model="item.prospectSource" class="cell-select" @change="updateField(item, 'prospectSource', item.prospectSource)">
+              <select v-else-if="col === 'source'" v-model="item.prospectSource" class="cell-select" @change="updateField(item, 'prospectSource', item.prospectSource)">
                 <option value="">-</option>
                 <option v-for="opt in sourceOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <select v-model="item.coiInvolved" class="cell-select" @change="updateField(item, 'coiInvolved', item.coiInvolved)">
+              <select v-else-if="col === 'coi'" v-model="item.coiInvolved" class="cell-select" @change="updateField(item, 'coiInvolved', item.coiInvolved)">
                 <option value="">-</option>
                 <option v-for="opt in coiOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <select v-model="item.industry" class="cell-select" @change="updateField(item, 'industry', item.industry)">
+              <select v-else-if="col === 'industry'" v-model="item.industry" class="cell-select" @change="updateField(item, 'industry', item.industry)">
                 <option value="">-</option>
                 <option v-for="opt in industryOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <input :value="toInputDate(item.approachDate)" type="date" class="cell-input date" @change="updateField(item, 'approachDate', ($event.target as HTMLInputElement).value)" />
-            </td>
-            <td>
-              <select v-model="item.approachStyle" class="cell-select" @change="updateField(item, 'approachStyle', item.approachStyle)">
+              <select v-else-if="col === 'approachStyle'" v-model="item.approachStyle" class="cell-select" @change="updateField(item, 'approachStyle', item.approachStyle)">
                 <option value="">-</option>
                 <option v-for="opt in approachOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td class="center">
-              <input type="checkbox" :checked="item.secureMeeting" @change="updateField(item, 'secureMeeting', !item.secureMeeting)" />
-            </td>
-            <td class="center">
-              <input type="checkbox" :checked="item.quizCompleted" @change="updateField(item, 'quizCompleted', !item.quizCompleted)" />
-            </td>
-            <td>
-              <select v-model="item.salesStyle" class="cell-select" @change="updateField(item, 'salesStyle', item.salesStyle)">
+              <select v-else-if="col === 'salesStyle'" v-model="item.salesStyle" class="cell-select" @change="updateField(item, 'salesStyle', item.salesStyle)">
                 <option value="">-</option>
                 <option v-for="opt in salesStyleOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td>
-              <input :value="toInputDate(item.meetingDate)" type="date" class="cell-input date" @change="updateField(item, 'meetingDate', ($event.target as HTMLInputElement).value)" />
-            </td>
-            <td class="center">
-              <input type="checkbox" :checked="item.followUpMeeting" @change="updateField(item, 'followUpMeeting', !item.followUpMeeting)" />
-            </td>
-            <td>
-              <input :value="toInputDate(item.followUpMeetingDate)" type="date" class="cell-input date" @change="updateField(item, 'followUpMeetingDate', ($event.target as HTMLInputElement).value)" />
-            </td>
-            <td>
-              <select v-model="item.totalNeedsStage" class="cell-select" @change="updateField(item, 'totalNeedsStage', item.totalNeedsStage)">
+              <select v-else-if="col === 'tnStage'" v-model="item.totalNeedsStage" class="cell-select" @change="updateField(item, 'totalNeedsStage', item.totalNeedsStage)">
                 <option value="">-</option>
                 <option v-for="opt in totalNeedsStageOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-            </td>
-            <td class="center">
-              <input type="checkbox" :checked="item.proposalSent" @change="updateField(item, 'proposalSent', !item.proposalSent)" />
-            </td>
-            <td class="money-cell">
-              <input :value="item.proposalValue" type="number" class="cell-input number" @blur="updateField(item, 'proposalValue', Number(($event.target as HTMLInputElement).value))" />
-            </td>
-            <td class="center">
-              <input type="checkbox" :checked="item.jobSecured" @change="updateField(item, 'jobSecured', !item.jobSecured)" />
-            </td>
-            <td>
-              <input :value="toInputDate(item.dateSecured)" type="date" class="cell-input date" @change="updateField(item, 'dateSecured', ($event.target as HTMLInputElement).value)" />
-            </td>
-            <td class="money-cell secured">
-              <input :value="item.jobSecuredValue" type="number" class="cell-input number" @blur="updateField(item, 'jobSecuredValue', Number(($event.target as HTMLInputElement).value))" />
-            </td>
-            <td class="money-cell">
-              <input :value="item.additionalWorkSecured" type="number" class="cell-input number" @blur="updateField(item, 'additionalWorkSecured', Number(($event.target as HTMLInputElement).value))" />
-            </td>
-            <td>
-              <input v-model="item.comments" class="cell-input wide" @blur="updateField(item, 'comments', item.comments)" />
+
+              <!-- Date inputs -->
+              <input v-else-if="col === 'approachDate'" :value="toInputDate(item.approachDate)" type="date" class="cell-input date" @change="updateField(item, 'approachDate', ($event.target as HTMLInputElement).value)" />
+              <input v-else-if="col === 'meetingDate'" :value="toInputDate(item.meetingDate)" type="date" class="cell-input date" @change="updateField(item, 'meetingDate', ($event.target as HTMLInputElement).value)" />
+              <input v-else-if="col === 'followUpDate'" :value="toInputDate(item.followUpMeetingDate)" type="date" class="cell-input date" @change="updateField(item, 'followUpMeetingDate', ($event.target as HTMLInputElement).value)" />
+              <input v-else-if="col === 'dateSecured'" :value="toInputDate(item.dateSecured)" type="date" class="cell-input date" @change="updateField(item, 'dateSecured', ($event.target as HTMLInputElement).value)" />
+
+              <!-- Checkboxes -->
+              <input v-else-if="col === 'meeting'" type="checkbox" :checked="item.secureMeeting" @change="updateField(item, 'secureMeeting', !item.secureMeeting)" />
+              <input v-else-if="col === 'quizDone'" type="checkbox" :checked="item.quizCompleted" @change="updateField(item, 'quizCompleted', !item.quizCompleted)" />
+              <input v-else-if="col === 'followUp'" type="checkbox" :checked="item.followUpMeeting" @change="updateField(item, 'followUpMeeting', !item.followUpMeeting)" />
+              <input v-else-if="col === 'proposal'" type="checkbox" :checked="item.proposalSent" @change="updateField(item, 'proposalSent', !item.proposalSent)" />
+              <input v-else-if="col === 'secured'" type="checkbox" :checked="item.jobSecured" @change="updateField(item, 'jobSecured', !item.jobSecured)" />
+
+              <!-- Number inputs -->
+              <input v-else-if="col === 'proposalValue'" :value="item.proposalValue" type="number" class="cell-input number" @blur="updateField(item, 'proposalValue', Number(($event.target as HTMLInputElement).value))" />
+              <input v-else-if="col === 'securedValue'" :value="item.jobSecuredValue" type="number" class="cell-input number" @blur="updateField(item, 'jobSecuredValue', Number(($event.target as HTMLInputElement).value))" />
+              <input v-else-if="col === 'additionalWork'" :value="item.additionalWorkSecured" type="number" class="cell-input number" @blur="updateField(item, 'additionalWorkSecured', Number(($event.target as HTMLInputElement).value))" />
             </td>
             <td class="actions-col">
               <button class="btn-delete" @click="removeItem(item)" title="Delete">×</button>
@@ -729,10 +716,10 @@ onMounted(async () => {
 .pipeline-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top right, rgba(239, 68, 68, 0.15) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(248, 113, 113, 0.12) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(254, 202, 202, 0.25) 0%, transparent 35%),
-    linear-gradient(180deg, #fff5f5 0%, #fef2f2 100%);
+    radial-gradient(circle at top right, rgba(0, 43, 100, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at left top, rgba(127, 211, 241, 0.1) 0%, transparent 30%),
+    radial-gradient(circle at bottom right, rgba(0, 177, 224, 0.08) 0%, transparent 35%),
+    linear-gradient(180deg, #f0f5fa 0%, #e8eff6 100%);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -741,11 +728,42 @@ onMounted(async () => {
 
 /* Header */
 .page-header {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(127, 211, 241, 0.25) 0%, transparent 40%),
+    radial-gradient(ellipse at 60% 80%, rgba(0, 177, 224, 0.2) 0%, transparent 45%),
+    linear-gradient(135deg, #004080 0%, #003366 25%, #002b64 50%, #00224d 75%, #001a3d 100%);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
   color: white;
-  box-shadow: 0 10px 40px rgba(220, 38, 38, 0.3);
+  box-shadow:
+    0 20px 60px rgba(0, 43, 100, 0.4),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+.page-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
 }
 .header-content {
   display: flex;
@@ -756,17 +774,34 @@ onMounted(async () => {
 }
 .header-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+  padding: 0.3rem 0.9rem;
   border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
 }
-.header-text h1 { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.2; }
-.header-text p { margin: 0.5rem 0 0; opacity: 0.9; font-size: 0.95rem; line-height: 1.4; max-width: 400px; }
+.header-text h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: -0.02em;
+}
+.header-text p {
+  margin: 0.6rem 0 0;
+  opacity: 0.9;
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 420px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
 .header-actions {
   display: flex;
   gap: 0.75rem;
@@ -774,34 +809,63 @@ onMounted(async () => {
 
 /* Buttons */
 .btn-primary {
-  background: white;
-  color: #dc2626;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #002b64;
   border: none;
-  border-radius: 10px;
-  padding: 0.6rem 1.25rem;
-  font-weight: 600;
+  border-radius: 12px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(0, 43, 100, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  padding: 0.6rem 1.25rem;
+  border-radius: 12px;
+  padding: 0.7rem 1.5rem;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
 }
 
 /* Stats Bar */
@@ -817,6 +881,8 @@ onMounted(async () => {
   padding: 0.75rem 1.25rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   min-width: 100px;
+  flex: 1;
+  text-align: center;
 }
 
 .stat-item.active {
@@ -899,7 +965,7 @@ onMounted(async () => {
 }
 
 .form-actions .btn-primary {
-  background: #dc2626;
+  background: linear-gradient(135deg, #003d80 0%, #002b64 100%);
   color: white;
 }
 
@@ -982,6 +1048,10 @@ onMounted(async () => {
   z-index: 10;
 }
 
+.data-table th.resizable {
+  position: relative;
+}
+
 .header-text {
   display: inline-block;
   padding: 0.1rem 0.25rem;
@@ -993,12 +1063,49 @@ onMounted(async () => {
 }
 
 .header-text:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(0, 43, 100, 0.1);
 }
 
 .header-text:focus {
   background: white;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(0, 43, 100, 0.3);
+}
+
+/* Drag handle */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.4;
+  font-size: 0.9rem;
+  margin-right: 0.35rem;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.drag-handle:hover {
+  opacity: 0.8;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Dragging state */
+.data-table th.dragging {
+  opacity: 0.5;
+  background: #e0e7ff;
+}
+
+.data-table th.drag-over {
+  border-left: 3px solid #002b64;
+  background: #e6eef8;
+}
+
+.data-table th[draggable="true"] {
+  cursor: grab;
+}
+
+.data-table th[draggable="true"]:active {
+  cursor: grabbing;
 }
 
 
@@ -1016,14 +1123,14 @@ onMounted(async () => {
 }
 
 .resize-handle:hover {
-  border-right-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
+  border-right-color: #002b64;
+  background: rgba(0, 43, 100, 0.15);
 }
 
 .resize-handle:active,
 .data-table.resizing .resize-handle {
-  border-right-color: #2563eb;
-  background: rgba(59, 130, 246, 0.25);
+  border-right-color: #001a3d;
+  background: rgba(0, 43, 100, 0.25);
 }
 
 .data-table td {
@@ -1115,9 +1222,9 @@ onMounted(async () => {
 .cell-input:focus,
 .cell-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #002b64;
   background: white;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 43, 100, 0.1);
 }
 
 .cell-input.date {

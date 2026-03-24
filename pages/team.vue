@@ -110,17 +110,37 @@ onMounted(loadRows);
   min-height: 100vh;
   padding: 1.5rem;
   background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(76, 201, 240, 0.15) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(147, 197, 253, 0.2) 0%, transparent 35%),
-    linear-gradient(180deg, #f0f7ff 0%, #e0efff 100%);
+    radial-gradient(circle at top right, rgba(127, 211, 241, 0.15) 0%, transparent 25%),
+    radial-gradient(circle at left top, rgba(200, 240, 255, 0.12) 0%, transparent 30%),
+    radial-gradient(circle at bottom right, rgba(127, 211, 241, 0.1) 0%, transparent 35%),
+    linear-gradient(180deg, #f0fafd 0%, #e6f7fc 100%);
 }
 .page-header {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(200, 240, 255, 0.3) 0%, transparent 40%),
+    linear-gradient(135deg, #9ce0f7 0%, #7fd3f1 25%, #5ec5eb 50%, #3db7e5 75%, #2a9bc7 100%);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
   color: white;
-  box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
+  box-shadow:
+    0 20px 60px rgba(127, 211, 241, 0.35),
+    0 8px 25px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
 }
 .header-content {
   display: flex;
@@ -151,7 +171,7 @@ onMounted(loadRows);
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   font-weight: 600;
-  color: #3b82f6;
+  color: #0891b2;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -169,17 +189,17 @@ onMounted(loadRows);
 .summary-strip article {
   border-radius: 18px;
   padding: 0.62rem 0.7rem;
-  background: linear-gradient(180deg, #ebf5ff, #dbeafe);
-  box-shadow: 0 12px 28px rgba(67, 97, 238, 0.12);
+  background: linear-gradient(180deg, #ecfeff, #cffafe);
+  box-shadow: 0 12px 28px rgba(127, 211, 241, 0.2);
 }
-.summary-strip span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #1d4ed8; }
-.summary-strip strong { display: block; margin-top: 0.2rem; font-size: 1.2rem; color: #1e3a8a; }
+.summary-strip span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #0891b2; }
+.summary-strip strong { display: block; margin-top: 0.2rem; font-size: 1.2rem; color: #155e75; }
 button {
-  border: 1px solid rgba(15, 122, 138, 0.35);
+  border: 1px solid rgba(127, 211, 241, 0.4);
   border-radius: 10px;
   padding: 0.34rem 0.48rem;
   background: rgba(255, 255, 255, 0.82);
-  color: #1e3a8a;
+  color: #0891b2;
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.1;

@@ -103,11 +103,31 @@ onMounted(loadHomeData);
 <style scoped>
 .home-page { display: flex; flex-direction: column; gap: 1rem; min-height: 100vh; padding: 1.5rem; }
 .page-header {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(255, 180, 100, 0.25) 0%, transparent 40%),
+    linear-gradient(135deg, #ff7a1a 0%, #f26200 25%, #d95700 50%, #c24e00 75%, #a34200 100%);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
   color: white;
-  box-shadow: 0 10px 40px rgba(249, 115, 22, 0.3);
+  box-shadow:
+    0 20px 60px rgba(242, 98, 0, 0.35),
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
 }
 .header-content {
   display: flex;
@@ -134,10 +154,10 @@ onMounted(loadHomeData);
 .metric-card { border-radius: 18px; padding: 1rem; box-shadow: 0 12px 28px rgba(16, 50, 74, 0.08); }
 .metric-card h3 { margin: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.78; }
 .metric-card p { margin: 0.35rem 0 0; font-size: 1.42rem; font-weight: 800; }
-.coral { background: linear-gradient(135deg, #ffd3cf, #ffb8ae); }
-.sky { background: linear-gradient(135deg, #d6f1ff, #b8e6ff); }
-.sun { background: linear-gradient(135deg, #fff2bf, #ffe08a); }
-.mint { background: linear-gradient(135deg, #ddf9e3, #b8efc4); }
+.coral { background: linear-gradient(135deg, #ffedd5, #fed7aa); }
+.sky { background: linear-gradient(135deg, #fff7ed, #ffedd5); }
+.sun { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.mint { background: linear-gradient(135deg, #ffedd5, #ffddc1); }
 
 .quick-links { display: grid; gap: 0.62rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .quick-link {
@@ -169,8 +189,8 @@ thead th { background: #f7fbff; color: #1e3d60; font-size: 0.72rem; text-transfo
 
 .info-panel { display: grid; align-content: start; gap: 0.55rem; }
 .info { margin: 0; padding: 0.56rem 0.62rem; border-radius: 12px; font-size: 0.84rem; font-weight: 700; }
-.info.blue { background: #e0f2fe; color: #0c4a6e; }
-.info.green { background: #dcfce7; color: #166534; }
+.info.blue { background: #fff7ed; color: #9a3412; }
+.info.green { background: #ffedd5; color: #c2410c; }
 .info.gold { background: #fef3c7; color: #92400e; }
 .caption { margin: 0.2rem 0 0; color: #5b708d; font-size: 0.84rem; }
 .error { color: #b91c1c; font-weight: 700; }

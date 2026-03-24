@@ -167,35 +167,35 @@ body {
   transform: translateY(-1px);
 }
 
-/* Home - Coral/warm gradient matching home page */
-.nav-home { background: linear-gradient(120deg, #fff0ed, #fff4e6); border: 1px solid rgba(255, 180, 174, 0.4); color: #9a3412; }
-.nav-home:hover { background: linear-gradient(120deg, #ffe4df, #ffead6); border-color: rgba(255, 159, 28, 0.5); }
-.nav-home.router-link-active { background: linear-gradient(120deg, #ffd3cf, #ffb8ae); border-color: rgba(255, 140, 100, 0.6); color: #7c2d12; }
+/* Home - Orange #f26200 */
+.nav-home { background: linear-gradient(120deg, #fff4ed, #ffefe6); border: 1px solid rgba(242, 98, 0, 0.3); color: #c24e00; }
+.nav-home:hover { background: linear-gradient(120deg, #ffe8d9, #ffdcc6); border-color: rgba(242, 98, 0, 0.45); }
+.nav-home.router-link-active { background: linear-gradient(120deg, #ffd4b8, #ffc49e); border-color: rgba(242, 98, 0, 0.6); color: #a34200; }
 
-/* Dashboard - Purple/violet gradient matching dashboard page */
-.nav-dashboard { background: linear-gradient(120deg, #f3f0ff, #ede9fe); border: 1px solid rgba(139, 92, 246, 0.3); color: #6d28d9; }
-.nav-dashboard:hover { background: linear-gradient(120deg, #ede9fe, #e4d9fc); border-color: rgba(139, 92, 246, 0.45); }
-.nav-dashboard.router-link-active { background: linear-gradient(120deg, #ddd6fe, #c4b5fd); border-color: rgba(139, 92, 246, 0.6); color: #5b21b6; }
+/* Dashboard - Cyan #00b1e0 */
+.nav-dashboard { background: linear-gradient(120deg, #e6f9ff, #d9f5fc); border: 1px solid rgba(0, 177, 224, 0.3); color: #008db3; }
+.nav-dashboard:hover { background: linear-gradient(120deg, #ccf2fc, #b3ecfa); border-color: rgba(0, 177, 224, 0.45); }
+.nav-dashboard.router-link-active { background: linear-gradient(120deg, #99e5f7, #66d9f2); border-color: rgba(0, 177, 224, 0.6); color: #007a99; }
 
-/* Pipeline - Red gradient matching pipeline page */
-.nav-pipeline { background: linear-gradient(120deg, #fff5f5, #fef2f2); border: 1px solid rgba(239, 68, 68, 0.3); color: #b91c1c; }
-.nav-pipeline:hover { background: linear-gradient(120deg, #fee2e2, #fecaca); border-color: rgba(239, 68, 68, 0.45); }
-.nav-pipeline.router-link-active { background: linear-gradient(120deg, #fecaca, #fca5a5); border-color: rgba(220, 38, 38, 0.6); color: #991b1b; }
+/* Pipeline - Navy #002b64 */
+.nav-pipeline { background: linear-gradient(120deg, #e6eef8, #dce6f4); border: 1px solid rgba(0, 43, 100, 0.3); color: #002b64; }
+.nav-pipeline:hover { background: linear-gradient(120deg, #ccdcef, #b3cbe6); border-color: rgba(0, 43, 100, 0.45); }
+.nav-pipeline.router-link-active { background: linear-gradient(120deg, #99b8db, #6695c9); border-color: rgba(0, 43, 100, 0.6); color: #001a3d; }
 
-/* Team - Blue gradient matching team page */
-.nav-team { background: linear-gradient(120deg, #eff6ff, #dbeafe); border: 1px solid rgba(59, 130, 246, 0.3); color: #1d4ed8; }
-.nav-team:hover { background: linear-gradient(120deg, #dbeafe, #bfdbfe); border-color: rgba(59, 130, 246, 0.45); }
-.nav-team.router-link-active { background: linear-gradient(120deg, #bfdbfe, #93c5fd); border-color: rgba(67, 97, 238, 0.6); color: #1e40af; }
+/* Team - Light Blue #7fd3f1 */
+.nav-team { background: linear-gradient(120deg, #f0fafd, #e6f7fc); border: 1px solid rgba(127, 211, 241, 0.4); color: #2a9bc7; }
+.nav-team:hover { background: linear-gradient(120deg, #d9f3fa, #c6edf8); border-color: rgba(127, 211, 241, 0.55); }
+.nav-team.router-link-active { background: linear-gradient(120deg, #b3e8f5, #8cddf0); border-color: rgba(127, 211, 241, 0.7); color: #1e7a9e; }
 
-/* COI - Purple gradient matching COI page */
-.nav-coi { background: linear-gradient(120deg, #faf5ff, #f3e8ff); border: 1px solid rgba(155, 93, 229, 0.3); color: #7c3aed; }
-.nav-coi:hover { background: linear-gradient(120deg, #f3e8ff, #e9d5ff); border-color: rgba(155, 93, 229, 0.45); }
-.nav-coi.router-link-active { background: linear-gradient(120deg, #e9d5ff, #d8b4fe); border-color: rgba(106, 76, 147, 0.6); color: #6b21a8; }
+/* COI - Green #1f9d40 */
+.nav-coi { background: linear-gradient(120deg, #e8f7ec, #dcf4e3); border: 1px solid rgba(31, 157, 64, 0.3); color: #1a8537; }
+.nav-coi:hover { background: linear-gradient(120deg, #c8edcf, #b3e6be); border-color: rgba(31, 157, 64, 0.45); }
+.nav-coi.router-link-active { background: linear-gradient(120deg, #99dba8, #66cc7a); border-color: rgba(31, 157, 64, 0.6); color: #156d2d; }
 
-/* Blog - Green gradient matching blog page */
-.nav-blog { background: linear-gradient(120deg, #f0fdf4, #dcfce7); border: 1px solid rgba(34, 197, 94, 0.3); color: #15803d; }
-.nav-blog:hover { background: linear-gradient(120deg, #dcfce7, #bbf7d0); border-color: rgba(34, 197, 94, 0.45); }
-.nav-blog.router-link-active { background: linear-gradient(120deg, #bbf7d0, #86efac); border-color: rgba(52, 211, 153, 0.6); color: #166534; }
+/* Blog - Magenta #d015d5 */
+.nav-blog { background: linear-gradient(120deg, #fce8fc, #fadcfa); border: 1px solid rgba(208, 21, 213, 0.3); color: #a611aa; }
+.nav-blog:hover { background: linear-gradient(120deg, #f7ccf7, #f4b8f4); border-color: rgba(208, 21, 213, 0.45); }
+.nav-blog.router-link-active { background: linear-gradient(120deg, #ee99ee, #e566e5); border-color: rgba(208, 21, 213, 0.6); color: #8a0e8e; }
 
 /* Lists - Cyan/teal gradient matching lists page */
 .nav-lists { background: linear-gradient(120deg, #ecfeff, #cffafe); border: 1px solid rgba(8, 145, 178, 0.3); color: #0e7490; }

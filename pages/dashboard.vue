@@ -11,13 +11,13 @@ const errorText = ref("");
 
 const money = new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD", maximumFractionDigits: 0 });
 
-// Color palettes
+// Color palettes - cyan-based for dashboard theme (#00b1e0)
 const colors = {
-  primary: ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'],
-  cool: ['#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6'],
+  primary: ['#00b1e0', '#0ea5e9', '#38bdf8', '#67e8f9', '#a5f3fc'],
+  cool: ['#00b1e0', '#0ea5e9', '#3b82f6', '#0891b2', '#06b6d4'],
   warm: ['#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e'],
   earth: ['#78716c', '#a8a29e', '#0d9488', '#0891b2', '#0284c7'],
-  vibrant: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#a855f7'],
+  vibrant: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#00b1e0', '#0ea5e9', '#38bdf8'],
 };
 
 // Combined funnel rates (Campaign + Total Needs)
@@ -102,7 +102,7 @@ const statusColors: Record<string, string> = {
   'Await Research': '#f59e0b', // Amber
   'Completed': '#3b82f6',   // Blue
   'Dead': '#ef4444',        // Red
-  'On Hold': '#8b5cf6',     // Purple
+  'On Hold': '#0891b2',     // Cyan/Teal
 };
 
 // High contrast colors for sources
@@ -153,8 +153,8 @@ const staffBarData = computed(() => ({
     data: metrics.value?.staffSecuredBreakdown.map(s => s.value) || [],
     backgroundColor: (ctx: any) => {
       const gradient = ctx.chart.ctx.createLinearGradient(0, 0, ctx.chart.width, 0);
-      gradient.addColorStop(0, '#6366f1');
-      gradient.addColorStop(1, '#a855f7');
+      gradient.addColorStop(0, '#00b1e0');
+      gradient.addColorStop(1, '#38bdf8');
       return gradient;
     },
     borderRadius: 6,
@@ -200,16 +200,16 @@ const monthlyTrendData = computed(() => ({
   datasets: [{
     label: 'Secured Value',
     data: metrics.value?.monthlySecuredTrend.map(s => s.value) || [],
-    borderColor: '#6366f1',
+    borderColor: '#00b1e0',
     backgroundColor: (ctx: any) => {
       const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
-      gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-      gradient.addColorStop(1, 'rgba(99, 102, 241, 0.02)');
+      gradient.addColorStop(0, 'rgba(0, 177, 224, 0.3)');
+      gradient.addColorStop(1, 'rgba(0, 177, 224, 0.02)');
       return gradient;
     },
     fill: true,
     tension: 0.4,
-    pointBackgroundColor: '#6366f1',
+    pointBackgroundColor: '#00b1e0',
     pointBorderColor: '#fff',
     pointBorderWidth: 2,
     pointRadius: 5,
@@ -395,7 +395,7 @@ onMounted(loadMetrics);
         <div class="stat-card">
           <div class="stat-header">
             <span class="stat-label">Approach → Meeting</span>
-            <span class="stat-badge purple">Combined</span>
+            <span class="stat-badge cyan">Combined</span>
           </div>
           <strong class="stat-value">{{ combinedMeetingRate }}%</strong>
           <div class="stat-footer">
@@ -439,7 +439,7 @@ onMounted(loadMetrics);
         <div class="stat-card">
           <div class="stat-header">
             <span class="stat-label">Pipeline Value</span>
-            <span class="stat-badge purple">Proposals</span>
+            <span class="stat-badge cyan">Proposals</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalProposalValue) }}</strong>
           <div class="stat-footer">
@@ -462,7 +462,7 @@ onMounted(loadMetrics);
       <!-- Campaign Results Funnel -->
       <section class="rates-section campaign">
         <h2 class="section-title">
-          <span class="title-icon purple">
+          <span class="title-icon cyan">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </span>
           Campaign Results
@@ -472,7 +472,7 @@ onMounted(loadMetrics);
             <div class="rate-ring">
               <svg viewBox="0 0 100 100">
                 <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress purple" cx="50" cy="50" r="42"
+                <circle class="ring-progress cyan" cx="50" cy="50" r="42"
                   :stroke-dasharray="264"
                   :stroke-dashoffset="264 - (264 * campaignMeetingRate / 100)"/>
               </svg>
@@ -524,7 +524,7 @@ onMounted(loadMetrics);
             <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.approaches }}</span>
           </div>
 
-          <div class="stat-card-inline purple">
+          <div class="stat-card-inline cyan">
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
@@ -532,7 +532,7 @@ onMounted(loadMetrics);
             <strong class="stat-value">{{ money.format(metrics.campaignFunnel.avgFee) }}</strong>
           </div>
 
-          <div class="stat-card-inline purple">
+          <div class="stat-card-inline cyan">
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
@@ -717,7 +717,10 @@ onMounted(loadMetrics);
 <style scoped>
 .dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background:
+    radial-gradient(circle at top right, rgba(0, 177, 224, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at left top, rgba(0, 200, 255, 0.06) 0%, transparent 30%),
+    linear-gradient(180deg, #e6f9ff 0%, #f0fcff 100%);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -727,11 +730,31 @@ onMounted(loadMetrics);
 
 /* Header */
 .dashboard-header {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 200, 255, 0.2) 0%, transparent 40%),
+    linear-gradient(135deg, #00c4e8 0%, #00b1e0 25%, #009fc8 50%, #008db3 75%, #007a99 100%);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
   color: white;
-  box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+  box-shadow:
+    0 20px 60px rgba(0, 177, 224, 0.35),
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
 }
 
 .header-content {
@@ -775,7 +798,7 @@ onMounted(loadMetrics);
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   font-weight: 600;
-  color: #6366f1;
+  color: #008db3;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -828,7 +851,7 @@ onMounted(loadMetrics);
   height: 4px;
 }
 
-.kpi-card.purple::before { background: linear-gradient(90deg, #6366f1, #a855f7); }
+.kpi-card.cyan::before { background: linear-gradient(90deg, #00b1e0, #38bdf8); }
 .kpi-card.blue::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
 .kpi-card.teal::before { background: linear-gradient(90deg, #14b8a6, #06b6d4); }
 .kpi-card.green::before { background: linear-gradient(90deg, #22c55e, #10b981); }
@@ -843,7 +866,7 @@ onMounted(loadMetrics);
   flex-shrink: 0;
 }
 
-.kpi-card.purple .kpi-icon { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #7c3aed; }
+.kpi-card.cyan .kpi-icon { background: linear-gradient(135deg, #cffafe, #a5f3fc); color: #0891b2; }
 .kpi-card.blue .kpi-icon { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; }
 .kpi-card.teal .kpi-icon { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0d9488; }
 .kpi-card.green .kpi-icon { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #16a34a; }
@@ -908,7 +931,7 @@ onMounted(loadMetrics);
 
 .stat-badge.blue { background: #dbeafe; color: #2563eb; }
 .stat-badge.green { background: #dcfce7; color: #16a34a; }
-.stat-badge.purple { background: #ede9fe; color: #7c3aed; }
+.stat-badge.cyan { background: #cffafe; color: #0891b2; }
 .stat-badge.teal { background: #ccfbf1; color: #0d9488; }
 .stat-badge.orange { background: #ffedd5; color: #ea580c; }
 .stat-badge.pink { background: #fce7f3; color: #db2777; }
@@ -963,9 +986,9 @@ onMounted(loadMetrics);
   justify-content: center;
 }
 
-.title-icon.purple {
-  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
-  color: #7c3aed;
+.title-icon.cyan {
+  background: linear-gradient(135deg, #cffafe, #a5f3fc);
+  color: #0891b2;
 }
 
 .title-icon.orange {
@@ -974,7 +997,7 @@ onMounted(loadMetrics);
 }
 
 .rates-section.campaign {
-  border-left: 4px solid #8b5cf6;
+  border-left: 4px solid #00b1e0;
 }
 
 .rates-section.total-needs {
@@ -1082,8 +1105,8 @@ onMounted(loadMetrics);
   text-align: center;
 }
 
-.stat-card-inline.purple {
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+.stat-card-inline.cyan {
+  background: linear-gradient(135deg, #ecfeff, #cffafe);
 }
 
 .stat-card-inline.orange {
@@ -1099,8 +1122,8 @@ onMounted(loadMetrics);
   justify-content: center;
 }
 
-.stat-card-inline.purple .stat-icon {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+.stat-card-inline.cyan .stat-icon {
+  background: linear-gradient(135deg, #00b1e0, #38bdf8);
   color: white;
 }
 
@@ -1155,7 +1178,7 @@ onMounted(loadMetrics);
   transition: stroke-dashoffset 0.6s ease;
 }
 
-.ring-progress.purple { stroke: #8b5cf6; }
+.ring-progress.cyan { stroke: #00b1e0; }
 .ring-progress.blue { stroke: #3b82f6; }
 .ring-progress.green { stroke: #22c55e; }
 .ring-progress.orange { stroke: #f97316; }
@@ -1262,7 +1285,7 @@ onMounted(loadMetrics);
   width: 40px;
   height: 40px;
   border: 3px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border-top-color: #00b1e0;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

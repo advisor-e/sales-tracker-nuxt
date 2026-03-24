@@ -442,17 +442,37 @@ onMounted(async () => {
   min-height: 100vh;
   padding: 1.5rem;
   background:
-    radial-gradient(circle at top right, rgba(147, 51, 234, 0.12) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(155, 93, 229, 0.1) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(216, 180, 254, 0.2) 0%, transparent 35%),
-    linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+    radial-gradient(circle at top right, rgba(31, 157, 64, 0.1) 0%, transparent 25%),
+    radial-gradient(circle at left top, rgba(150, 230, 170, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at bottom right, rgba(31, 157, 64, 0.06) 0%, transparent 35%),
+    linear-gradient(180deg, #f0faf2 0%, #e8f7ec 100%);
 }
 .page-header {
-  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #6d28d9 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(150, 230, 170, 0.25) 0%, transparent 40%),
+    linear-gradient(135deg, #2cb850 0%, #1f9d40 25%, #1a8537 50%, #156d2d 75%, #105523 100%);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
   color: white;
-  box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);
+  box-shadow:
+    0 20px 60px rgba(31, 157, 64, 0.35),
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
 }
 .header-content {
   display: flex;
@@ -483,7 +503,7 @@ onMounted(async () => {
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   font-weight: 600;
-  color: #7c3aed;
+  color: #1a8537;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -511,15 +531,15 @@ onMounted(async () => {
 .summary-strip article {
   border-radius: 18px;
   padding: 0.62rem 0.7rem;
-  background: linear-gradient(180deg, #f3e8ff, #e9d5ff);
-  box-shadow: 0 12px 28px rgba(147, 51, 234, 0.12);
+  background: linear-gradient(180deg, #dcfce7, #bbf7d0);
+  box-shadow: 0 12px 28px rgba(31, 157, 64, 0.12);
 }
-.summary-strip span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7e22ce; }
-.summary-strip strong { display: block; margin-top: 0.2rem; font-size: 1.2rem; color: #581c87; }
+.summary-strip span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #16a34a; }
+.summary-strip strong { display: block; margin-top: 0.2rem; font-size: 1.2rem; color: #15803d; }
 
 /* Add COI Section */
 .add-section {
-  background: linear-gradient(175deg, #faf5ff 0%, #f3e8ff 100%);
+  background: linear-gradient(175deg, #f0fdf4 0%, #dcfce7 100%);
 }
 .coi-form {
   display: flex;
@@ -546,7 +566,7 @@ onMounted(async () => {
 }
 .form-group input,
 .form-group select {
-  border: 1px solid #d8b4fe;
+  border: 1px solid #86efac;
   border-radius: 10px;
   padding: 0.6rem 0.85rem;
   font-size: 0.9rem;
@@ -555,15 +575,15 @@ onMounted(async () => {
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 .btn-group {
   display: flex;
   align-items: flex-end;
 }
 .btn-add {
-  background: #9333ea;
+  background: #1f9d40;
   color: white;
   border: none;
   border-radius: 10px;
@@ -573,7 +593,7 @@ onMounted(async () => {
   transition: background-color 0.15s;
   width: 100%;
 }
-.btn-add:hover:not(:disabled) { background: #7c3aed; }
+.btn-add:hover:not(:disabled) { background: #16a34a; }
 .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .card-header-row {
@@ -613,7 +633,7 @@ onMounted(async () => {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #9333ea;
+  accent-color: #1f9d40;
 }
 
 .progress-col {
@@ -629,7 +649,7 @@ onMounted(async () => {
 }
 
 .row-selected {
-  background: #f3e8ff !important;
+  background: #dcfce7 !important;
 }
 
 .empty-table {
@@ -648,7 +668,7 @@ thead th {
   letter-spacing: 0.05em;
   font-weight: 700;
 }
-tbody tr:hover { background: #faf5ff; }
+tbody tr:hover { background: #f0fdf4; }
 .error { color: #b91c1c; font-weight: 700; }
 @media (max-width: 980px) {
   .summary-strip { grid-template-columns: repeat(3, 1fr); }
