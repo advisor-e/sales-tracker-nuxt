@@ -8,8 +8,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Invalid id" });
   }
 
-  // Atomic ownership check + delete to prevent TOCTOU race conditions
-  const result = await prisma.coiEntry.deleteMany({ where: { id, userId: user.id } });
+  // COIs are shared across the firm - any authenticated user can delete
+  const result = await prisma.coiEntry.deleteMany({ where: { id } });
 
   if (result.count === 0) {
     throw createError({ statusCode: 404, statusMessage: "Not found" });

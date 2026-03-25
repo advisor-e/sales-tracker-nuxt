@@ -16,6 +16,7 @@ export default defineEventHandler((event) => {
         "img-src 'self' data: https: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
         "connect-src 'self' ws: wss: https://api.openai.com",
+        "worker-src 'self' blob:",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'"

@@ -63,15 +63,21 @@ const defaultLists: Record<string, { name: string; description: string; items: s
 };
 
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
+  // Any authenticated user can read lists (they're shared across the firm)
+  await requireUser(event);
 
-  // Fetch all list configs for this user
-  const configs = await prisma.appConfig.findMany({
+  // Fetch all list configs (shared across all users - take most recent per key)
+  const allConfigs = await prisma.appConfig.findMany({
     where: {
-      userId: user.id,
       configKey: { startsWith: "list:" }
-    }
+    },
+    orderBy: { updatedAt: "desc" }
   });
+
+  // Deduplicate by configKey (keep the most recent)
+  const configs = Array.from(
+    new Map(allConfigs.map(c => [c.configKey, c])).values()
+  );
 
   // Build lists object, merging defaults with saved data
   const lists: Record<string, { name: string; description: string; items: string[]; colors?: Record<string, string> }> = {};

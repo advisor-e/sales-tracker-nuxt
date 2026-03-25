@@ -30,9 +30,9 @@ export default defineEventHandler(async (event) => {
 
   const payload = schema.parse(await readBody(event));
 
-  // Atomic ownership check + update to prevent TOCTOU race conditions
+  // Pipeline is shared across the firm - any authenticated user can update
   const result = await prisma.pipelineEntry.updateMany({
-    where: { id, userId: user.id },
+    where: { id },
     data: {
       ...payload,
       approachDate: payload.approachDate === undefined ? undefined : payload.approachDate ? new Date(payload.approachDate) : null

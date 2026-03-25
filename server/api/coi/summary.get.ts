@@ -2,19 +2,18 @@ import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
 
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
+  // Any authenticated user can view COI summary (firm-wide metrics)
+  await requireUser(event);
 
-  // Get valid COI names from the COI directory
+  // Get valid COI names from the COI directory (shared across firm)
   const validCois = await prisma.coiEntry.findMany({
-    where: { userId: user.id },
     select: { coiName: true }
   });
   const validCoiNames = new Set(validCois.map(c => c.coiName.toLowerCase()));
 
-  // Get all pipeline entries that have a COI involved
+  // Get all pipeline entries that have a COI involved (firm-wide)
   const pipelineEntries = await prisma.pipelineEntry.findMany({
     where: {
-      userId: user.id,
       coiInvolved: { not: null }
     },
     select: {

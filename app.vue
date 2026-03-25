@@ -1,7 +1,9 @@
 <script setup lang="ts">
-type UserRole = "firm_manager" | "advisor";
+import { type UserRole } from "~/composables/useAuth";
 
 const route = useRoute();
+const { isAuthenticated, user, checkAuth, logout: authLogout } = useAuth();
+
 const allNavItems = [
   { to: "/home", label: "Home", className: "nav-home" },
   { to: "/dashboard", label: "Dashboard", className: "nav-dashboard" },
@@ -12,43 +14,30 @@ const allNavItems = [
   { to: "/lists", label: "Lists", className: "nav-lists", requiredRole: "firm_manager" as UserRole }
 ];
 
-const auth = ref<{ authenticated: boolean; user: { email: string; displayName: string | null; role: UserRole } | null }>({
-  authenticated: false,
-  user: null
+// Show nav if authenticated OR if on a protected route (not login page)
+// This prevents nav from disappearing during auth check
+const showNav = computed(() => {
+  return isAuthenticated.value || (route.path !== "/login");
 });
 
 // Filter nav items based on user role
 const navItems = computed(() => {
-  const userRole = auth.value.user?.role || "advisor";
+  const userRole = user.value?.role || "advisor";
   return allNavItems.filter(item => {
     if (!item.requiredRole) return true;
     return userRole === item.requiredRole || userRole === "firm_manager";
   });
 });
 
-async function refreshAuth() {
-  try {
-    auth.value = await $fetch("/api/auth/me");
-  } catch {
-    auth.value = { authenticated: false, user: null };
-  }
-}
-
-async function logout() {
-  await $fetch("/api/auth/logout", { method: "POST" });
-  await refreshAuth();
+async function handleLogout() {
+  await authLogout();
   if (route.path !== "/login") {
     await navigateTo("/login");
   }
 }
 
-onMounted(refreshAuth);
-watch(
-  () => route.path,
-  () => {
-    refreshAuth();
-  }
-);
+// Check auth on mount (uses cache if valid)
+onMounted(() => checkAuth());
 </script>
 
 <template>
@@ -56,13 +45,13 @@ watch(
     <header class="top-nav">
       <div class="brand-block">
         <strong>Sales Command Center</strong>
-        <span v-if="auth.authenticated">{{ auth.user?.displayName || auth.user?.email }}</span>
+        <span v-if="showNav">{{ user?.displayName || user?.email }}</span>
       </div>
-      <template v-if="auth.authenticated">
+      <template v-if="showNav">
         <nav class="nav-links">
           <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" :class="item.className">{{ item.label }}</NuxtLink>
         </nav>
-        <button class="auth-btn" @click="logout">Sign Out</button>
+        <button class="auth-btn" @click="handleLogout">Sign Out</button>
       </template>
       <template v-else>
         <NuxtLink to="/login">Sign In</NuxtLink>

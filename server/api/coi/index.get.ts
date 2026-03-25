@@ -2,13 +2,14 @@ import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
 
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
+  // Any authenticated user can view COIs (shared across the firm)
+  await requireUser(event);
   const query = getQuery(event);
   const search = String(query.search || "").trim();
 
   const items = await prisma.coiEntry.findMany({
     where: {
-      userId: user.id,
+      // COIs are shared across the firm - no userId filter
       OR: search
         ? [
             { coiName: { contains: search } },

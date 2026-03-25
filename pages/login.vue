@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { checkAuth } = useAuth();
+
 const email = ref("");
 const password = ref("");
 const errorText = ref("");
@@ -15,6 +17,8 @@ async function submit() {
         password: password.value
       }
     });
+    // Force refresh auth state so header shows correct user
+    await checkAuth(true);
     await navigateTo("/dashboard");
   } catch (error: unknown) {
     const e = error as { data?: { statusMessage?: string }; message?: string };

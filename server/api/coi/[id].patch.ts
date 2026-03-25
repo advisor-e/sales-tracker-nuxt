@@ -36,8 +36,8 @@ export default defineEventHandler(async (event) => {
   if (typeof payload.willWe === "boolean") data.willWe = payload.willWe ? 1 : 0;
   if (typeof payload.testReview === "boolean") data.testReview = payload.testReview ? 1 : 0;
 
-  // Atomic ownership check + update to prevent TOCTOU race conditions
-  const result = await prisma.coiEntry.updateMany({ where: { id, userId: user.id }, data });
+  // COIs are shared across the firm - any authenticated user can update
+  const result = await prisma.coiEntry.updateMany({ where: { id }, data });
 
   if (result.count === 0) {
     throw createError({ statusCode: 404, statusMessage: "Not found" });

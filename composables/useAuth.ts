@@ -1,7 +1,10 @@
+export type UserRole = "firm_manager" | "advisor";
+
 interface AuthUser {
   id: number;
   email: string;
   displayName: string | null;
+  role: UserRole;
 }
 
 interface AuthState {
@@ -75,11 +78,25 @@ export function useAuth() {
     };
   };
 
+  const logout = async (): Promise<void> => {
+    try {
+      await $fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore errors - still clear local state
+    }
+    // Clear auth cache
+    clearAuth();
+    // Clear lists cache
+    const { invalidateCache } = useLists();
+    invalidateCache();
+  };
+
   return {
     isAuthenticated,
     user,
     checkAuth,
     clearAuth,
+    logout,
     isCacheValid
   };
 }

@@ -2,19 +2,20 @@ import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
 
 // Simple in-memory cache for dashboard metrics (5 second TTL)
-const metricsCache = new Map<number, { data: any; timestamp: number }>();
+let metricsCache: { data: any; timestamp: number } | null = null;
 const CACHE_TTL_MS = 5000;
 
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
+  // Any authenticated user can view dashboard metrics (firm-wide)
+  await requireUser(event);
 
   // Check cache
-  const cached = metricsCache.get(user.id);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.data;
+  if (metricsCache && Date.now() - metricsCache.timestamp < CACHE_TTL_MS) {
+    return metricsCache.data;
   }
 
   // Consolidated queries - reduced from 40+ to ~15 queries
+  // All queries now show firm-wide data (no userId filter)
   const [
     // Pipeline aggregations - combined
     pipelineStats,
@@ -31,33 +32,28 @@ export default defineEventHandler(async (event) => {
   ] = await Promise.all([
     // Single aggregate query for pipeline totals
     prisma.pipelineEntry.aggregate({
-      where: { userId: user.id },
       _count: { _all: true },
       _sum: { proposalValue: true, jobSecuredValue: true }
     }),
     // Status breakdown
     prisma.pipelineEntry.groupBy({
       by: ["prospectStatus"],
-      where: { userId: user.id },
       _count: { _all: true },
       orderBy: { prospectStatus: "asc" }
     }),
     // Source breakdown
     prisma.pipelineEntry.groupBy({
       by: ["prospectSource"],
-      where: { userId: user.id },
       _count: { _all: true }
     }),
     // Sales style funnel metrics - one query instead of 8
     prisma.pipelineEntry.groupBy({
       by: ["salesStyle"],
-      where: { userId: user.id },
       _count: { _all: true },
       _sum: { jobSecuredValue: true }
     }),
     // Get all pipeline entries with needed fields for calculations
     prisma.pipelineEntry.findMany({
-      where: { userId: user.id },
       select: {
         prospectStatus: true,
         salesStyle: true,
@@ -75,27 +71,25 @@ export default defineEventHandler(async (event) => {
     }),
     // COI aggregations
     prisma.coiEntry.aggregate({
-      where: { userId: user.id },
       _count: { _all: true },
       _sum: { totalReferrals: true, totalConverted: true, feeValue: true }
     }),
-    // COI progress counts - using raw query for efficiency
+    // COI progress counts - using raw query for efficiency (firm-wide)
     prisma.$queryRaw`
       SELECT
         SUM(CASE WHEN couldWe > 0 THEN 1 ELSE 0 END) as couldWe,
         SUM(CASE WHEN howWouldWe > 0 THEN 1 ELSE 0 END) as howWouldWe,
         SUM(CASE WHEN willWe > 0 THEN 1 ELSE 0 END) as willWe,
         SUM(CASE WHEN testReview > 0 THEN 1 ELSE 0 END) as testReview
-      FROM CoiEntry WHERE userId = ${user.id}
+      FROM CoiEntry
     ` as Promise<Array<{ couldWe: bigint; howWouldWe: bigint; willWe: bigint; testReview: bigint }>>,
     // COI industries
     prisma.coiEntry.findMany({
-      where: { userId: user.id },
       select: { industry: true, coiName: true }
     }),
-    // App config
+    // App config (firm-wide settings)
     prisma.appConfig.findMany({
-      where: { userId: user.id, configKey: { in: ["campaignAvgDays", "totalNeedsAvgDays"] } }
+      where: { configKey: { in: ["campaignAvgDays", "totalNeedsAvgDays"] } }
     })
   ]);
 
@@ -275,8 +269,8 @@ export default defineEventHandler(async (event) => {
     }
   };
 
-  // Cache the result
-  metricsCache.set(user.id, { data: result, timestamp: Date.now() });
+  // Cache the result (shared across all users)
+  metricsCache = { data: result, timestamp: Date.now() };
 
   return result;
 });
