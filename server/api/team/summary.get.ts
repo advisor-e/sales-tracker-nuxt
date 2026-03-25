@@ -1,9 +1,14 @@
 import { prisma } from "~/server/utils/db";
-import { requireFirmManager } from "~/server/utils/auth";
+import { requireUser } from "~/server/utils/auth";
 
 export default defineEventHandler(async (event) => {
-  // Only Firm Managers can view team performance
-  const user = await requireFirmManager(event);
+  const user = await requireUser(event);
+
+  // Advisors get empty data (they can't view team performance)
+  if (user.role !== "firm_manager") {
+    return { items: [] };
+  }
+
   const rows = await prisma.pipelineEntry.findMany({
     where: { userId: user.id },
     select: {
