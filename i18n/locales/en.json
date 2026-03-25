@@ -52,7 +52,7 @@
   "login": {
     "title": "Sign In",
     "subtitle": "Use your account to access your tenant data.",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "passwordPlaceholder": "********",
     "hint": "First-time bootstrap: set ADMIN_EMAIL and ADMIN_PASSWORD in .env and sign in with those values."
   },

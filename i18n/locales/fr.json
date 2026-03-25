@@ -52,7 +52,7 @@
   "login": {
     "title": "Se Connecter",
     "subtitle": "Utilisez votre compte pour accéder aux données de votre locataire.",
-    "emailPlaceholder": "vous@exemple.com",
+    "emailPlaceholder": "vous{'@'}exemple.com",
     "passwordPlaceholder": "********",
     "hint": "Première configuration: définissez ADMIN_EMAIL et ADMIN_PASSWORD dans .env et connectez-vous avec ces valeurs."
   },

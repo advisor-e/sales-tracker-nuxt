@@ -52,7 +52,7 @@
   "login": {
     "title": "Iniciar Sesión",
     "subtitle": "Usa tu cuenta para acceder a los datos de tu inquilino.",
-    "emailPlaceholder": "tu@ejemplo.com",
+    "emailPlaceholder": "tu{'@'}ejemplo.com",
     "passwordPlaceholder": "********",
     "hint": "Primera configuración: establece ADMIN_EMAIL y ADMIN_PASSWORD en .env e inicia sesión con esos valores."
   },
