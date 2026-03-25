@@ -1,13 +1,13 @@
 <script setup lang="ts">
-const { locale, locales, setLocale } = useI18n();
+const { locale, locales, setLocale } = useI18n({ useScope: 'global' });
 
 const availableLocales = computed(() => {
   return locales.value.filter((l): l is { code: string; name: string } => typeof l !== "string");
 });
 
-function changeLanguage(event: Event) {
+async function changeLanguage(event: Event) {
   const target = event.target as HTMLSelectElement;
-  setLocale(target.value);
+  await setLocale(target.value);
 }
 </script>
 
