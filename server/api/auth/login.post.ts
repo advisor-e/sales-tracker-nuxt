@@ -1,7 +1,9 @@
 import { z } from "zod";
-import { defineEventHandler, readBody, createError } from "h3";
+import { defineEventHandler, readBody, createError, setResponseHeader } from "h3";
 import { prisma } from "../../utils/db";
 import { createSession, hashPassword, verifyPassword } from "../../utils/auth";
+import { checkLoginRateLimit, recordLoginAttempt, clearLoginRateLimit, getClientIP } from "../../utils/ratelimit";
+import { logLogin } from "../../utils/audit";
 
 const schema = z.object({
   email: z.string().trim().email().max(255),
@@ -9,6 +11,17 @@ const schema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  // Rate limiting check
+  const clientIP = getClientIP(event);
+  const rateCheck = checkLoginRateLimit(clientIP);
+  if (!rateCheck.allowed) {
+    setResponseHeader(event, "Retry-After", String(rateCheck.retryAfter));
+    throw createError({
+      statusCode: 429,
+      statusMessage: `Too many login attempts. Try again in ${Math.ceil((rateCheck.retryAfter || 0) / 60)} minutes.`
+    });
+  }
+
   const payload = schema.parse(await readBody(event));
   const email = payload.email.trim().toLowerCase();
 
@@ -28,10 +41,16 @@ export default defineEventHandler(async (event) => {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !verifyPassword(payload.password, user.passwordHash)) {
+    recordLoginAttempt(clientIP);
     throw createError({ statusCode: 401, statusMessage: "Invalid credentials" });
   }
 
+  // Successful login - clear rate limit
+  clearLoginRateLimit(clientIP);
   await createSession(event, user.id);
+
+  // Audit log
+  logLogin(event, user.id, user.email);
 
   return {
     user: {

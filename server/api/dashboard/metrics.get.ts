@@ -1,150 +1,202 @@
 import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
 
+// Simple in-memory cache for dashboard metrics (5 second TTL)
+const metricsCache = new Map<number, { data: any; timestamp: number }>();
+const CACHE_TTL_MS = 5000;
+
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event);
+
+  // Check cache
+  const cached = metricsCache.get(user.id);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  // Consolidated queries - reduced from 40+ to ~15 queries
   const [
-    totalProspects,
-    activeProspects,
-    securedJobs,
-    proposalAgg,
-    securedAgg,
-    totalCoi,
-    coiAgg,
-    statusRows,
-    sourceRows,
-    approachCount,
-    meetingCount,
-    proposalCount,
-    staffRows,
-    monthlyRows,
+    // Pipeline aggregations - combined
+    pipelineStats,
+    pipelineGroupByStatus,
+    pipelineGroupBySource,
+    pipelineGroupBySalesStyle,
+    pipelineEntries,
+    // COI aggregations - combined
+    coiStats,
+    coiGroupByProgress,
     coiIndustryRows,
-    // Campaign funnel metrics
-    campaignApproaches,
-    campaignMeetings,
-    campaignProposals,
-    campaignSecured,
-    // Total Needs funnel metrics
-    totalNeedsApproaches,
-    totalNeedsMeetings,
-    totalNeedsProposals,
-    totalNeedsSecured,
-    // Secured entries for avg calculations
-    campaignSecuredEntries,
-    totalNeedsSecuredEntries,
-    // Stored config values
-    appConfigRows,
-    // COI Performance
-    coiCouldWe,
-    coiHowWouldWe,
-    coiWillWe,
-    coiTestReview,
-    // COI referrals/conversions from pipeline
-    validCoiRows,
-    coiPipelineEntries
+    // Config
+    appConfigRows
   ] = await Promise.all([
-    prisma.pipelineEntry.count({ where: { userId: user.id } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, prospectStatus: "Active" } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, jobSecured: true } }),
-    prisma.pipelineEntry.aggregate({ where: { userId: user.id }, _sum: { proposalValue: true } }),
-    prisma.pipelineEntry.aggregate({ where: { userId: user.id }, _sum: { jobSecuredValue: true } }),
-    prisma.coiEntry.count({ where: { userId: user.id } }),
-    prisma.coiEntry.aggregate({ where: { userId: user.id }, _sum: { totalReferrals: true, totalConverted: true } }),
-    prisma.pipelineEntry.groupBy({ by: ["prospectStatus"], where: { userId: user.id }, _count: { _all: true }, orderBy: { prospectStatus: "asc" } }),
-    prisma.pipelineEntry.groupBy({ by: ["prospectSource"], where: { userId: user.id }, _count: { _all: true } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, NOT: { approachStyle: null } } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, secureMeeting: true } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, proposalSent: true } }),
-    prisma.pipelineEntry.findMany({ where: { userId: user.id }, select: { leadStaff: true, jobSecuredValue: true } }),
-    prisma.pipelineEntry.findMany({ where: { userId: user.id, approachDate: { not: null } }, select: { approachDate: true, jobSecuredValue: true }, orderBy: { approachDate: "asc" } }),
-    prisma.coiEntry.findMany({ where: { userId: user.id }, select: { industry: true } }),
-    // Campaign funnel
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Campaign", NOT: { approachStyle: null } } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Campaign", secureMeeting: true } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Campaign", proposalSent: true } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Campaign", jobSecured: true } }),
-    // Total Needs funnel
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Total Needs", NOT: { approachStyle: null } } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Total Needs", secureMeeting: true } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Total Needs", proposalSent: true } }),
-    prisma.pipelineEntry.count({ where: { userId: user.id, salesStyle: "Total Needs", jobSecured: true } }),
-    // Campaign secured entries for avg calculations
-    prisma.pipelineEntry.findMany({
-      where: { userId: user.id, salesStyle: "Campaign", jobSecured: true },
-      select: { jobSecuredValue: true, approachDate: true, dateSecured: true }
+    // Single aggregate query for pipeline totals
+    prisma.pipelineEntry.aggregate({
+      where: { userId: user.id },
+      _count: { _all: true },
+      _sum: { proposalValue: true, jobSecuredValue: true }
     }),
-    // Total Needs secured entries for avg calculations
-    prisma.pipelineEntry.findMany({
-      where: { userId: user.id, salesStyle: "Total Needs", jobSecured: true },
-      select: { jobSecuredValue: true, approachDate: true, dateSecured: true }
+    // Status breakdown
+    prisma.pipelineEntry.groupBy({
+      by: ["prospectStatus"],
+      where: { userId: user.id },
+      _count: { _all: true },
+      orderBy: { prospectStatus: "asc" }
     }),
-    // Get stored avg days from AppConfig
+    // Source breakdown
+    prisma.pipelineEntry.groupBy({
+      by: ["prospectSource"],
+      where: { userId: user.id },
+      _count: { _all: true }
+    }),
+    // Sales style funnel metrics - one query instead of 8
+    prisma.pipelineEntry.groupBy({
+      by: ["salesStyle"],
+      where: { userId: user.id },
+      _count: { _all: true },
+      _sum: { jobSecuredValue: true }
+    }),
+    // Get all pipeline entries with needed fields for calculations
+    prisma.pipelineEntry.findMany({
+      where: { userId: user.id },
+      select: {
+        prospectStatus: true,
+        salesStyle: true,
+        leadStaff: true,
+        approachStyle: true,
+        secureMeeting: true,
+        proposalSent: true,
+        jobSecured: true,
+        jobSecuredValue: true,
+        proposalValue: true,
+        approachDate: true,
+        dateSecured: true,
+        coiInvolved: true
+      }
+    }),
+    // COI aggregations
+    prisma.coiEntry.aggregate({
+      where: { userId: user.id },
+      _count: { _all: true },
+      _sum: { totalReferrals: true, totalConverted: true, feeValue: true }
+    }),
+    // COI progress counts - using raw query for efficiency
+    prisma.$queryRaw`
+      SELECT
+        SUM(CASE WHEN couldWe > 0 THEN 1 ELSE 0 END) as couldWe,
+        SUM(CASE WHEN howWouldWe > 0 THEN 1 ELSE 0 END) as howWouldWe,
+        SUM(CASE WHEN willWe > 0 THEN 1 ELSE 0 END) as willWe,
+        SUM(CASE WHEN testReview > 0 THEN 1 ELSE 0 END) as testReview
+      FROM CoiEntry WHERE userId = ${user.id}
+    ` as Promise<Array<{ couldWe: bigint; howWouldWe: bigint; willWe: bigint; testReview: bigint }>>,
+    // COI industries
+    prisma.coiEntry.findMany({
+      where: { userId: user.id },
+      select: { industry: true, coiName: true }
+    }),
+    // App config
     prisma.appConfig.findMany({
       where: { userId: user.id, configKey: { in: ["campaignAvgDays", "totalNeedsAvgDays"] } }
-    }),
-    // COI Performance metrics (relationship progress from COI entries)
-    prisma.coiEntry.count({ where: { userId: user.id, couldWe: { gt: 0 } } }),
-    prisma.coiEntry.count({ where: { userId: user.id, howWouldWe: { gt: 0 } } }),
-    prisma.coiEntry.count({ where: { userId: user.id, willWe: { gt: 0 } } }),
-    prisma.coiEntry.count({ where: { userId: user.id, testReview: { gt: 0 } } }),
-    // Get valid COI names from directory
-    prisma.coiEntry.findMany({ where: { userId: user.id }, select: { coiName: true } }),
-    // Get all pipeline entries with COI involved for filtering
-    prisma.pipelineEntry.findMany({
-      where: { userId: user.id, coiInvolved: { not: null } },
-      select: { coiInvolved: true, jobSecured: true, jobSecuredValue: true, proposalValue: true }
     })
   ]);
 
-  const sourceBreakdown = sourceRows
-    .map((row) => {
-      const raw = String(row.prospectSource || "").trim();
-      return {
-        source: raw || "Unknown",
-        count: row._count._all
-      };
-    })
+  // Process pipeline entries in memory (much faster than multiple DB queries)
+  let activeProspects = 0;
+  let securedJobs = 0;
+  let approachCount = 0;
+  let meetingCount = 0;
+  let proposalCount = 0;
+  let campaignApproaches = 0, campaignMeetings = 0, campaignProposals = 0, campaignSecured = 0;
+  let totalNeedsApproaches = 0, totalNeedsMeetings = 0, totalNeedsProposals = 0, totalNeedsSecured = 0;
+  const campaignSecuredEntries: Array<{ jobSecuredValue: any; approachDate: Date | null; dateSecured: Date | null }> = [];
+  const totalNeedsSecuredEntries: Array<{ jobSecuredValue: any; approachDate: Date | null; dateSecured: Date | null }> = [];
+  const staffTotals = new Map<string, number>();
+  const monthlyMap = new Map<string, number>();
+  const validCoiNames = new Set(coiIndustryRows.map(c => c.coiName?.toLowerCase()).filter(Boolean));
+  let coiReferralsCount = 0, coiConvertedCount = 0, coiProposalFeeValue = 0, coiSecuredFeeValue = 0;
+
+  for (const entry of pipelineEntries) {
+    // Status counts
+    if (entry.prospectStatus === "Active") activeProspects++;
+    if (entry.jobSecured) securedJobs++;
+
+    // Funnel counts
+    if (entry.approachStyle) approachCount++;
+    if (entry.secureMeeting) meetingCount++;
+    if (entry.proposalSent) proposalCount++;
+
+    // Sales style funnel
+    if (entry.salesStyle === "Campaign") {
+      if (entry.approachStyle) campaignApproaches++;
+      if (entry.secureMeeting) campaignMeetings++;
+      if (entry.proposalSent) campaignProposals++;
+      if (entry.jobSecured) {
+        campaignSecured++;
+        campaignSecuredEntries.push(entry);
+      }
+    } else if (entry.salesStyle === "Total Needs") {
+      if (entry.approachStyle) totalNeedsApproaches++;
+      if (entry.secureMeeting) totalNeedsMeetings++;
+      if (entry.proposalSent) totalNeedsProposals++;
+      if (entry.jobSecured) {
+        totalNeedsSecured++;
+        totalNeedsSecuredEntries.push(entry);
+      }
+    }
+
+    // Staff breakdown
+    const staffKey = String(entry.leadStaff || "").trim() || "Unassigned";
+    staffTotals.set(staffKey, (staffTotals.get(staffKey) || 0) + Number(entry.jobSecuredValue || 0));
+
+    // Monthly trend
+    if (entry.approachDate) {
+      const d = new Date(entry.approachDate);
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthlyMap.set(month, (monthlyMap.get(month) || 0) + Number(entry.jobSecuredValue || 0));
+    }
+
+    // COI tracking
+    const coiName = String(entry.coiInvolved || "").trim();
+    if (coiName && validCoiNames.has(coiName.toLowerCase())) {
+      coiReferralsCount++;
+      coiProposalFeeValue += Number(entry.proposalValue || 0);
+      if (entry.jobSecured) {
+        coiConvertedCount++;
+        coiSecuredFeeValue += Number(entry.jobSecuredValue || 0);
+      }
+    }
+  }
+
+  // Process source breakdown
+  const sourceBreakdown = pipelineGroupBySource
+    .map(row => ({
+      source: String(row.prospectSource || "").trim() || "Unknown",
+      count: row._count._all
+    }))
     .sort((a, b) => b.count - a.count);
 
-  const staffTotals = new Map<string, number>();
-  for (const row of staffRows) {
-    const key = String(row.leadStaff || "").trim() || "Unassigned";
-    staffTotals.set(key, (staffTotals.get(key) || 0) + Number(row.jobSecuredValue || 0));
-  }
+  // Process staff breakdown
   const staffSecuredBreakdown = Array.from(staffTotals.entries())
     .map(([leadStaff, value]) => ({ leadStaff, value }))
     .sort((a, b) => b.value - a.value);
 
-  const monthlyMap = new Map<string, number>();
-  for (const row of monthlyRows) {
-    if (!row.approachDate) {
-      continue;
-    }
-    const d = new Date(row.approachDate);
-    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    monthlyMap.set(month, (monthlyMap.get(month) || 0) + Number(row.jobSecuredValue || 0));
-  }
+  // Process monthly trend
   const monthlySecuredTrend = Array.from(monthlyMap.entries())
     .map(([month, value]) => ({ month, value }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
+  // Process COI industry breakdown
   const industryMap = new Map<string, number>();
   for (const row of coiIndustryRows) {
     const key = String(row.industry || "").trim();
-    if (!key) {
-      continue;
-    }
-    industryMap.set(key, (industryMap.get(key) || 0) + 1);
+    if (key) industryMap.set(key, (industryMap.get(key) || 0) + 1);
   }
   const coiIndustryBreakdown = Array.from(industryMap.entries())
     .map(([industry, relationships]) => ({ industry, relationships }))
     .sort((a, b) => b.relationships - a.relationships);
 
-  // Calculate average fee and days elapsed for Campaign
+  // Calculate funnel stats
   function calculateFunnelStats(entries: Array<{ jobSecuredValue: any; approachDate: Date | null; dateSecured: Date | null }>) {
-    if (!entries.length) {
-      return { avgFee: 0, avgDaysElapsed: 0 };
-    }
+    if (!entries.length) return { avgFee: 0, avgDaysElapsed: 0 };
 
     const totalFee = entries.reduce((sum, e) => sum + Number(e.jobSecuredValue || 0), 0);
     const avgFee = Math.round(totalFee / entries.length);
@@ -168,50 +220,32 @@ export default defineEventHandler(async (event) => {
   const campaignStats = calculateFunnelStats(campaignSecuredEntries);
   const totalNeedsStats = calculateFunnelStats(totalNeedsSecuredEntries);
 
-  // Get stored avg days from AppConfig (imported from Excel Stats to Date sheet)
+  // Get stored config values
   const configMap = new Map(appConfigRows.map((r: { configKey: string; configVal: string }) => [r.configKey, r.configVal]));
   const storedCampaignAvgDays = parseFloat(configMap.get("campaignAvgDays") || "0");
   const storedTotalNeedsAvgDays = parseFloat(configMap.get("totalNeedsAvgDays") || "0");
 
-  // Calculate COI referrals/conversions - only count pipeline entries with valid COI names
-  const validCoiNames = new Set(validCoiRows.map((c: { coiName: string }) => c.coiName.toLowerCase()));
-  let coiReferralsCount = 0;
-  let coiConvertedCount = 0;
-  let coiProposalFeeValue = 0;
-  let coiSecuredFeeValue = 0;
+  // Process COI progress counts
+  const coiProgress = coiGroupByProgress[0] || { couldWe: BigInt(0), howWouldWe: BigInt(0), willWe: BigInt(0), testReview: BigInt(0) };
 
-  for (const entry of coiPipelineEntries) {
-    const coiName = String(entry.coiInvolved || "").trim();
-    if (!coiName || !validCoiNames.has(coiName.toLowerCase())) continue;
-
-    coiReferralsCount += 1;
-    coiProposalFeeValue += Number(entry.proposalValue || 0);
-
-    if (entry.jobSecured) {
-      coiConvertedCount += 1;
-      coiSecuredFeeValue += Number(entry.jobSecuredValue || 0);
-    }
-  }
-
-  return {
+  const result = {
     approaches: approachCount,
     meetingsSecured: meetingCount,
     proposalsSent: proposalCount,
-    workSecured: Number(securedAgg._sum.jobSecuredValue || 0),
-    totalProspects,
+    workSecured: Number(pipelineStats._sum.jobSecuredValue || 0),
+    totalProspects: pipelineStats._count._all,
     activeProspects,
     securedJobs,
-    totalProposalValue: Number(proposalAgg._sum.proposalValue || 0),
-    totalSecuredValue: Number(securedAgg._sum.jobSecuredValue || 0),
-    totalCoi,
-    totalReferrals: coiAgg._sum.totalReferrals || 0,
-    totalConverted: coiAgg._sum.totalConverted || 0,
-    statusBreakdown: statusRows.map((row) => ({ status: row.prospectStatus, count: row._count._all })),
+    totalProposalValue: Number(pipelineStats._sum.proposalValue || 0),
+    totalSecuredValue: Number(pipelineStats._sum.jobSecuredValue || 0),
+    totalCoi: coiStats._count._all,
+    totalReferrals: coiStats._sum.totalReferrals || 0,
+    totalConverted: coiStats._sum.totalConverted || 0,
+    statusBreakdown: pipelineGroupByStatus.map(row => ({ status: row.prospectStatus, count: row._count._all })),
     sourceBreakdown,
     staffSecuredBreakdown,
     monthlySecuredTrend,
     coiIndustryBreakdown,
-    // Campaign funnel data
     campaignFunnel: {
       approaches: campaignApproaches,
       meetings: campaignMeetings,
@@ -220,7 +254,6 @@ export default defineEventHandler(async (event) => {
       avgFee: campaignStats.avgFee,
       avgDaysElapsed: storedCampaignAvgDays || campaignStats.avgDaysElapsed
     },
-    // Total Needs funnel data
     totalNeedsFunnel: {
       approaches: totalNeedsApproaches,
       meetings: totalNeedsMeetings,
@@ -229,18 +262,21 @@ export default defineEventHandler(async (event) => {
       avgFee: totalNeedsStats.avgFee,
       avgDaysElapsed: storedTotalNeedsAvgDays || totalNeedsStats.avgDaysElapsed
     },
-    // COI Performance data
     coiPerformance: {
-      total: totalCoi,
-      couldWe: coiCouldWe,
-      howWouldWe: coiHowWouldWe,
-      willWe: coiWillWe,
-      testReview: coiTestReview,
-      // Referrals/conversions from pipeline entries with valid COI involved
+      total: coiStats._count._all,
+      couldWe: Number(coiProgress.couldWe),
+      howWouldWe: Number(coiProgress.howWouldWe),
+      willWe: Number(coiProgress.willWe),
+      testReview: Number(coiProgress.testReview),
       totalReferrals: coiReferralsCount,
       totalConverted: coiConvertedCount,
       totalProposalFeeValue: coiProposalFeeValue,
       totalSecuredFeeValue: coiSecuredFeeValue
     }
   };
+
+  // Cache the result
+  metricsCache.set(user.id, { data: result, timestamp: Date.now() });
+
+  return result;
 });

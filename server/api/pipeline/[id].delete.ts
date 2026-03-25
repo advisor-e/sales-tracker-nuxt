@@ -1,5 +1,6 @@
 import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
+import { logDelete } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event);
@@ -14,6 +15,9 @@ export default defineEventHandler(async (event) => {
   if (result.count === 0) {
     throw createError({ statusCode: 404, statusMessage: "Not found" });
   }
+
+  // Audit log
+  logDelete(event, user.id, "PipelineEntry", id);
 
   return { ok: true };
 });

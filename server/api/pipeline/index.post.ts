@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
+import { logCreate } from "~/server/utils/audit";
 
 const schema = z.object({
   prospectName: z.string().min(1).max(255),
@@ -78,6 +79,9 @@ export default defineEventHandler(async (event) => {
       comments: payload.comments || null
     }
   });
+
+  // Audit log
+  logCreate(event, user.id, "PipelineEntry", item.id, { prospectName: payload.prospectName });
 
   return {
     item: {

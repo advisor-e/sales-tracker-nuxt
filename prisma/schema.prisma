@@ -188,3 +188,19 @@ model AppConfig {
   @@unique([userId, configKey])
   @@index([userId])
 }
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  action     String   @db.VarChar(50)  // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+  entityType String   @db.VarChar(50)  // PipelineEntry, CoiEntry, BlogPost, etc.
+  entityId   Int?
+  changes    String?  @db.Text         // JSON of what changed
+  ipAddress  String?  @db.VarChar(45)  // IPv6 can be up to 45 chars
+  userAgent  String?  @db.VarChar(500)
+  timestamp  DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([entityType, entityId])
+  @@index([action, timestamp])
+}
