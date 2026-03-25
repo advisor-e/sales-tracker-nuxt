@@ -27,11 +27,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Invalid id" });
   }
 
-  const existing = await prisma.coiEntry.findFirst({ where: { id, userId: user.id } });
-  if (!existing) {
-    throw createError({ statusCode: 404, statusMessage: "Not found" });
-  }
-
   const payload = schema.parse(await readBody(event));
 
   // Convert boolean progress fields to integers for database
@@ -41,6 +36,13 @@ export default defineEventHandler(async (event) => {
   if (typeof payload.willWe === "boolean") data.willWe = payload.willWe ? 1 : 0;
   if (typeof payload.testReview === "boolean") data.testReview = payload.testReview ? 1 : 0;
 
-  const item = await prisma.coiEntry.update({ where: { id }, data });
-  return { item: { ...item, feeValue: Number(item.feeValue || 0) } };
+  // Atomic ownership check + update to prevent TOCTOU race conditions
+  const result = await prisma.coiEntry.updateMany({ where: { id, userId: user.id }, data });
+
+  if (result.count === 0) {
+    throw createError({ statusCode: 404, statusMessage: "Not found" });
+  }
+
+  const item = await prisma.coiEntry.findUnique({ where: { id } });
+  return { item: { ...item, feeValue: Number(item?.feeValue || 0) } };
 });

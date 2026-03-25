@@ -4,12 +4,6 @@ const password = ref("");
 const errorText = ref("");
 const busy = ref(false);
 
-async function useMikeLogin() {
-  email.value = "mike@advisor-e.com";
-  password.value = "TempPass!234";
-  await submit();
-}
-
 async function submit() {
   busy.value = true;
   errorText.value = "";
@@ -47,7 +41,6 @@ async function submit() {
         </label>
         <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? "Signing in..." : "Sign In" }}</button>
       </form>
-      <button type="button" class="quick-btn" :disabled="busy" @click="useMikeLogin">Use Mike Login</button>
       <p v-if="errorText" class="error">{{ errorText }}</p>
       <p class="hint">First-time bootstrap: set ADMIN_EMAIL and ADMIN_PASSWORD in .env and sign in with those values.</p>
     </article>
@@ -111,12 +104,6 @@ button {
   color: #0a4752;
   font-weight: 700;
   cursor: pointer;
-}
-
-.quick-btn {
-  background: linear-gradient(135deg, #ffeec8, #fde7bc);
-  color: #7b4b07;
-  border-color: rgba(190, 126, 15, 0.28);
 }
 
 .error {

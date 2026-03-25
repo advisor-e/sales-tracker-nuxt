@@ -4,8 +4,8 @@ import { prisma } from "../../utils/db";
 import { createSession, hashPassword, verifyPassword } from "../../utils/auth";
 
 const schema = z.object({
-  email: z.string().email().max(255),
-  password: z.string().min(8).max(128)
+  email: z.string().trim().email().max(255),
+  password: z.string().min(10).max(128)  // Strengthened from 8 to 10 char minimum
 });
 
 export default defineEventHandler(async (event) => {

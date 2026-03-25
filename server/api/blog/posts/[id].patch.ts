@@ -18,13 +18,9 @@ export default defineEventHandler(async (event) => {
 
   const body = schema.parse(await readBody(event));
 
-  const existing = await prisma.blogPost.findFirst({ where: { id, userId: user.id } });
-  if (!existing) {
-    throw createError({ statusCode: 404, statusMessage: "Not found" });
-  }
-
-  const item = await prisma.blogPost.update({
-    where: { id },
+  // Atomic ownership check + update to prevent TOCTOU race conditions
+  const result = await prisma.blogPost.updateMany({
+    where: { id, userId: user.id },
     data: {
       isPinned: body.isPinned,
       outlineText: body.outlineText,
@@ -33,5 +29,10 @@ export default defineEventHandler(async (event) => {
     }
   });
 
+  if (result.count === 0) {
+    throw createError({ statusCode: 404, statusMessage: "Not found" });
+  }
+
+  const item = await prisma.blogPost.findUnique({ where: { id } });
   return { item };
 });

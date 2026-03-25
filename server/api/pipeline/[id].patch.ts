@@ -28,19 +28,23 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Invalid id" });
   }
 
-  const existing = await prisma.pipelineEntry.findFirst({ where: { id, userId: user.id } });
-  if (!existing) {
-    throw createError({ statusCode: 404, statusMessage: "Not found" });
-  }
-
   const payload = schema.parse(await readBody(event));
-  const item = await prisma.pipelineEntry.update({
-    where: { id },
+
+  // Atomic ownership check + update to prevent TOCTOU race conditions
+  const result = await prisma.pipelineEntry.updateMany({
+    where: { id, userId: user.id },
     data: {
       ...payload,
       approachDate: payload.approachDate === undefined ? undefined : payload.approachDate ? new Date(payload.approachDate) : null
     }
   });
+
+  if (result.count === 0) {
+    throw createError({ statusCode: 404, statusMessage: "Not found" });
+  }
+
+  // Fetch the updated item to return
+  const item = await prisma.pipelineEntry.findUnique({ where: { id } });
 
   return {
     item: {

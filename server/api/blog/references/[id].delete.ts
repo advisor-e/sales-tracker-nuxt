@@ -9,13 +9,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Invalid ID" });
   }
 
-  const item = await prisma.blogReference.findUnique({ where: { id } });
+  // Atomic ownership check + delete to prevent TOCTOU race conditions
+  const result = await prisma.blogReference.deleteMany({ where: { id, userId: user.id } });
 
-  if (!item || item.userId !== user.id) {
+  if (result.count === 0) {
     throw createError({ statusCode: 404, statusMessage: "Reference not found" });
   }
-
-  await prisma.blogReference.delete({ where: { id } });
 
   return { success: true };
 });

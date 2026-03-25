@@ -8,11 +8,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Invalid id" });
   }
 
-  const existing = await prisma.pipelineEntry.findFirst({ where: { id, userId: user.id } });
-  if (!existing) {
+  // Atomic ownership check + delete to prevent TOCTOU race conditions
+  const result = await prisma.pipelineEntry.deleteMany({ where: { id, userId: user.id } });
+
+  if (result.count === 0) {
     throw createError({ statusCode: 404, statusMessage: "Not found" });
   }
 
-  await prisma.pipelineEntry.delete({ where: { id } });
   return { ok: true };
 });
