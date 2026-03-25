@@ -59,11 +59,6 @@ const defaultLists: Record<string, { name: string; description: string; items: s
     name: "Industry",
     description: "Common industries for prospects and COIs",
     items: ["Accounting", "Legal", "Finance", "Real Estate", "Insurance", "Healthcare", "Technology", "Manufacturing", "Retail", "Construction", "Education", "Hospitality", "Earthmoving", "Other"]
-  },
-  coiName: {
-    name: "COI (Centers of Influence)",
-    description: "Referral partners who provide leads",
-    items: []
   }
 };
 
