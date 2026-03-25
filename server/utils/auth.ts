@@ -6,9 +6,12 @@ const SESSION_COOKIE = "st_session";
 const SESSION_DAYS = 30;
 const SESSION_CACHE_MS = 60 * 1000; // 1 minute cache
 
+// User roles
+export type UserRole = "firm_manager" | "advisor";
+
 // Simple in-memory session cache
 interface CachedSession {
-  user: { id: number; email: string; displayName: string | null };
+  user: { id: number; email: string; displayName: string | null; role: UserRole };
   expiresAt: Date;
   cachedAt: number;
 }
@@ -78,7 +81,7 @@ export async function clearUserSession(event: H3Event): Promise<void> {
   deleteCookie(event, SESSION_COOKIE, { path: "/" });
 }
 
-export async function requireUser(event: H3Event): Promise<{ id: number; email: string; displayName: string | null }> {
+export async function requireUser(event: H3Event): Promise<{ id: number; email: string; displayName: string | null; role: UserRole }> {
   const token = getCookie(event, SESSION_COOKIE);
   if (!token) {
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
@@ -110,7 +113,8 @@ export async function requireUser(event: H3Event): Promise<{ id: number; email: 
   const user = {
     id: session.user.id,
     email: session.user.email,
-    displayName: session.user.displayName
+    displayName: session.user.displayName,
+    role: (session.user.role || "advisor") as UserRole
   };
 
   // Cache the result
@@ -123,7 +127,18 @@ export async function requireUser(event: H3Event): Promise<{ id: number; email: 
   return user;
 }
 
-export async function getOptionalUser(event: H3Event): Promise<{ id: number; email: string; displayName: string | null } | null> {
+/**
+ * Require user to have firm_manager role
+ */
+export async function requireFirmManager(event: H3Event): Promise<{ id: number; email: string; displayName: string | null; role: UserRole }> {
+  const user = await requireUser(event);
+  if (user.role !== "firm_manager") {
+    throw createError({ statusCode: 403, statusMessage: "Access denied. Firm Manager role required." });
+  }
+  return user;
+}
+
+export async function getOptionalUser(event: H3Event): Promise<{ id: number; email: string; displayName: string | null; role: UserRole } | null> {
   try {
     return await requireUser(event);
   } catch {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+import { requireFirmManager } from "~/server/utils/auth";
 
 const schema = z.object({
   key: z.string().min(1).max(50),
@@ -9,7 +9,8 @@ const schema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
+  // Only Firm Managers can modify lists
+  const user = await requireFirmManager(event);
   const payload = schema.parse(await readBody(event));
 
   const configKey = `list:${payload.key}`;

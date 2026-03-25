@@ -1,17 +1,29 @@
 <script setup lang="ts">
+type UserRole = "firm_manager" | "advisor";
+
 const route = useRoute();
-const navItems = [
+const allNavItems = [
   { to: "/home", label: "Home", className: "nav-home" },
   { to: "/dashboard", label: "Dashboard", className: "nav-dashboard" },
   { to: "/pipeline", label: "Pipeline", className: "nav-pipeline" },
-  { to: "/team", label: "Team", className: "nav-team" },
+  { to: "/team", label: "Team", className: "nav-team", requiredRole: "firm_manager" as UserRole },
   { to: "/coi", label: "COI", className: "nav-coi" },
   { to: "/", label: "Blog", className: "nav-blog" },
-  { to: "/lists", label: "Lists", className: "nav-lists" }
-] as const;
-const auth = ref<{ authenticated: boolean; user: { email: string; displayName: string | null } | null }>({
+  { to: "/lists", label: "Lists", className: "nav-lists", requiredRole: "firm_manager" as UserRole }
+];
+
+const auth = ref<{ authenticated: boolean; user: { email: string; displayName: string | null; role: UserRole } | null }>({
   authenticated: false,
   user: null
+});
+
+// Filter nav items based on user role
+const navItems = computed(() => {
+  const userRole = auth.value.user?.role || "advisor";
+  return allNavItems.filter(item => {
+    if (!item.requiredRole) return true;
+    return userRole === item.requiredRole || userRole === "firm_manager";
+  });
 });
 
 async function refreshAuth() {

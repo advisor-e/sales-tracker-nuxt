@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// Protect this page - only Firm Managers can access
+definePageMeta({
+  middleware: ["firm-manager"]
+});
+
 const { lists: listsData, loading: listsLoading, fetchLists, saveList, invalidateCache } = useLists();
 
 // Local editable copy of lists

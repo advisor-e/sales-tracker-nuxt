@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// Protect this page - only Firm Managers can access
+definePageMeta({
+  middleware: ["firm-manager"]
+});
+
 import type { TeamSummaryRow } from "~/types/sales";
 
 const rows = ref<TeamSummaryRow[]>([]);

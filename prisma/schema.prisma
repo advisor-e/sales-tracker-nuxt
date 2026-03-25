@@ -17,6 +17,7 @@ model User {
   email          String           @unique @db.VarChar(255)
   displayName    String?          @db.VarChar(255)
   passwordHash   String           @db.VarChar(255)
+  role           String           @default("advisor") @db.VarChar(50)  // "firm_manager" or "advisor"
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   sessions       Session[]

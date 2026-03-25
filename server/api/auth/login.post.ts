@@ -30,11 +30,13 @@ export default defineEventHandler(async (event) => {
 
   const userCount = await prisma.user.count();
   if (userCount === 0 && adminPassword && email === adminEmail && payload.password === adminPassword) {
+    // First user is automatically a Firm Manager
     await prisma.user.create({
       data: {
         email,
         displayName: "Administrator",
-        passwordHash: hashPassword(payload.password)
+        passwordHash: hashPassword(payload.password),
+        role: "firm_manager"
       }
     });
   }
