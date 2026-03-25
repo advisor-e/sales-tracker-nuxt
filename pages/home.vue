@@ -39,9 +39,9 @@ onMounted(loadHomeData);
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Home</span>
-          <h1>Sales Command Center</h1>
-          <p>Navigate between dashboard, pipeline, team, COI, and blog views</p>
+          <span class="header-badge">{{ $t('home.badge') }}</span>
+          <h1>{{ $t('home.title') }}</h1>
+          <p>{{ $t('home.subtitle') }}</p>
         </div>
       </div>
     </header>
@@ -49,39 +49,39 @@ onMounted(loadHomeData);
     <p v-if="errorText" class="error">{{ errorText }}</p>
 
     <section v-if="metrics" class="home-kpis">
-      <article class="metric-card coral"><h3>Filtered Prospects</h3><p>{{ metrics.totalProspects }}</p></article>
-      <article class="metric-card sky"><h3>Active Staff Entries</h3><p>{{ teamRows.length }}</p></article>
-      <article class="metric-card sun"><h3>Secured Value</h3><p>${{ Number(metrics.workSecured || 0).toLocaleString() }}</p></article>
-      <article class="metric-card mint"><h3>COI Records</h3><p>{{ coiRows.length }}</p></article>
+      <article class="metric-card coral"><h3>{{ $t('home.filteredProspects') }}</h3><p>{{ metrics.totalProspects }}</p></article>
+      <article class="metric-card sky"><h3>{{ $t('home.activeStaff') }}</h3><p>{{ teamRows.length }}</p></article>
+      <article class="metric-card sun"><h3>{{ $t('home.securedValue') }}</h3><p>${{ Number(metrics.workSecured || 0).toLocaleString() }}</p></article>
+      <article class="metric-card mint"><h3>{{ $t('home.coiRecords') }}</h3><p>{{ coiRows.length }}</p></article>
     </section>
 
     <section class="quick-links">
-      <NuxtLink to="/dashboard" class="quick-link"><strong>Dashboard</strong><span>Top-line KPIs for approaches, meetings, proposals, and secured work.</span></NuxtLink>
-      <NuxtLink to="/dashboard" class="quick-link"><strong>Dashboard Charts</strong><span>See the KPI summary and visual trends together in one place.</span></NuxtLink>
-      <NuxtLink to="/pipeline" class="quick-link"><strong>Pipeline</strong><span>Detailed pipeline table with the working prospect view.</span></NuxtLink>
-      <NuxtLink to="/team" class="quick-link"><strong>Team</strong><span>Open the team report without digging through tabs.</span></NuxtLink>
-      <NuxtLink to="/coi" class="quick-link"><strong>COI</strong><span>Jump straight to referral development activity and records.</span></NuxtLink>
-      <NuxtLink to="/" class="quick-link"><strong>Blog</strong><span>Open the content workflow, saved inputs, drafts, and final posts.</span></NuxtLink>
+      <NuxtLink to="/dashboard" class="quick-link"><strong>{{ $t('home.dashboard') }}</strong><span>{{ $t('home.dashboardDesc') }}</span></NuxtLink>
+      <NuxtLink to="/dashboard" class="quick-link"><strong>{{ $t('home.dashboardCharts') }}</strong><span>{{ $t('home.dashboardChartsDesc') }}</span></NuxtLink>
+      <NuxtLink to="/pipeline" class="quick-link"><strong>{{ $t('home.pipeline') }}</strong><span>{{ $t('home.pipelineDesc') }}</span></NuxtLink>
+      <NuxtLink to="/team" class="quick-link"><strong>{{ $t('home.team') }}</strong><span>{{ $t('home.teamDesc') }}</span></NuxtLink>
+      <NuxtLink to="/coi" class="quick-link"><strong>{{ $t('home.coi') }}</strong><span>{{ $t('home.coiDesc') }}</span></NuxtLink>
+      <NuxtLink to="/" class="quick-link"><strong>{{ $t('home.blog') }}</strong><span>{{ $t('home.blogDesc') }}</span></NuxtLink>
     </section>
 
     <section class="home-columns">
       <article class="panel preview-panel">
-        <h2>Today at a Glance</h2>
+        <h2>{{ $t('home.todayGlance') }}</h2>
         <table>
           <thead>
             <tr>
-              <th>Prospect Name</th>
-              <th>Business Name</th>
-              <th>Team Member</th>
-              <th>Status</th>
-              <th>Secured Value</th>
+              <th>{{ $t('home.prospectName') }}</th>
+              <th>{{ $t('home.businessName') }}</th>
+              <th>{{ $t('home.teamMember') }}</th>
+              <th>{{ $t('home.status') }}</th>
+              <th>{{ $t('home.securedValueCol') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in pipelineRows" :key="item.id">
               <td>{{ item.prospectName }}</td>
-              <td>{{ item.businessName || 'N/A' }}</td>
-              <td>{{ item.leadStaff || 'Unassigned' }}</td>
+              <td>{{ item.businessName || $t('common.na') }}</td>
+              <td>{{ item.leadStaff || $t('common.unassigned') }}</td>
               <td>{{ item.prospectStatus }}</td>
               <td>${{ Number(item.jobSecuredValue || 0).toLocaleString() }}</td>
             </tr>
@@ -90,11 +90,11 @@ onMounted(loadHomeData);
       </article>
 
       <article class="panel info-panel">
-        <h2>What Each Section Gives You</h2>
-        <p class="info blue">Dashboard now includes both headline numbers and charts.</p>
-        <p class="info green">Visual trends sit directly under the KPI summary.</p>
-        <p class="info gold">Pipeline is the working view for exporting and follow-up.</p>
-        <p class="caption">Team rows loaded: {{ teamRows.length }} | COI rows loaded: {{ coiRows.length }}</p>
+        <h2>{{ $t('home.whatEachSection') }}</h2>
+        <p class="info blue">{{ $t('home.infoDashboard') }}</p>
+        <p class="info green">{{ $t('home.infoTrends') }}</p>
+        <p class="info gold">{{ $t('home.infoPipeline') }}</p>
+        <p class="caption">{{ $t('home.rowsLoaded', { team: teamRows.length, coi: coiRows.length }) }}</p>
       </article>
     </section>
   </section>

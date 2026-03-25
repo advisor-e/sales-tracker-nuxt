@@ -360,13 +360,13 @@ onMounted(loadMetrics);
     <header class="dashboard-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Analytics</span>
-          <h1>Sales Dashboard</h1>
-          <p>Real-time insights into your sales pipeline and team performance</p>
+          <span class="header-badge">{{ $t('dashboard.badge') }}</span>
+          <h1>{{ $t('dashboard.title') }}</h1>
+          <p>{{ $t('dashboard.subtitle') }}</p>
         </div>
         <button class="refresh-btn" @click="loadMetrics" :disabled="loading">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          {{ loading ? 'Loading...' : 'Refresh' }}
+          {{ loading ? $t('common.loading') : $t('common.refresh') }}
         </button>
       </div>
     </header>
@@ -375,7 +375,7 @@ onMounted(loadMetrics);
 
     <div v-if="loading && !metrics" class="loading-state">
       <div class="spinner"></div>
-      <p>Loading dashboard...</p>
+      <p>{{ $t('common.loadingDashboard') }}</p>
     </div>
 
     <template v-if="metrics">
@@ -383,19 +383,19 @@ onMounted(loadMetrics);
       <section class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Total Pipeline Prospects</span>
-            <span class="stat-badge blue">Pipeline</span>
+            <span class="stat-label">{{ $t('dashboard.totalProspects') }}</span>
+            <span class="stat-badge blue">{{ $t('dashboard.pipeline') }}</span>
           </div>
           <strong class="stat-value">{{ metrics.totalProspects }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ metrics.activeProspects }} active</span>
+            <span class="stat-sub">{{ metrics.activeProspects }} {{ $t('common.active') }}</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Approach → Meeting</span>
-            <span class="stat-badge cyan">Combined</span>
+            <span class="stat-label">{{ $t('dashboard.approachMeeting') }}</span>
+            <span class="stat-badge cyan">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedMeetingRate }}%</strong>
           <div class="stat-footer">
@@ -405,8 +405,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Meeting → Proposal</span>
-            <span class="stat-badge blue">Combined</span>
+            <span class="stat-label">{{ $t('dashboard.meetingProposal') }}</span>
+            <span class="stat-badge blue">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedProposalRate }}%</strong>
           <div class="stat-footer">
@@ -416,8 +416,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Proposal → Secured</span>
-            <span class="stat-badge teal">Combined</span>
+            <span class="stat-label">{{ $t('dashboard.proposalSecured') }}</span>
+            <span class="stat-badge teal">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedSecuredRate }}%</strong>
           <div class="stat-footer">
@@ -427,8 +427,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Overall Win Rate</span>
-            <span class="stat-badge green">Combined</span>
+            <span class="stat-label">{{ $t('dashboard.overallWinRate') }}</span>
+            <span class="stat-badge green">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedOverallRate }}%</strong>
           <div class="stat-footer">
@@ -438,23 +438,23 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Pipeline Value</span>
-            <span class="stat-badge cyan">Proposals</span>
+            <span class="stat-label">{{ $t('dashboard.pipelineValue') }}</span>
+            <span class="stat-badge cyan">{{ $t('dashboard.proposals') }}</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalProposalValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">Outstanding proposals</span>
+            <span class="stat-sub">{{ $t('dashboard.outstandingProposals') }}</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Work Secured</span>
-            <span class="stat-badge green">Revenue</span>
+            <span class="stat-label">{{ $t('dashboard.workSecured') }}</span>
+            <span class="stat-badge green">{{ $t('dashboard.revenue') }}</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalSecuredValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">Total closed value</span>
+            <span class="stat-sub">{{ $t('dashboard.totalClosedValue') }}</span>
           </div>
         </div>
       </section>
@@ -465,7 +465,7 @@ onMounted(loadMetrics);
           <span class="title-icon cyan">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </span>
-          Campaign Results
+          {{ $t('dashboard.campaignResults') }}
         </h2>
         <div class="funnel-grid">
           <div class="rate-card">
@@ -548,7 +548,7 @@ onMounted(loadMetrics);
           <span class="title-icon orange">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
           </span>
-          Total Needs Results
+          {{ $t('dashboard.totalNeedsResults') }}
         </h2>
         <div class="funnel-grid">
           <div class="rate-card">
@@ -631,7 +631,7 @@ onMounted(loadMetrics);
           <span class="title-icon teal">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
-          COI Performance
+          {{ $t('dashboard.coiPerformance') }}
         </h2>
         <div class="coi-panel-grid">
           <div class="coi-chart-box">

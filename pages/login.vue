@@ -32,21 +32,21 @@ async function submit() {
 <template>
   <section class="login-wrap">
     <article class="login-card">
-      <h1>Sign In</h1>
-      <p>Use your account to access your tenant data.</p>
+      <h1>{{ $t('login.title') }}</h1>
+      <p>{{ $t('login.subtitle') }}</p>
       <form @submit.prevent="submit" class="login-form">
         <label>
-          Email
-          <input id="email" name="email" v-model="email" type="email" placeholder="you@example.com" autocomplete="username" />
+          {{ $t('auth.email') }}
+          <input id="email" name="email" v-model="email" type="email" :placeholder="$t('login.emailPlaceholder')" autocomplete="username" />
         </label>
         <label>
-          Password
-          <input id="password" name="password" v-model="password" type="password" placeholder="********" autocomplete="current-password" />
+          {{ $t('auth.password') }}
+          <input id="password" name="password" v-model="password" type="password" :placeholder="$t('login.passwordPlaceholder')" autocomplete="current-password" />
         </label>
-        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? "Signing in..." : "Sign In" }}</button>
+        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? $t('auth.signingIn') : $t('auth.signIn') }}</button>
       </form>
       <p v-if="errorText" class="error">{{ errorText }}</p>
-      <p class="hint">First-time bootstrap: set ADMIN_EMAIL and ADMIN_PASSWORD in .env and sign in with those values.</p>
+      <p class="hint">{{ $t('login.hint') }}</p>
     </article>
   </section>
 </template>
