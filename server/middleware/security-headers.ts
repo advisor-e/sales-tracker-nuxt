@@ -5,18 +5,32 @@ import { defineEventHandler, setHeader } from "h3";
  * Sets various security headers including CSP, HSTS, etc.
  */
 export default defineEventHandler((event) => {
-  // Content Security Policy
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",  // Nuxt requires unsafe-inline/eval for dev
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    "connect-src 'self' https://api.openai.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'"
-  ].join("; ");
+  const isDev = process.env.NODE_ENV !== "production";
+
+  // Content Security Policy - more permissive in dev for Vite HMR
+  const csp = isDev
+    ? [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https: blob:",
+        "font-src 'self' data:",
+        "connect-src 'self' ws: wss: https://api.openai.com",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'"
+      ].join("; ")
+    : [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' https://api.openai.com",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'"
+      ].join("; ");
 
   setHeader(event, "Content-Security-Policy", csp);
 
