@@ -25,4 +25,5 @@ export type BlogFinalRequest = {
   cta: string;
   polishLevel: "Standard" | "Strong" | "Premium";
   wordCount?: string;
+  aiInstructions?: string;
 };

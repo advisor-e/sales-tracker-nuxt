@@ -10,7 +10,8 @@ const schema = z.object({
   tone: z.enum(["Professional", "Friendly", "Confident", "Educational"]),
   cta: z.string().min(1),
   polishLevel: z.enum(["Standard", "Strong", "Premium"]),
-  wordCount: z.string().optional()
+  wordCount: z.string().optional(),
+  aiInstructions: z.string().optional()
 });
 
 export default defineEventHandler(async (event) => {

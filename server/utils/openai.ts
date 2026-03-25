@@ -80,15 +80,24 @@ export async function generateFinal(payload: BlogFinalRequest): Promise<{ text: 
     return { text: buildFinalTemplate(payload), source: "template", error: "OpenAI key not configured" };
   }
 
-  const wordCountLine = payload.wordCount ? `\nTarget word count: ${payload.wordCount} words` : "";
-  const system = "You are an elite financial content writer. Convert outlines into polished markdown articles without filler. When a target word count is specified, expand the content appropriately to meet that target.";
-  const user = `Turn this outline into a complete markdown article.\nTopic: ${payload.topic}\nAudience: ${payload.audience}\nObjective: ${payload.objective}\nTone: ${payload.tone}\nPolish level: ${payload.polishLevel}${wordCountLine}\nCTA: ${payload.cta}\n\nOutline:\n${payload.outlineText}`;
+  // Parse word count range to get minimum target
+  let wordCountInstruction = "";
+  if (payload.wordCount) {
+    const match = payload.wordCount.match(/(\d+)/);
+    const minWords = match ? parseInt(match[1], 10) : 0;
+    if (minWords > 0) {
+      wordCountInstruction = `\n\nWORD COUNT REQUIREMENT (CRITICAL): The article MUST be at least ${minWords} words. This is a hard minimum - do not submit anything shorter. Expand each section with relevant details, examples, and practical insights to meet this requirement. Target range: ${payload.wordCount} words.`;
+    }
+  }
+  const instructionsLine = payload.aiInstructions?.trim() ? `\n\nSpecial Instructions:\n${payload.aiInstructions}` : "";
+  const system = "You are an elite financial content writer. Convert outlines into polished markdown articles. CRITICAL: You must meet the specified word count minimum - this is non-negotiable. Expand content with substantive details, real-world examples, and actionable insights to reach the target length. Pay careful attention to any special instructions provided.";
+  const user = `Turn this outline into a complete markdown article.\nTopic: ${payload.topic}\nAudience: ${payload.audience}\nObjective: ${payload.objective}\nTone: ${payload.tone}\nPolish level: ${payload.polishLevel}\nCTA: ${payload.cta}${wordCountInstruction}${instructionsLine}\n\nOutline:\n${payload.outlineText}`;
 
   try {
     const response = await client.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.65,
-      max_tokens: 2200,
+      max_tokens: 3500,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user }

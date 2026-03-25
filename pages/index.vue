@@ -66,7 +66,8 @@ const form = reactive({
   cta: "book a short strategy call",
   authorType: "Lead Staff" as "Partner" | "Lead Staff",
   author: "",
-  polishLevel: "Strong"
+  polishLevel: "Strong",
+  aiInstructions: ""
 });
 
 // Author options based on authorType selection
@@ -150,12 +151,26 @@ const finalText = ref("");
 const aiSource = ref<"ai" | "template" | "">("");
 const aiError = ref("");
 const busy = ref(false);
+const generatingType = ref<"draft" | "final" | "">("");
 const startupError = ref("");
 const saveStatus = ref<{ type: "success" | "error"; message: string } | null>(null);
 const showPreview = ref(true);
 
 const draftHtml = computed(() => marked(draftText.value || ""));
 const finalHtml = computed(() => marked(finalText.value || ""));
+
+// Word count helpers
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+const draftWordCount = computed(() => countWords(draftText.value));
+const finalWordCount = computed(() => countWords(finalText.value));
+const isWordCountShort = computed(() => {
+  if (!form.wordCount || finalWordCount.value === 0) return false;
+  const match = form.wordCount.match(/(\d+)/);
+  const minWords = match ? parseInt(match[1], 10) : 0;
+  return finalWordCount.value < minWords;
+});
 
 const inputs = ref<BlogInput[]>([]);
 const draftPosts = ref<BlogPost[]>([]);
@@ -294,6 +309,7 @@ function getSelectedReferencesText(): string {
 
 async function generateDraft() {
   busy.value = true;
+  generatingType.value = "draft";
   aiError.value = "";
   try {
     const res = await $fetch<{ text: string; source: "ai" | "template"; error?: string }>("/api/blog/generate/draft", {
@@ -317,11 +333,13 @@ async function generateDraft() {
     await saveInputs();
   } finally {
     busy.value = false;
+    generatingType.value = "";
   }
 }
 
 async function generateFinal() {
   busy.value = true;
+  generatingType.value = "final";
   aiError.value = "";
   try {
     const res = await $fetch<{ text: string; source: "ai" | "template"; error?: string }>("/api/blog/generate/final", {
@@ -334,7 +352,8 @@ async function generateFinal() {
         tone: form.tone,
         cta: form.cta,
         polishLevel: form.polishLevel,
-        wordCount: form.wordCount
+        wordCount: form.wordCount,
+        aiInstructions: form.aiInstructions
       }
     });
     finalText.value = res.text;
@@ -342,6 +361,7 @@ async function generateFinal() {
     aiError.value = res.error || "";
   } finally {
     busy.value = false;
+    generatingType.value = "";
   }
 }
 
@@ -620,8 +640,14 @@ onMounted(async () => {
 
       <div class="actions">
         <button :disabled="busy" @click="saveInputs">Save Inputs</button>
-        <button :disabled="busy || !form.topic.trim()" @click="generateDraft">Generate Draft</button>
-        <button :disabled="busy || !draftText.trim()" @click="generateFinal">Generate Final</button>
+        <button :disabled="busy || !form.topic.trim()" @click="generateDraft">
+          <span v-if="busy && generatingType === 'draft'" class="spinner"></span>
+          {{ busy && generatingType === 'draft' ? 'Generating...' : 'Generate Draft' }}
+        </button>
+        <button :disabled="busy || !draftText.trim()" @click="generateFinal">
+          <span v-if="busy && generatingType === 'final'" class="spinner"></span>
+          {{ busy && generatingType === 'final' ? 'Generating...' : 'Generate Final' }}
+        </button>
         <button :disabled="busy || !draftText.trim()" @click="savePost('draft')">Save Draft</button>
         <button :disabled="busy || !finalText.trim()" @click="savePost('final')">Save Final</button>
       </div>
@@ -694,7 +720,7 @@ onMounted(async () => {
 
     <section class="card editor-card">
       <div class="editor-header">
-        <h2>Draft Outline</h2>
+        <h2>Draft Outline <span v-if="draftWordCount > 0" class="word-count">{{ draftWordCount }} words</span></h2>
         <button class="preview-toggle" :class="{ editing: !showPreview }" @click="showPreview = !showPreview">
           {{ showPreview ? 'Edit Mode' : 'Save Changes' }}
         </button>
@@ -702,7 +728,18 @@ onMounted(async () => {
       <textarea v-if="!showPreview" v-model="draftText" rows="14" />
       <div v-else class="markdown-preview" v-html="draftHtml" />
 
-      <h2>Final Post</h2>
+      <div v-if="draftText.trim()" class="ai-instructions-section">
+        <h3>AI Instructions for Final Generation</h3>
+        <p class="ai-instructions-hint">Add specific guidance for the AI when generating the final article (optional)</p>
+        <textarea
+          v-model="form.aiInstructions"
+          rows="3"
+          placeholder="e.g., Include specific statistics with sources and dates. Emphasize practical takeaways. Add a compelling opening hook..."
+          class="ai-instructions-input"
+        />
+      </div>
+
+      <h2>Final Post <span v-if="finalWordCount > 0" class="word-count" :class="{ 'word-count-short': isWordCountShort }">{{ finalWordCount }} words <template v-if="isWordCountShort">(target: {{ form.wordCount }})</template></span></h2>
       <label>
         Polish Level
         <select v-model="form.polishLevel">
@@ -855,6 +892,51 @@ button:hover:enabled {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(208, 21, 213, 0.3);
+  border-top-color: #d015d5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-instructions-section {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+  border: 1px solid rgba(208, 21, 213, 0.2);
+  border-radius: 12px;
+}
+
+.ai-instructions-section h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6a0b6e;
+}
+
+.ai-instructions-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ai-instructions-input {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  font-family: inherit;
+  background: white;
 }
 
 .principles {
@@ -1038,6 +1120,21 @@ button:disabled {
 
 .editor-header h2 {
   margin: 0;
+}
+
+.word-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  margin-left: 0.5rem;
+}
+
+.word-count-short {
+  color: #dc2626;
+  background: #fee2e2;
 }
 
 .preview-toggle {
