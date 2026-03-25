@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { type UserRole } from "~/composables/useAuth";
 
+const { t } = useI18n();
 const route = useRoute();
 const { isAuthenticated, user, checkAuth, logout: authLogout } = useAuth();
 
 const allNavItems = [
-  { to: "/home", label: "Home", className: "nav-home" },
-  { to: "/dashboard", label: "Dashboard", className: "nav-dashboard" },
-  { to: "/pipeline", label: "Pipeline", className: "nav-pipeline" },
-  { to: "/team", label: "Team", className: "nav-team", requiredRole: "firm_manager" as UserRole },
-  { to: "/coi", label: "COI", className: "nav-coi" },
-  { to: "/", label: "Blog", className: "nav-blog" },
-  { to: "/lists", label: "Lists", className: "nav-lists", requiredRole: "firm_manager" as UserRole }
+  { to: "/home", labelKey: "nav.home", className: "nav-home" },
+  { to: "/dashboard", labelKey: "nav.dashboard", className: "nav-dashboard" },
+  { to: "/pipeline", labelKey: "nav.pipeline", className: "nav-pipeline" },
+  { to: "/team", labelKey: "nav.team", className: "nav-team", requiredRole: "firm_manager" as UserRole },
+  { to: "/coi", labelKey: "nav.coi", className: "nav-coi" },
+  { to: "/", labelKey: "nav.blog", className: "nav-blog" },
+  { to: "/lists", labelKey: "nav.lists", className: "nav-lists", requiredRole: "firm_manager" as UserRole }
 ];
 
 // Show nav if authenticated OR if on a protected route (not login page)
@@ -44,17 +45,19 @@ onMounted(() => checkAuth());
   <div class="app-shell">
     <header class="top-nav">
       <div class="brand-block">
-        <strong>Sales Command Center</strong>
+        <strong>{{ $t('app.title') }}</strong>
         <span v-if="showNav">{{ user?.displayName || user?.email }}</span>
       </div>
       <template v-if="showNav">
         <nav class="nav-links">
-          <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" :class="item.className">{{ item.label }}</NuxtLink>
+          <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" :class="item.className">{{ $t(item.labelKey) }}</NuxtLink>
         </nav>
-        <button class="auth-btn" @click="handleLogout">Sign Out</button>
+        <LanguageSwitcher />
+        <button class="auth-btn" @click="handleLogout">{{ $t('auth.signOut') }}</button>
       </template>
       <template v-else>
-        <NuxtLink to="/login">Sign In</NuxtLink>
+        <LanguageSwitcher />
+        <NuxtLink to="/login">{{ $t('auth.signIn') }}</NuxtLink>
       </template>
     </header>
     <main class="page-content">

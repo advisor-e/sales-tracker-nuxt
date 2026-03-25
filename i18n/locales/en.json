@@ -1,0 +1,41 @@
+{
+  "app": {
+    "title": "Sales Command Center"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "pipeline": "Pipeline",
+    "team": "Team",
+    "coi": "COI",
+    "blog": "Blog",
+    "lists": "Lists"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "loggingIn": "Logging in...",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "language": {
+    "select": "Language",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French"
+  }
+}

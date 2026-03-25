@@ -1,0 +1,41 @@
+{
+  "app": {
+    "title": "Centre de Commande des Ventes"
+  },
+  "nav": {
+    "home": "Accueil",
+    "dashboard": "Tableau de Bord",
+    "pipeline": "Pipeline",
+    "team": "Équipe",
+    "coi": "COI",
+    "blog": "Blog",
+    "lists": "Listes"
+  },
+  "auth": {
+    "signIn": "Se Connecter",
+    "signOut": "Se Déconnecter",
+    "email": "E-mail",
+    "password": "Mot de Passe",
+    "loggingIn": "Connexion en cours...",
+    "invalidCredentials": "E-mail ou mot de passe invalide"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "language": {
+    "select": "Langue",
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français"
+  }
+}
