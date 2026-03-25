@@ -1,19 +1,14 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { isAuthenticated, checkAuth, isCacheValid } = useAuth();
+  // Skip auth check for login page
+  if (to.path === "/login") return;
 
-  // Only check auth if cache is invalid or on server-side render
-  if (!isCacheValid() || import.meta.server) {
-    await checkAuth();
-  }
+  try {
+    const auth = await $fetch<{ authenticated: boolean }>("/api/auth/me");
 
-  if (to.path === "/login") {
-    if (isAuthenticated.value) {
-      return navigateTo("/dashboard");
+    if (!auth.authenticated) {
+      return navigateTo("/login");
     }
-    return;
-  }
-
-  if (!isAuthenticated.value) {
+  } catch {
     return navigateTo("/login");
   }
 });

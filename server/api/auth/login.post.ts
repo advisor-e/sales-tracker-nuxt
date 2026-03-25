@@ -7,7 +7,7 @@ import { logLogin } from "../../utils/audit";
 
 const schema = z.object({
   email: z.string().trim().email().max(255),
-  password: z.string().min(10).max(128)  // Strengthened from 8 to 10 char minimum
+  password: z.string().min(1).max(128)  // Allow any length for login (validation is on registration)
 });
 
 export default defineEventHandler(async (event) => {
