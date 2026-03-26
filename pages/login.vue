@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global' });
 const { checkAuth } = useAuth();
 
 const email = ref("");
@@ -32,21 +35,21 @@ async function submit() {
 <template>
   <section class="login-wrap">
     <article class="login-card">
-      <h1>{{ $t('login.title') }}</h1>
-      <p>{{ $t('login.subtitle') }}</p>
+      <h1>{{ t('login.title') }}</h1>
+      <p>{{ t('login.subtitle') }}</p>
       <form @submit.prevent="submit" class="login-form">
         <label>
-          {{ $t('auth.email') }}
-          <input id="email" name="email" v-model="email" type="email" :placeholder="$t('login.emailPlaceholder')" autocomplete="username" />
+          {{ t('auth.email') }}
+          <input id="email" name="email" v-model="email" type="email" :placeholder="t('login.emailPlaceholder')" autocomplete="username" />
         </label>
         <label>
-          {{ $t('auth.password') }}
-          <input id="password" name="password" v-model="password" type="password" :placeholder="$t('login.passwordPlaceholder')" autocomplete="current-password" />
+          {{ t('auth.password') }}
+          <input id="password" name="password" v-model="password" type="password" :placeholder="t('login.passwordPlaceholder')" autocomplete="current-password" />
         </label>
-        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? $t('auth.signingIn') : $t('auth.signIn') }}</button>
+        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? t('auth.signingIn') : t('auth.signIn') }}</button>
       </form>
       <p v-if="errorText" class="error">{{ errorText }}</p>
-      <p class="hint">{{ $t('login.hint') }}</p>
+      <p class="hint">{{ t('login.hint') }}</p>
     </article>
   </section>
 </template>

@@ -4,6 +4,10 @@ definePageMeta({
   middleware: ["firm-manager"]
 });
 
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global' });
+
 const { lists: listsData, loading: listsLoading, fetchLists, saveList, invalidateCache } = useLists();
 
 // Local editable copy of lists
@@ -90,21 +94,21 @@ async function saveListToDb(key: string) {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Configuration</span>
-          <h1>Lists</h1>
-          <p>Manage dropdown options used throughout the Sales Tracker</p>
+          <span class="header-badge">{{ t('lists.badge') }}</span>
+          <h1>{{ t('lists.title') }}</h1>
+          <p>{{ t('lists.subtitle') }}</p>
         </div>
       </div>
     </header>
 
     <!-- Loading State -->
     <div v-if="listsLoading && Object.keys(lists).length === 0" class="loading-banner">
-      Loading lists...
+      {{ t('lists.loading') }}
     </div>
 
     <!-- Save Status -->
     <div v-if="saveMessage" class="save-banner" :class="{ error: saveMessage === 'Failed to save' }">
-      {{ saveMessage }}
+      {{ saveMessage === 'Saved' ? t('lists.saved') : t('lists.failedToSave') }}
     </div>
 
     <!-- Info Banner -->
@@ -114,7 +118,7 @@ async function saveListToDb(key: string) {
         <path d="M12 16v-4"/>
         <path d="M12 8h.01"/>
       </svg>
-      <p>These lists define the dropdown options available in Sales Activity, COI Development, and other areas. Changes here will affect what options are available when entering data.</p>
+      <p>{{ t('lists.infoBanner') }}</p>
     </div>
 
     <!-- Lists Grid -->
@@ -131,7 +135,7 @@ async function saveListToDb(key: string) {
             <p>{{ list.description }}</p>
           </div>
           <div class="list-meta">
-            <span class="item-count">{{ list.items.length }} items</span>
+            <span class="item-count">{{ list.items.length }} {{ t('lists.items') }}</span>
             <span class="expand-icon">{{ expandedList === key ? '−' : '+' }}</span>
           </div>
         </div>
@@ -150,18 +154,18 @@ async function saveListToDb(key: string) {
                   class="btn-move"
                   :disabled="idx === 0"
                   @click.stop="moveItem(key, idx, -1)"
-                  title="Move up"
+                  :title="t('lists.moveUp')"
                 >↑</button>
                 <button
                   class="btn-move"
                   :disabled="idx === list.items.length - 1"
                   @click.stop="moveItem(key, idx, 1)"
-                  title="Move down"
+                  :title="t('lists.moveDown')"
                 >↓</button>
                 <button
                   class="btn-remove"
                   @click.stop="removeItem(key, item)"
-                  title="Remove"
+                  :title="t('lists.remove')"
                 >×</button>
               </div>
             </li>
@@ -170,14 +174,14 @@ async function saveListToDb(key: string) {
           <div class="add-item-form">
             <input
               v-model="newItemText"
-              placeholder="Add new item..."
+              :placeholder="t('lists.addNewItem')"
               @keyup.enter="addItem(key)"
             />
             <button
               class="btn-add"
               :disabled="!newItemText.trim()"
               @click="addItem(key)"
-            >Add</button>
+            >{{ t('common.add') }}</button>
           </div>
         </div>
       </div>
@@ -185,31 +189,31 @@ async function saveListToDb(key: string) {
 
     <!-- Usage Guide -->
     <section class="usage-guide">
-      <h2>How Lists Are Used</h2>
+      <h2>{{ t('lists.usageGuideTitle') }}</h2>
       <div class="usage-grid">
         <div class="usage-item">
-          <h4>Prospect Status</h4>
-          <p>Controls the status dropdown in Sales Activity. Rows are color-coded based on status.</p>
+          <h4>{{ t('lists.prospectStatus') }}</h4>
+          <p>{{ t('lists.prospectStatusDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>Prospect Source</h4>
-          <p>Tracks where leads come from. Used in dashboard charts for source analysis.</p>
+          <h4>{{ t('lists.prospectSource') }}</h4>
+          <p>{{ t('lists.prospectSourceDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>Approach Style</h4>
-          <p>Documents how you first contacted the prospect. Important for measuring approach effectiveness.</p>
+          <h4>{{ t('lists.approachStyle') }}</h4>
+          <p>{{ t('lists.approachStyleDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>Sales Style</h4>
-          <p>Campaign vs Total Needs tracking. Each has its own funnel metrics on the dashboard.</p>
+          <h4>{{ t('lists.salesStyle') }}</h4>
+          <p>{{ t('lists.salesStyleDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>Total Needs Stage</h4>
-          <p>For Total Needs sales, tracks progression through the 5-stage process.</p>
+          <h4>{{ t('lists.totalNeedsStage') }}</h4>
+          <p>{{ t('lists.totalNeedsStageDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>Industry</h4>
-          <p>Used in both Sales Activity and COI Development for industry segmentation.</p>
+          <h4>{{ t('lists.industry') }}</h4>
+          <p>{{ t('lists.industryDesc') }}</p>
         </div>
       </div>
     </section>

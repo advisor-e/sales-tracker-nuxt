@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { Principle } from "~/types/blog";
 import { marked } from "marked";
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global' });
 
 // Use shared lists from database for Author dropdown
 const { fetchLists, getListItems } = useLists();
@@ -515,112 +518,112 @@ onMounted(async () => {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Blog</span>
-          <h1>Blog Studio</h1>
-          <p>Create and manage blog content with AI-powered drafts</p>
+          <span class="header-badge">{{ t('blog.badge') }}</span>
+          <h1>{{ t('blog.title') }}</h1>
+          <p>{{ t('blog.subtitle') }}</p>
         </div>
       </div>
     </header>
 
     <section class="stats-strip">
-      <article><span>Saved Inputs</span><strong>{{ inputs.length }}</strong></article>
-      <article><span>Drafts</span><strong>{{ draftPosts.length }}</strong></article>
-      <article><span>Finals</span><strong>{{ finalPosts.length }}</strong></article>
+      <article><span>{{ t('blog.savedInputs') }}</span><strong>{{ inputs.length }}</strong></article>
+      <article><span>{{ t('blog.drafts') }}</span><strong>{{ draftPosts.length }}</strong></article>
+      <article><span>{{ t('blog.finals') }}</span><strong>{{ finalPosts.length }}</strong></article>
     </section>
 
     <p v-if="startupError" class="error">Startup warning: {{ startupError }}</p>
 
     <section class="card form-card">
-      <h2>Blog Inputs</h2>
+      <h2>{{ t('blog.blogInputs') }}</h2>
       <div class="grid">
         <label>
-          Topic
-          <input v-model="form.topic" placeholder="e.g., Interest rates and small business cashflow" />
+          {{ t('blog.topic') }}
+          <input v-model="form.topic" :placeholder="t('blog.topicPlaceholder')" />
         </label>
         <label>
-          Audience
+          {{ t('blog.audience') }}
           <input v-model="form.audience" />
         </label>
         <label>
-          Objective
+          {{ t('blog.objective') }}
           <input v-model="form.objective" />
         </label>
         <label>
-          Tone
+          {{ t('blog.tone') }}
           <select v-model="form.tone">
             <option v-for="tone in tones" :key="tone" :value="tone">{{ tone }}</option>
           </select>
         </label>
         <label>
-          Length
+          {{ t('blog.length') }}
           <select v-model="form.length">
             <option v-for="length in lengths" :key="length" :value="length">{{ length }}</option>
           </select>
         </label>
         <label>
-          Word Count
-          <input v-model="form.wordCount" placeholder="e.g., 250-325" />
+          {{ t('blog.wordCount') }}
+          <input v-model="form.wordCount" :placeholder="t('blog.wordCountPlaceholder')" />
         </label>
         <label>
-          CTA
+          {{ t('blog.cta') }}
           <input v-model="form.cta" />
         </label>
         <label>
-          Author Type
+          {{ t('blog.authorType') }}
           <select v-model="form.authorType">
             <option v-for="opt in authorTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </label>
         <label>
-          Author
+          {{ t('blog.author') }}
           <select v-model="form.author">
-            <option value="">Select {{ form.authorType.toLowerCase() }}...</option>
+            <option value="">{{ t('blog.selectAuthor') }}</option>
             <option v-for="opt in authorOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </label>
       </div>
 
-      <h3>Principles</h3>
+      <h3>{{ t('blog.principles') }}</h3>
       <div class="principles">
         <article v-for="(p, index) in principles" :key="index" class="principle">
-          <h4>Principle {{ index + 1 }}</h4>
+          <h4>{{ t('blog.principle') }} {{ index + 1 }}</h4>
           <textarea v-model="p.title" class="auto-resize" rows="1" @input="autoResize" />
           <label v-for="(_, detailIndex) in p.details" :key="detailIndex">
-            Detail {{ detailIndex + 1 }}
+            {{ t('blog.detail') }} {{ detailIndex + 1 }}
             <textarea v-model="p.details[detailIndex]" class="auto-resize" rows="1" @input="autoResize" />
           </label>
         </article>
       </div>
 
-      <h3>Reference Documents</h3>
-      <p class="ref-hint">Select source documents or URLs to help AI generate your blog</p>
+      <h3>{{ t('blog.references') }}</h3>
+      <p class="ref-hint">{{ t('blog.refHint') }}</p>
 
       <div class="ref-list">
         <div v-for="ref in references" :key="ref.id" class="ref-item" :class="{ selected: selectedReferenceIds.includes(ref.id) }">
           <label class="ref-checkbox">
             <input type="checkbox" :checked="selectedReferenceIds.includes(ref.id)" @change="toggleReference(ref.id)" />
             <span class="ref-title">{{ ref.title }}</span>
-            <span class="ref-type">{{ ref.type === 'url' ? 'URL' : 'Doc' }}</span>
+            <span class="ref-type">{{ ref.type === 'url' ? 'URL' : t('blog.doc') }}</span>
           </label>
-          <button class="ref-delete" @click="deleteReference(ref.id)">Delete</button>
+          <button class="ref-delete" @click="deleteReference(ref.id)">{{ t('common.delete') }}</button>
         </div>
-        <p v-if="references.length === 0" class="ref-empty">No reference documents yet</p>
+        <p v-if="references.length === 0" class="ref-empty">{{ t('blog.noReferences') }}</p>
       </div>
 
       <button class="ref-toggle" @click="showRefForm = !showRefForm">
-        {{ showRefForm ? 'Cancel' : '+ Add Reference' }}
+        {{ showRefForm ? t('common.cancel') : t('blog.addReference') }}
       </button>
 
       <div v-if="showRefForm" class="ref-form">
         <label>
-          Title
-          <input v-model="newRef.title" placeholder="e.g., Q1 2024 Market Analysis" />
+          {{ t('blog.refTitle') }}
+          <input v-model="newRef.title" :placeholder="t('blog.refTitlePlaceholder')" />
         </label>
         <label>
-          Type
+          {{ t('blog.refType') }}
           <select v-model="newRef.type">
-            <option value="document">Document</option>
-            <option value="url">URL Link</option>
+            <option value="document">{{ t('blog.document') }}</option>
+            <option value="url">{{ t('blog.urlLink') }}</option>
           </select>
         </label>
         <label v-if="newRef.type === 'url'">
@@ -628,28 +631,28 @@ onMounted(async () => {
           <input v-model="newRef.url" placeholder="https://..." />
         </label>
         <label v-if="newRef.type === 'document'">
-          Content
-          <textarea v-model="newRef.content" rows="6" placeholder="Paste your reference document text here..." />
+          {{ t('blog.content') }}
+          <textarea v-model="newRef.content" rows="6" :placeholder="t('blog.contentPlaceholder')" />
         </label>
         <label>
-          Topic (optional)
-          <input v-model="newRef.topic" placeholder="e.g., Interest Rates, Tax Planning" />
+          {{ t('blog.topicOptional') }}
+          <input v-model="newRef.topic" :placeholder="t('blog.topicOptionalPlaceholder')" />
         </label>
-        <button :disabled="busy || !newRef.title.trim()" @click="saveReference">Save Reference</button>
+        <button :disabled="busy || !newRef.title.trim()" @click="saveReference">{{ t('blog.saveReference') }}</button>
       </div>
 
       <div class="actions">
-        <button :disabled="busy" @click="saveInputs">Save Inputs</button>
+        <button :disabled="busy" @click="saveInputs">{{ t('blog.saveInputs') }}</button>
         <button :disabled="busy || !form.topic.trim()" @click="generateDraft">
           <span v-if="busy && generatingType === 'draft'" class="spinner"></span>
-          {{ busy && generatingType === 'draft' ? 'Generating...' : 'Generate Draft' }}
+          {{ busy && generatingType === 'draft' ? t('blog.generating') : t('blog.generateDraft') }}
         </button>
         <button :disabled="busy || !draftText.trim()" @click="generateFinal">
           <span v-if="busy && generatingType === 'final'" class="spinner"></span>
-          {{ busy && generatingType === 'final' ? 'Generating...' : 'Generate Final' }}
+          {{ busy && generatingType === 'final' ? t('blog.generating') : t('blog.generateFinal') }}
         </button>
-        <button :disabled="busy || !draftText.trim()" @click="savePost('draft')">Save Draft</button>
-        <button :disabled="busy || !finalText.trim()" @click="savePost('final')">Save Final</button>
+        <button :disabled="busy || !draftText.trim()" @click="savePost('draft')">{{ t('blog.saveDraft') }}</button>
+        <button :disabled="busy || !finalText.trim()" @click="savePost('final')">{{ t('blog.saveFinal') }}</button>
       </div>
 
       <p v-if="saveStatus" :class="saveStatus.type === 'success' ? 'status' : 'error'">{{ saveStatus.message }}</p>
@@ -659,7 +662,7 @@ onMounted(async () => {
 
     <section class="columns">
       <article class="card">
-        <h2>Saved Inputs</h2>
+        <h2>{{ t('blog.savedInputs') }}</h2>
         <div class="list">
           <div v-for="item in inputs" :key="item.id" class="list-item">
             <div>
@@ -667,51 +670,51 @@ onMounted(async () => {
               <p>{{ new Date(item.updatedAt).toLocaleString() }}</p>
             </div>
             <div class="row-actions">
-              <button @click="restoreFromInput(item)">Restore</button>
-              <button @click="deleteInput(item)">Delete</button>
+              <button @click="restoreFromInput(item)">{{ t('blog.restore') }}</button>
+              <button @click="deleteInput(item)">{{ t('common.delete') }}</button>
             </div>
           </div>
         </div>
       </article>
 
       <article class="card">
-        <h2>Draft Outlines</h2>
+        <h2>{{ t('blog.draftOutlines') }}</h2>
         <div class="filters">
-          <input v-model="draftSearch" placeholder="Search drafts" />
-          <label><input v-model="draftPinnedOnly" type="checkbox" /> Pinned only</label>
+          <input v-model="draftSearch" :placeholder="t('blog.searchDrafts')" />
+          <label><input v-model="draftPinnedOnly" type="checkbox" /> {{ t('blog.pinnedOnly') }}</label>
         </div>
         <div class="list">
           <div v-for="item in filteredDrafts" :key="item.id" class="list-item">
             <div>
               <strong>{{ item.title }}</strong>
-              <p>{{ new Date(item.updatedAt).toLocaleString() }} • {{ item.isPinned ? 'Pinned' : 'Unpinned' }}</p>
+              <p>{{ new Date(item.updatedAt).toLocaleString() }} • {{ item.isPinned ? t('blog.pinned') : t('blog.unpinned') }}</p>
             </div>
             <div class="row-actions wrap">
-              <button @click="restoreDraft(item)">Restore</button>
-              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? 'Unpin' : 'Pin' }}</button>
-              <button @click="deletePost(item)">Delete</button>
+              <button @click="restoreDraft(item)">{{ t('blog.restore') }}</button>
+              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? t('blog.unpin') : t('blog.pin') }}</button>
+              <button @click="deletePost(item)">{{ t('common.delete') }}</button>
             </div>
           </div>
         </div>
       </article>
 
       <article class="card">
-        <h2>Final Posts</h2>
+        <h2>{{ t('blog.finalPosts') }}</h2>
         <div class="filters">
-          <input v-model="finalSearch" placeholder="Search finals" />
-          <label><input v-model="finalPinnedOnly" type="checkbox" /> Pinned only</label>
+          <input v-model="finalSearch" :placeholder="t('blog.searchFinals')" />
+          <label><input v-model="finalPinnedOnly" type="checkbox" /> {{ t('blog.pinnedOnly') }}</label>
         </div>
         <div class="list">
           <div v-for="item in filteredFinals" :key="item.id" class="list-item">
             <div>
               <strong>{{ item.title }}</strong>
-              <p>{{ new Date(item.updatedAt).toLocaleString() }} • {{ item.isPinned ? 'Pinned' : 'Unpinned' }}</p>
+              <p>{{ new Date(item.updatedAt).toLocaleString() }} • {{ item.isPinned ? t('blog.pinned') : t('blog.unpinned') }}</p>
             </div>
             <div class="row-actions wrap">
-              <button @click="restoreFinal(item)">Restore</button>
-              <button @click="duplicateFinalToDraft(item)">Duplicate to Draft</button>
-              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? 'Unpin' : 'Pin' }}</button>
-              <button @click="deletePost(item)">Delete</button>
+              <button @click="restoreFinal(item)">{{ t('blog.restore') }}</button>
+              <button @click="duplicateFinalToDraft(item)">{{ t('blog.duplicateToDraft') }}</button>
+              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? t('blog.unpin') : t('blog.pin') }}</button>
+              <button @click="deletePost(item)">{{ t('common.delete') }}</button>
             </div>
           </div>
         </div>
@@ -720,28 +723,28 @@ onMounted(async () => {
 
     <section class="card editor-card">
       <div class="editor-header">
-        <h2>Draft Outline <span v-if="draftWordCount > 0" class="word-count">{{ draftWordCount }} words</span></h2>
+        <h2>{{ t('blog.draftOutline') }} <span v-if="draftWordCount > 0" class="word-count">{{ draftWordCount }} {{ t('blog.words') }}</span></h2>
         <button class="preview-toggle" :class="{ editing: !showPreview }" @click="showPreview = !showPreview">
-          {{ showPreview ? 'Edit Mode' : 'Save Changes' }}
+          {{ showPreview ? t('blog.editMode') : t('blog.saveChanges') }}
         </button>
       </div>
       <textarea v-if="!showPreview" v-model="draftText" rows="14" />
       <div v-else class="markdown-preview" v-html="draftHtml" />
 
       <div v-if="draftText.trim()" class="ai-instructions-section">
-        <h3>AI Instructions for Final Generation</h3>
-        <p class="ai-instructions-hint">Add specific guidance for the AI when generating the final article (optional)</p>
+        <h3>{{ t('blog.aiInstructions') }}</h3>
+        <p class="ai-instructions-hint">{{ t('blog.aiInstructionsHint') }}</p>
         <textarea
           v-model="form.aiInstructions"
           rows="3"
-          placeholder="e.g., Include specific statistics with sources and dates. Emphasize practical takeaways. Add a compelling opening hook..."
+          :placeholder="t('blog.aiInstructionsPlaceholder')"
           class="ai-instructions-input"
         />
       </div>
 
-      <h2>Final Post <span v-if="finalWordCount > 0" class="word-count" :class="{ 'word-count-short': isWordCountShort }">{{ finalWordCount }} words <template v-if="isWordCountShort">(target: {{ form.wordCount }})</template></span></h2>
+      <h2>{{ t('blog.finalPost') }} <span v-if="finalWordCount > 0" class="word-count" :class="{ 'word-count-short': isWordCountShort }">{{ finalWordCount }} {{ t('blog.words') }} <template v-if="isWordCountShort">({{ t('blog.target') }}: {{ form.wordCount }})</template></span></h2>
       <label>
-        Polish Level
+        {{ t('blog.polishLevel') }}
         <select v-model="form.polishLevel">
           <option v-for="level in polishLevels" :key="level" :value="level">{{ level }}</option>
         </select>

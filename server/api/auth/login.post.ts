@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const clientIP = getClientIP(event);
   const rateCheck = checkLoginRateLimit(clientIP);
   if (!rateCheck.allowed) {
-    setResponseHeader(event, "Retry-After", String(rateCheck.retryAfter));
+    setResponseHeader(event, "Retry-After", rateCheck.retryAfter);
     throw createError({
       statusCode: 429,
       statusMessage: `Too many login attempts. Try again in ${Math.ceil((rateCheck.retryAfter || 0) / 60)} minutes.`

@@ -17,7 +17,7 @@ export default defineEventHandler((event) => {
         "font-src 'self' data: https://fonts.gstatic.com",
         "connect-src 'self' ws: wss: https://api.openai.com",
         "worker-src 'self' blob:",
-        "frame-ancestors 'none'",
+        "frame-ancestors 'self'",
         "base-uri 'self'",
         "form-action 'self'"
       ].join("; ")
@@ -35,8 +35,8 @@ export default defineEventHandler((event) => {
 
   setHeader(event, "Content-Security-Policy", csp);
 
-  // Prevent clickjacking
-  setHeader(event, "X-Frame-Options", "DENY");
+  // Prevent clickjacking (allow same-origin framing in dev for tools like VSCode)
+  setHeader(event, "X-Frame-Options", isDev ? "SAMEORIGIN" : "DENY");
 
   // Prevent MIME type sniffing
   setHeader(event, "X-Content-Type-Options", "nosniff");

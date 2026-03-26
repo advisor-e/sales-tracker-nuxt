@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global' });
+
 interface PipelineEntry {
   id: number;
   prospectName: string;
@@ -459,15 +463,15 @@ onMounted(async () => {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Sales</span>
-          <h1>Pipeline</h1>
-          <p>Manage your prospect pipeline and track sales progress</p>
+          <span class="header-badge">{{ t('pipeline.badge') }}</span>
+          <h1>{{ t('pipeline.title') }}</h1>
+          <p>{{ t('pipeline.subtitle') }}</p>
         </div>
         <div class="header-actions">
           <button class="btn-primary" @click="showAddForm = !showAddForm">
-            {{ showAddForm ? 'Cancel' : '+ Add Prospect' }}
+            {{ showAddForm ? t('common.cancel') : t('pipeline.addProspect') }}
           </button>
-          <button class="btn-secondary" @click="loadItems">Refresh</button>
+          <button class="btn-secondary" @click="loadItems">{{ t('common.refresh') }}</button>
         </div>
       </div>
     </header>
@@ -475,38 +479,38 @@ onMounted(async () => {
     <!-- Summary Stats -->
     <section class="stats-bar">
       <div class="stat-item">
-        <span class="stat-label">Total Prospects</span>
+        <span class="stat-label">{{ t('pipeline.totalProspects') }}</span>
         <span class="stat-value">{{ totalProspects }}</span>
       </div>
       <div class="stat-item active">
-        <span class="stat-label">Active</span>
+        <span class="stat-label">{{ t('pipeline.active') }}</span>
         <span class="stat-value">{{ activeProspects }}</span>
       </div>
       <div class="stat-item">
-        <span class="stat-label">Meetings</span>
+        <span class="stat-label">{{ t('pipeline.meetings') }}</span>
         <span class="stat-value">{{ meetingsCount }}</span>
       </div>
       <div class="stat-item">
-        <span class="stat-label">Proposals</span>
+        <span class="stat-label">{{ t('pipeline.proposals') }}</span>
         <span class="stat-value">{{ proposalsSent }}</span>
       </div>
       <div class="stat-item secured">
-        <span class="stat-label">Secured</span>
+        <span class="stat-label">{{ t('pipeline.secured') }}</span>
         <span class="stat-value">{{ securedCount }}</span>
       </div>
       <div class="stat-item money">
-        <span class="stat-label">Proposal Value</span>
+        <span class="stat-label">{{ t('pipeline.proposalValue') }}</span>
         <span class="stat-value">{{ money.format(totalProposalValue) }}</span>
       </div>
       <div class="stat-item money secured">
-        <span class="stat-label">Secured Value</span>
+        <span class="stat-label">{{ t('pipeline.securedValue') }}</span>
         <span class="stat-value">{{ money.format(totalSecuredValue) }}</span>
       </div>
     </section>
 
     <!-- Add Form -->
     <section v-if="showAddForm" class="add-form-panel">
-      <h2>New Prospect</h2>
+      <h2>{{ t('pipeline.newProspect') }}</h2>
       <div class="form-grid">
         <div class="form-group">
           <label>Prospect Name *</label>
@@ -595,21 +599,21 @@ onMounted(async () => {
         </div>
       </div>
       <div class="form-actions">
-        <button class="btn-primary" :disabled="!draft.prospectName.trim() || submitting" @click="createItem">{{ submitting ? 'Saving...' : 'Save Prospect' }}</button>
-        <button class="btn-secondary" @click="showAddForm = false">Cancel</button>
+        <button class="btn-primary" :disabled="!draft.prospectName.trim() || submitting" @click="createItem">{{ submitting ? t('pipeline.saving') : t('pipeline.saveProspect') }}</button>
+        <button class="btn-secondary" @click="showAddForm = false">{{ t('common.cancel') }}</button>
       </div>
     </section>
 
     <!-- Filters -->
     <section class="filters-bar">
-      <input v-model="search" placeholder="Search prospects..." @keyup.enter="loadItems" />
-      <input v-model="ownerFilter" placeholder="Filter by owner..." @keyup.enter="loadItems" />
-      <button class="btn-secondary" @click="loadItems">Apply</button>
+      <input v-model="search" :placeholder="t('pipeline.searchProspects')" @keyup.enter="loadItems" />
+      <input v-model="ownerFilter" :placeholder="t('pipeline.filterByOwner')" @keyup.enter="loadItems" />
+      <button class="btn-secondary" @click="loadItems">{{ t('pipeline.apply') }}</button>
     </section>
 
     <!-- Error message -->
     <p v-if="errorText" class="error-msg">{{ errorText }}</p>
-    <p v-if="loading" class="loading-msg">Loading pipeline data...</p>
+    <p v-if="loading" class="loading-msg">{{ t('pipeline.loadingData') }}</p>
 
     <!-- Data Table - Spreadsheet Style -->
     <div class="table-container">

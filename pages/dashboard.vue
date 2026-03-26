@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
 import { Pie, Doughnut, Bar, Line } from 'vue-chartjs';
 import type { DashboardMetrics } from "~/types/sales";
+
+const { t } = useI18n({ useScope: 'global' });
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
@@ -360,13 +363,13 @@ onMounted(loadMetrics);
     <header class="dashboard-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ $t('dashboard.badge') }}</span>
-          <h1>{{ $t('dashboard.title') }}</h1>
-          <p>{{ $t('dashboard.subtitle') }}</p>
+          <span class="header-badge">{{ t('dashboard.badge') }}</span>
+          <h1>{{ t('dashboard.title') }}</h1>
+          <p>{{ t('dashboard.subtitle') }}</p>
         </div>
         <button class="refresh-btn" @click="loadMetrics" :disabled="loading">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          {{ loading ? $t('common.loading') : $t('common.refresh') }}
+          {{ loading ? t('common.loading') : t('common.refresh') }}
         </button>
       </div>
     </header>
@@ -375,7 +378,7 @@ onMounted(loadMetrics);
 
     <div v-if="loading && !metrics" class="loading-state">
       <div class="spinner"></div>
-      <p>{{ $t('common.loadingDashboard') }}</p>
+      <p>{{ t('common.loadingDashboard') }}</p>
     </div>
 
     <template v-if="metrics">
@@ -383,19 +386,19 @@ onMounted(loadMetrics);
       <section class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.totalProspects') }}</span>
-            <span class="stat-badge blue">{{ $t('dashboard.pipeline') }}</span>
+            <span class="stat-label">{{ t('dashboard.totalProspects') }}</span>
+            <span class="stat-badge blue">{{ t('dashboard.pipeline') }}</span>
           </div>
           <strong class="stat-value">{{ metrics.totalProspects }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ metrics.activeProspects }} {{ $t('common.active') }}</span>
+            <span class="stat-sub">{{ metrics.activeProspects }} {{ t('common.active') }}</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.approachMeeting') }}</span>
-            <span class="stat-badge cyan">{{ $t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ t('dashboard.approachMeeting') }}</span>
+            <span class="stat-badge cyan">{{ t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedMeetingRate }}%</strong>
           <div class="stat-footer">
@@ -405,8 +408,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.meetingProposal') }}</span>
-            <span class="stat-badge blue">{{ $t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ t('dashboard.meetingProposal') }}</span>
+            <span class="stat-badge blue">{{ t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedProposalRate }}%</strong>
           <div class="stat-footer">
@@ -416,8 +419,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.proposalSecured') }}</span>
-            <span class="stat-badge teal">{{ $t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ t('dashboard.proposalSecured') }}</span>
+            <span class="stat-badge teal">{{ t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedSecuredRate }}%</strong>
           <div class="stat-footer">
@@ -427,8 +430,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.overallWinRate') }}</span>
-            <span class="stat-badge green">{{ $t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ t('dashboard.overallWinRate') }}</span>
+            <span class="stat-badge green">{{ t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedOverallRate }}%</strong>
           <div class="stat-footer">
@@ -438,23 +441,23 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.pipelineValue') }}</span>
-            <span class="stat-badge cyan">{{ $t('dashboard.proposals') }}</span>
+            <span class="stat-label">{{ t('dashboard.pipelineValue') }}</span>
+            <span class="stat-badge cyan">{{ t('dashboard.proposals') }}</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalProposalValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ $t('dashboard.outstandingProposals') }}</span>
+            <span class="stat-sub">{{ t('dashboard.outstandingProposals') }}</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.workSecured') }}</span>
-            <span class="stat-badge green">{{ $t('dashboard.revenue') }}</span>
+            <span class="stat-label">{{ t('dashboard.workSecured') }}</span>
+            <span class="stat-badge green">{{ t('dashboard.revenue') }}</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalSecuredValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ $t('dashboard.totalClosedValue') }}</span>
+            <span class="stat-sub">{{ t('dashboard.totalClosedValue') }}</span>
           </div>
         </div>
       </section>
@@ -465,7 +468,7 @@ onMounted(loadMetrics);
           <span class="title-icon cyan">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </span>
-          {{ $t('dashboard.campaignResults') }}
+          {{ t('dashboard.campaignResults') }}
         </h2>
         <div class="funnel-grid">
           <div class="rate-card">
@@ -478,7 +481,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignMeetingRate }}%</div>
             </div>
-            <span class="rate-label">Approach → Meeting</span>
+            <span class="rate-label">{{ t('dashboard.approachMeeting') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.meetings }}/{{ metrics.campaignFunnel.approaches }}</span>
           </div>
 
@@ -492,7 +495,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignProposalRate }}%</div>
             </div>
-            <span class="rate-label">Meeting → Proposal</span>
+            <span class="rate-label">{{ t('dashboard.meetingProposal') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.proposals }}/{{ metrics.campaignFunnel.meetings }}</span>
           </div>
 
@@ -506,7 +509,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignSecuredRate }}%</div>
             </div>
-            <span class="rate-label">Proposal → Secured</span>
+            <span class="rate-label">{{ t('dashboard.proposalSecured') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.proposals }}</span>
           </div>
 
@@ -520,7 +523,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignOverallRate }}%</div>
             </div>
-            <span class="rate-label">Overall Win Rate</span>
+            <span class="rate-label">{{ t('dashboard.overallWinRate') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.approaches }}</span>
           </div>
 
@@ -528,7 +531,7 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <span class="stat-label">Avg Fee</span>
+            <span class="stat-label">{{ t('dashboard.avgFee') }}</span>
             <strong class="stat-value">{{ money.format(metrics.campaignFunnel.avgFee) }}</strong>
           </div>
 
@@ -536,8 +539,8 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <span class="stat-label">Avg Days</span>
-            <strong class="stat-value">{{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} days</strong>
+            <span class="stat-label">{{ t('dashboard.avgDays') }}</span>
+            <strong class="stat-value">{{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} {{ t('common.days') }}</strong>
           </div>
         </div>
       </section>
@@ -548,7 +551,7 @@ onMounted(loadMetrics);
           <span class="title-icon orange">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
           </span>
-          {{ $t('dashboard.totalNeedsResults') }}
+          {{ t('dashboard.totalNeedsResults') }}
         </h2>
         <div class="funnel-grid">
           <div class="rate-card">
@@ -561,7 +564,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsMeetingRate }}%</div>
             </div>
-            <span class="rate-label">Approach → Meeting</span>
+            <span class="rate-label">{{ t('dashboard.approachMeeting') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.meetings }}/{{ metrics.totalNeedsFunnel.approaches }}</span>
           </div>
 
@@ -575,7 +578,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsProposalRate }}%</div>
             </div>
-            <span class="rate-label">Meeting → Proposal</span>
+            <span class="rate-label">{{ t('dashboard.meetingProposal') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.proposals }}/{{ metrics.totalNeedsFunnel.meetings }}</span>
           </div>
 
@@ -589,7 +592,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsSecuredRate }}%</div>
             </div>
-            <span class="rate-label">Proposal → Secured</span>
+            <span class="rate-label">{{ t('dashboard.proposalSecured') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.proposals }}</span>
           </div>
 
@@ -603,7 +606,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsOverallRate }}%</div>
             </div>
-            <span class="rate-label">Overall Win Rate</span>
+            <span class="rate-label">{{ t('dashboard.overallWinRate') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.approaches }}</span>
           </div>
 
@@ -611,7 +614,7 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <span class="stat-label">Avg Fee</span>
+            <span class="stat-label">{{ t('dashboard.avgFee') }}</span>
             <strong class="stat-value">{{ money.format(metrics.totalNeedsFunnel.avgFee) }}</strong>
           </div>
 
@@ -619,8 +622,8 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <span class="stat-label">Avg Days</span>
-            <strong class="stat-value">{{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} days</strong>
+            <span class="stat-label">{{ t('dashboard.avgDays') }}</span>
+            <strong class="stat-value">{{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} {{ t('common.days') }}</strong>
           </div>
         </div>
       </section>
@@ -631,11 +634,11 @@ onMounted(loadMetrics);
           <span class="title-icon teal">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
-          {{ $t('dashboard.coiPerformance') }}
+          {{ t('dashboard.coiPerformance') }}
         </h2>
         <div class="coi-panel-grid">
           <div class="coi-chart-box">
-            <h4>Status Progression</h4>
+            <h4>{{ t('dashboard.statusProgression') }}</h4>
             <div class="coi-chart-inner">
               <Bar :data="coiPerformanceBarData" :options="verticalBarOptions" />
             </div>
@@ -643,29 +646,29 @@ onMounted(loadMetrics);
 
           <div class="coi-stats-table">
             <div class="coi-stat-row">
-              <span class="coi-stat-label">Total COIs</span>
+              <span class="coi-stat-label">{{ t('dashboard.totalCOIs') }}</span>
               <strong class="coi-stat-value">{{ metrics.coiPerformance.total }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">Referrals</span>
+              <span class="coi-stat-label">{{ t('dashboard.referrals') }}</span>
               <strong class="coi-stat-value">{{ metrics.coiPerformance.totalReferrals }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">Converted</span>
+              <span class="coi-stat-label">{{ t('dashboard.converted') }}</span>
               <strong class="coi-stat-value">{{ metrics.coiPerformance.totalConverted }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">Proposal Fee Value</span>
+              <span class="coi-stat-label">{{ t('dashboard.proposalFeeValue') }}</span>
               <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalProposalFeeValue) }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">Secured Fee Value</span>
+              <span class="coi-stat-label">{{ t('dashboard.securedFeeValue') }}</span>
               <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalSecuredFeeValue) }}</strong>
             </div>
           </div>
 
           <div class="coi-chart-box">
-            <h4>By Industry</h4>
+            <h4>{{ t('dashboard.byIndustry') }}</h4>
             <div class="coi-chart-inner">
               <Bar :data="coiIndustryBarData" :options="verticalBarOptions" />
             </div>
@@ -676,24 +679,24 @@ onMounted(loadMetrics);
       <!-- Charts Row 1 -->
       <section class="charts-row">
         <div class="chart-card">
-          <h3>Prospect Status</h3>
-          <p class="chart-subtitle">Distribution by current status</p>
+          <h3>{{ t('dashboard.prospectStatus') }}</h3>
+          <p class="chart-subtitle">{{ t('dashboard.statusDistribution') }}</p>
           <div class="chart-container pie">
             <Pie :data="statusPieData" :options="pieOptions" />
           </div>
         </div>
 
         <div class="chart-card">
-          <h3>Lead Sources</h3>
-          <p class="chart-subtitle">Where prospects come from</p>
+          <h3>{{ t('dashboard.leadSources') }}</h3>
+          <p class="chart-subtitle">{{ t('dashboard.whereProspectsCome') }}</p>
           <div class="chart-container doughnut">
             <Doughnut :data="sourceDoughnutData" :options="doughnutOptions" />
           </div>
         </div>
 
         <div class="chart-card wide">
-          <h3>Monthly Secured Value Trend</h3>
-          <p class="chart-subtitle">Revenue secured over time</p>
+          <h3>{{ t('dashboard.monthlyTrend') }}</h3>
+          <p class="chart-subtitle">{{ t('dashboard.revenueOverTime') }}</p>
           <div class="chart-container line">
             <Line :data="monthlyTrendData" :options="lineOptions" />
           </div>
@@ -703,8 +706,8 @@ onMounted(loadMetrics);
       <!-- Charts Row 2 -->
       <section class="charts-row single">
         <div class="chart-card wide">
-          <h3>Work Secured by Team Member</h3>
-          <p class="chart-subtitle">Individual performance breakdown</p>
+          <h3>{{ t('dashboard.workSecuredByTeam') }}</h3>
+          <p class="chart-subtitle">{{ t('dashboard.individualPerformance') }}</p>
           <div class="chart-container bar-h">
             <Bar :data="staffBarData" :options="horizontalBarOptions" />
           </div>

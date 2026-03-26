@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { type UserRole } from "~/composables/useAuth";
 
-const { t } = useI18n();
+const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const { isAuthenticated, user, checkAuth, logout: authLogout } = useAuth();
 
@@ -45,19 +46,21 @@ onMounted(() => checkAuth());
   <div class="app-shell">
     <header class="top-nav">
       <div class="brand-block">
-        <strong>{{ $t('app.title') }}</strong>
-        <span v-if="showNav">{{ user?.displayName || user?.email }}</span>
+        <strong>{{ t('app.title') }}</strong>
+        <ClientOnly>
+          <span v-if="showNav">{{ user?.displayName || user?.email }}</span>
+        </ClientOnly>
       </div>
       <template v-if="showNav">
         <nav class="nav-links">
-          <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" :class="item.className">{{ $t(item.labelKey) }}</NuxtLink>
+          <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" :class="item.className">{{ t(item.labelKey) }}</NuxtLink>
         </nav>
         <LanguageSwitcher />
-        <button class="auth-btn" @click="handleLogout">{{ $t('auth.signOut') }}</button>
+        <button class="auth-btn" @click="handleLogout">{{ t('auth.signOut') }}</button>
       </template>
       <template v-else>
         <LanguageSwitcher />
-        <NuxtLink to="/login">{{ $t('auth.signIn') }}</NuxtLink>
+        <NuxtLink to="/login">{{ t('auth.signIn') }}</NuxtLink>
       </template>
     </header>
     <main class="page-content">

@@ -5,6 +5,9 @@ definePageMeta({
 });
 
 import type { TeamSummaryRow } from "~/types/sales";
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global' });
 
 const rows = ref<TeamSummaryRow[]>([]);
 const loading = ref(false);
@@ -42,44 +45,44 @@ onMounted(loadRows);
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Team</span>
-          <h1>Team Performance</h1>
-          <p>Track team metrics, proposals, and secured work at a glance</p>
+          <span class="header-badge">{{ t('team.badge') }}</span>
+          <h1>{{ t('team.title') }}</h1>
+          <p>{{ t('team.subtitle') }}</p>
         </div>
-        <button class="refresh-btn" @click="loadRows">Refresh</button>
+        <button class="refresh-btn" @click="loadRows">{{ t('common.refresh') }}</button>
       </div>
     </header>
 
     <section class="summary-strip">
-      <article><span>Team Members</span><strong>{{ rows.length }}</strong></article>
-      <article><span>Total Prospects</span><strong>{{ totalProspects }}</strong></article>
-      <article><span>Proposals Sent</span><strong>{{ totalProposals }}</strong></article>
-      <article><span>Secured Value</span><strong>${{ totalSecuredValue.toLocaleString() }}</strong></article>
+      <article><span>{{ t('team.teamMembers') }}</span><strong>{{ rows.length }}</strong></article>
+      <article><span>{{ t('team.totalProspects') }}</span><strong>{{ totalProspects }}</strong></article>
+      <article><span>{{ t('team.proposalsSent') }}</span><strong>{{ totalProposals }}</strong></article>
+      <article><span>{{ t('team.securedValue') }}</span><strong>${{ totalSecuredValue.toLocaleString() }}</strong></article>
     </section>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
-    <p v-if="loading">Loading team summary...</p>
+    <p v-if="loading">{{ t('team.loadingSummary') }}</p>
 
     <section class="card">
       <table>
         <thead>
           <tr>
-            <th>Team Member</th>
-            <th>Prospects</th>
-            <th>Approaches</th>
-            <th>Meetings</th>
-            <th>Proposals</th>
-            <th>Proposal Value</th>
-            <th>Secured</th>
-            <th>Secured Value</th>
-            <th>Approach Conv</th>
-            <th>Avg Proposal</th>
-            <th>Secured Conv</th>
-            <th>Active</th>
-            <th>Await Research</th>
-            <th>Completed</th>
-            <th>Dead</th>
-            <th>On Hold</th>
+            <th>{{ t('team.teamMember') }}</th>
+            <th>{{ t('team.prospects') }}</th>
+            <th>{{ t('team.approaches') }}</th>
+            <th>{{ t('team.meetings') }}</th>
+            <th>{{ t('team.proposals') }}</th>
+            <th>{{ t('team.proposalValue') }}</th>
+            <th>{{ t('team.secured') }}</th>
+            <th>{{ t('team.securedValue') }}</th>
+            <th>{{ t('team.approachConv') }}</th>
+            <th>{{ t('team.avgProposal') }}</th>
+            <th>{{ t('team.securedConv') }}</th>
+            <th>{{ t('team.active') }}</th>
+            <th>{{ t('team.awaitResearch') }}</th>
+            <th>{{ t('team.completed') }}</th>
+            <th>{{ t('team.dead') }}</th>
+            <th>{{ t('team.onHold') }}</th>
           </tr>
         </thead>
         <tbody>

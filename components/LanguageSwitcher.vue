@@ -1,13 +1,24 @@
 <script setup lang="ts">
-const { locale, locales, setLocale } = useI18n({ useScope: 'global' });
+import { useI18n } from 'vue-i18n';
 
-const availableLocales = computed(() => {
-  return locales.value.filter((l): l is { code: string; name: string } => typeof l !== "string");
-});
+const { t, locale } = useI18n({ useScope: 'global' });
 
-async function changeLanguage(event: Event) {
+const locales = [
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' }
+];
+
+function changeLanguage(event: Event) {
   const target = event.target as HTMLSelectElement;
-  await setLocale(target.value);
+  const newLocale = target.value;
+
+  // Set the cookie directly for persistence
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `i18n_locale=${newLocale}; expires=${expires}; path=/; SameSite=Lax`;
+
+  // Update the global locale - triggers reactivity everywhere
+  locale.value = newLocale;
 }
 </script>
 
@@ -16,9 +27,9 @@ async function changeLanguage(event: Event) {
     class="language-switcher"
     :value="locale"
     @change="changeLanguage"
-    :aria-label="$t('language.select')"
+    :aria-label="t('language.select')"
   >
-    <option v-for="loc in availableLocales" :key="loc.code" :value="loc.code">
+    <option v-for="loc in locales" :key="loc.code" :value="loc.code">
       {{ loc.name }}
     </option>
   </select>

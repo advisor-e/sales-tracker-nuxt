@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global' });
+
 interface CoiSummaryItem {
   coiName: string;
   totalReferrals: number;
@@ -224,57 +228,57 @@ onMounted(async () => {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">Report</span>
-          <h1>COI Performance</h1>
-          <p>Manage Centers of Influence and track referral metrics</p>
+          <span class="header-badge">{{ t('coi.badge') }}</span>
+          <h1>{{ t('coi.title') }}</h1>
+          <p>{{ t('coi.subtitle') }}</p>
         </div>
-        <button class="refresh-btn" @click="loadSummary(); loadCoiEntries();">Refresh</button>
+        <button class="refresh-btn" @click="loadSummary(); loadCoiEntries();">{{ t('coi.refresh') }}</button>
       </div>
     </header>
 
     <section class="summary-strip">
-      <article><span>COI Relationships</span><strong>{{ totals.relationships }}</strong></article>
-      <article><span>Total Referrals</span><strong>{{ totals.totalReferrals }}</strong></article>
-      <article><span>Converted</span><strong>{{ totals.totalConverted }}</strong></article>
-      <article><span>Conversion Rate</span><strong>{{ (totals.conversionRate * 100).toFixed(1) }}%</strong></article>
-      <article><span>Proposed Fee Value</span><strong>${{ totals.totalProposedValue.toLocaleString() }}</strong></article>
-      <article><span>Secured Fee Value</span><strong>${{ totals.totalSecuredValue.toLocaleString() }}</strong></article>
+      <article><span>{{ t('coi.coiRelationships') }}</span><strong>{{ totals.relationships }}</strong></article>
+      <article><span>{{ t('coi.totalReferrals') }}</span><strong>{{ totals.totalReferrals }}</strong></article>
+      <article><span>{{ t('coi.converted') }}</span><strong>{{ totals.totalConverted }}</strong></article>
+      <article><span>{{ t('coi.conversionRate') }}</span><strong>{{ (totals.conversionRate * 100).toFixed(1) }}%</strong></article>
+      <article><span>{{ t('coi.proposedFeeValue') }}</span><strong>${{ totals.totalProposedValue.toLocaleString() }}</strong></article>
+      <article><span>{{ t('coi.securedFeeValue') }}</span><strong>${{ totals.totalSecuredValue.toLocaleString() }}</strong></article>
     </section>
 
     <!-- Add COI Section -->
     <section class="card add-section">
-      <h2>Add COI</h2>
-      <p class="section-desc">Add a new Center of Influence. COI names will appear in the Pipeline dropdown.</p>
+      <h2>{{ t('coi.addCoi') }}</h2>
+      <p class="section-desc">{{ t('coi.addCoiDesc') }}</p>
 
       <form class="coi-form" @submit.prevent="addCoi">
         <div class="form-row">
           <div class="form-group">
-            <label>COI Name <span class="required">*</span></label>
-            <input v-model="newCoi.coiName" placeholder="Full name" required />
+            <label>{{ t('coi.coiName') }} <span class="required">*</span></label>
+            <input v-model="newCoi.coiName" :placeholder="t('coi.placeholderName')" required />
           </div>
           <div class="form-group">
-            <label>Email</label>
-            <input v-model="newCoi.email" type="email" placeholder="email@example.com" />
+            <label>{{ t('coi.email') }}</label>
+            <input v-model="newCoi.email" type="email" :placeholder="t('coi.placeholderEmail')" />
           </div>
           <div class="form-group">
-            <label>Cell/Phone</label>
-            <input v-model="newCoi.cell" placeholder="Phone number" />
+            <label>{{ t('coi.cellPhone') }}</label>
+            <input v-model="newCoi.cell" :placeholder="t('coi.placeholderPhone')" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Entity/Company</label>
-            <input v-model="newCoi.entity" placeholder="Company name" />
+            <label>{{ t('coi.entityCompany') }}</label>
+            <input v-model="newCoi.entity" :placeholder="t('coi.placeholderCompany')" />
           </div>
           <div class="form-group">
-            <label>Position</label>
-            <input v-model="newCoi.position" placeholder="Job title" />
+            <label>{{ t('coi.position') }}</label>
+            <input v-model="newCoi.position" :placeholder="t('coi.placeholderPosition')" />
           </div>
           <div class="form-group">
-            <label>Industry</label>
+            <label>{{ t('coi.industry') }}</label>
             <select v-model="newCoi.industry">
-              <option value="">Select industry...</option>
+              <option value="">{{ t('coi.selectIndustry') }}</option>
               <option v-for="opt in industryOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
@@ -282,22 +286,22 @@ onMounted(async () => {
 
         <div class="form-row">
           <div class="form-group">
-            <label>Lead Relationship Partner</label>
+            <label>{{ t('coi.leadPartner') }}</label>
             <select v-model="newCoi.leadRelationshipPartner">
-              <option value="">Select partner...</option>
+              <option value="">{{ t('coi.selectPartner') }}</option>
               <option v-for="opt in partnerOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Relationship Support</label>
+            <label>{{ t('coi.relationshipSupport') }}</label>
             <select v-model="newCoi.relationshipSupport">
-              <option value="">Select staff...</option>
+              <option value="">{{ t('coi.selectStaff') }}</option>
               <option v-for="opt in staffOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
           <div class="form-group btn-group">
             <button type="submit" class="btn-add" :disabled="!newCoi.coiName.trim() || savingCoi">
-              {{ savingCoi ? "Saving..." : "Add COI" }}
+              {{ savingCoi ? t('coi.saving') : t('coi.addCoiBtn') }}
             </button>
           </div>
         </div>
@@ -308,8 +312,8 @@ onMounted(async () => {
     <section class="card">
       <div class="card-header-row">
         <div>
-          <h2>COI Directory</h2>
-          <p class="section-desc">All registered Centers of Influence. Use these names in the Pipeline COI dropdown.</p>
+          <h2>{{ t('coi.directory') }}</h2>
+          <p class="section-desc">{{ t('coi.directoryDesc') }}</p>
         </div>
         <button
           v-if="selectedIds.size > 0"
@@ -317,11 +321,11 @@ onMounted(async () => {
           :disabled="deletingSelected"
           @click="removeSelectedCois"
         >
-          {{ deletingSelected ? "Removing..." : `Remove Selected (${selectedIds.size})` }}
+          {{ deletingSelected ? t('coi.removing') : t('coi.removeSelected', { count: selectedIds.size }) }}
         </button>
       </div>
 
-      <p v-if="loadingEntries">Loading COI entries...</p>
+      <p v-if="loadingEntries">{{ t('coi.loadingEntries') }}</p>
       <table v-else-if="coiEntries.length > 0">
         <thead>
           <tr>
@@ -330,19 +334,19 @@ onMounted(async () => {
                 type="checkbox"
                 :checked="allSelected"
                 @change="toggleSelectAll"
-                title="Select all"
+                :title="t('coi.selectAll')"
               />
             </th>
-            <th>Name</th>
-            <th>Entity</th>
-            <th>Industry</th>
-            <th>Email</th>
-            <th>Cell</th>
-            <th>Lead Partner</th>
-            <th class="progress-col">Could We</th>
-            <th class="progress-col">How Would We</th>
-            <th class="progress-col">Will We</th>
-            <th class="progress-col">Test/Review</th>
+            <th>{{ t('coi.name') }}</th>
+            <th>{{ t('coi.entity') }}</th>
+            <th>{{ t('coi.industry') }}</th>
+            <th>{{ t('coi.email') }}</th>
+            <th>{{ t('coi.cell') }}</th>
+            <th>{{ t('coi.leadPartner') }}</th>
+            <th class="progress-col">{{ t('coi.couldWe') }}</th>
+            <th class="progress-col">{{ t('coi.howWouldWe') }}</th>
+            <th class="progress-col">{{ t('coi.willWe') }}</th>
+            <th class="progress-col">{{ t('coi.testReview') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -395,26 +399,26 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
-      <p v-else class="empty-table">No COI entries yet. Add your first COI above.</p>
+      <p v-else class="empty-table">{{ t('coi.noEntries') }}</p>
     </section>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
-    <p v-if="loading">Loading COI summary...</p>
+    <p v-if="loading">{{ t('coi.loadingSummary') }}</p>
 
     <!-- Performance Table -->
     <section class="card">
-      <h2>Referral Performance by COI</h2>
-      <p class="section-desc">Data calculated from Pipeline entries where COI is selected.</p>
+      <h2>{{ t('coi.performanceTitle') }}</h2>
+      <p class="section-desc">{{ t('coi.performanceDesc') }}</p>
       <table v-if="summaryItems.length > 0">
         <thead>
           <tr>
-            <th>COI Name</th>
-            <th>Referrals</th>
-            <th>Active</th>
-            <th>Converted</th>
-            <th>Conversion Rate</th>
-            <th>Proposed Fee Value</th>
-            <th>Secured Fee Value</th>
+            <th>{{ t('coi.coiName') }}</th>
+            <th>{{ t('coi.referrals') }}</th>
+            <th>{{ t('coi.active') }}</th>
+            <th>{{ t('coi.converted') }}</th>
+            <th>{{ t('coi.conversionRate') }}</th>
+            <th>{{ t('coi.proposedFeeValue') }}</th>
+            <th>{{ t('coi.securedFeeValue') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -429,7 +433,7 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
-      <p v-else class="empty-table">No referral data yet. Assign COIs to prospects in the Pipeline page.</p>
+      <p v-else class="empty-table">{{ t('coi.noReferralData') }}</p>
     </section>
   </section>
 </template>

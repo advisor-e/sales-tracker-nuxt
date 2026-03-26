@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import type { DashboardMetrics, TeamSummaryRow, CoiEntry, PipelineEntry } from "~/types/sales";
+
+const { t } = useI18n({ useScope: 'global' });
 
 const metrics = ref<DashboardMetrics | null>(null);
 const teamRows = ref<TeamSummaryRow[]>([]);
@@ -39,9 +42,9 @@ onMounted(loadHomeData);
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ $t('home.badge') }}</span>
-          <h1>{{ $t('home.title') }}</h1>
-          <p>{{ $t('home.subtitle') }}</p>
+          <span class="header-badge">{{ t('home.badge') }}</span>
+          <h1>{{ t('home.title') }}</h1>
+          <p>{{ t('home.subtitle') }}</p>
         </div>
       </div>
     </header>
@@ -49,39 +52,39 @@ onMounted(loadHomeData);
     <p v-if="errorText" class="error">{{ errorText }}</p>
 
     <section v-if="metrics" class="home-kpis">
-      <article class="metric-card coral"><h3>{{ $t('home.filteredProspects') }}</h3><p>{{ metrics.totalProspects }}</p></article>
-      <article class="metric-card sky"><h3>{{ $t('home.activeStaff') }}</h3><p>{{ teamRows.length }}</p></article>
-      <article class="metric-card sun"><h3>{{ $t('home.securedValue') }}</h3><p>${{ Number(metrics.workSecured || 0).toLocaleString() }}</p></article>
-      <article class="metric-card mint"><h3>{{ $t('home.coiRecords') }}</h3><p>{{ coiRows.length }}</p></article>
+      <article class="metric-card coral"><h3>{{ t('home.filteredProspects') }}</h3><p>{{ metrics.totalProspects }}</p></article>
+      <article class="metric-card sky"><h3>{{ t('home.activeStaff') }}</h3><p>{{ teamRows.length }}</p></article>
+      <article class="metric-card sun"><h3>{{ t('home.securedValue') }}</h3><p>${{ Number(metrics.workSecured || 0).toLocaleString() }}</p></article>
+      <article class="metric-card mint"><h3>{{ t('home.coiRecords') }}</h3><p>{{ coiRows.length }}</p></article>
     </section>
 
     <section class="quick-links">
-      <NuxtLink to="/dashboard" class="quick-link"><strong>{{ $t('home.dashboard') }}</strong><span>{{ $t('home.dashboardDesc') }}</span></NuxtLink>
-      <NuxtLink to="/dashboard" class="quick-link"><strong>{{ $t('home.dashboardCharts') }}</strong><span>{{ $t('home.dashboardChartsDesc') }}</span></NuxtLink>
-      <NuxtLink to="/pipeline" class="quick-link"><strong>{{ $t('home.pipeline') }}</strong><span>{{ $t('home.pipelineDesc') }}</span></NuxtLink>
-      <NuxtLink to="/team" class="quick-link"><strong>{{ $t('home.team') }}</strong><span>{{ $t('home.teamDesc') }}</span></NuxtLink>
-      <NuxtLink to="/coi" class="quick-link"><strong>{{ $t('home.coi') }}</strong><span>{{ $t('home.coiDesc') }}</span></NuxtLink>
-      <NuxtLink to="/" class="quick-link"><strong>{{ $t('home.blog') }}</strong><span>{{ $t('home.blogDesc') }}</span></NuxtLink>
+      <NuxtLink to="/dashboard" class="quick-link"><strong>{{ t('home.dashboard') }}</strong><span>{{ t('home.dashboardDesc') }}</span></NuxtLink>
+      <NuxtLink to="/dashboard" class="quick-link"><strong>{{ t('home.dashboardCharts') }}</strong><span>{{ t('home.dashboardChartsDesc') }}</span></NuxtLink>
+      <NuxtLink to="/pipeline" class="quick-link"><strong>{{ t('home.pipeline') }}</strong><span>{{ t('home.pipelineDesc') }}</span></NuxtLink>
+      <NuxtLink to="/team" class="quick-link"><strong>{{ t('home.team') }}</strong><span>{{ t('home.teamDesc') }}</span></NuxtLink>
+      <NuxtLink to="/coi" class="quick-link"><strong>{{ t('home.coi') }}</strong><span>{{ t('home.coiDesc') }}</span></NuxtLink>
+      <NuxtLink to="/" class="quick-link"><strong>{{ t('home.blog') }}</strong><span>{{ t('home.blogDesc') }}</span></NuxtLink>
     </section>
 
     <section class="home-columns">
       <article class="panel preview-panel">
-        <h2>{{ $t('home.todayGlance') }}</h2>
+        <h2>{{ t('home.todayGlance') }}</h2>
         <table>
           <thead>
             <tr>
-              <th>{{ $t('home.prospectName') }}</th>
-              <th>{{ $t('home.businessName') }}</th>
-              <th>{{ $t('home.teamMember') }}</th>
-              <th>{{ $t('home.status') }}</th>
-              <th>{{ $t('home.securedValueCol') }}</th>
+              <th>{{ t('home.prospectName') }}</th>
+              <th>{{ t('home.businessName') }}</th>
+              <th>{{ t('home.teamMember') }}</th>
+              <th>{{ t('home.status') }}</th>
+              <th>{{ t('home.securedValueCol') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in pipelineRows" :key="item.id">
               <td>{{ item.prospectName }}</td>
-              <td>{{ item.businessName || $t('common.na') }}</td>
-              <td>{{ item.leadStaff || $t('common.unassigned') }}</td>
+              <td>{{ item.businessName || t('common.na') }}</td>
+              <td>{{ item.leadStaff || t('common.unassigned') }}</td>
               <td>{{ item.prospectStatus }}</td>
               <td>${{ Number(item.jobSecuredValue || 0).toLocaleString() }}</td>
             </tr>
@@ -90,11 +93,11 @@ onMounted(loadHomeData);
       </article>
 
       <article class="panel info-panel">
-        <h2>{{ $t('home.whatEachSection') }}</h2>
-        <p class="info blue">{{ $t('home.infoDashboard') }}</p>
-        <p class="info green">{{ $t('home.infoTrends') }}</p>
-        <p class="info gold">{{ $t('home.infoPipeline') }}</p>
-        <p class="caption">{{ $t('home.rowsLoaded', { team: teamRows.length, coi: coiRows.length }) }}</p>
+        <h2>{{ t('home.whatEachSection') }}</h2>
+        <p class="info blue">{{ t('home.infoDashboard') }}</p>
+        <p class="info green">{{ t('home.infoTrends') }}</p>
+        <p class="info gold">{{ t('home.infoPipeline') }}</p>
+        <p class="caption">{{ t('home.rowsLoaded', { team: teamRows.length, coi: coiRows.length }) }}</p>
       </article>
     </section>
   </section>
