@@ -160,52 +160,57 @@ function loadColumnWidths(): Record<string, number> {
 // Column widths for resizing
 const columnWidths = ref<Record<string, number>>(loadColumnWidths());
 
-// Default header labels
-const defaultHeaderLabels: Record<string, string> = {
-  prospect: "Prospect",
-  business: "Business",
-  partner: "Partner",
-  leadStaff: "Lead Staff",
-  status: "Status",
-  relationship: "Relationship",
-  source: "Source",
-  coi: "COI",
-  industry: "Industry",
-  approachDate: "Approach Date",
-  approachStyle: "Approach Style",
-  meeting: "Meeting",
-  quizDone: "Quiz Done",
-  salesStyle: "Sales Style",
-  meetingDate: "Meeting Date",
-  followUp: "Follow Up",
-  followUpDate: "F/Up Date",
-  tnStage: "TN Stage",
-  proposal: "Proposal",
-  proposalValue: "Proposal $",
-  secured: "Secured",
-  dateSecured: "Date Secured",
-  securedValue: "Secured $",
-  additionalWork: "Add'l Work",
-  comments: "Comments"
-};
+// Default header labels (computed for i18n reactivity)
+const defaultHeaderLabels = computed<Record<string, string>>(() => ({
+  prospect: t('pipeline.columns.prospect'),
+  business: t('pipeline.columns.business'),
+  partner: t('pipeline.columns.partner'),
+  leadStaff: t('pipeline.columns.leadStaff'),
+  status: t('pipeline.columns.status'),
+  relationship: t('pipeline.columns.relationship'),
+  source: t('pipeline.columns.source'),
+  coi: t('pipeline.columns.coi'),
+  industry: t('pipeline.columns.industry'),
+  approachDate: t('pipeline.columns.approachDate'),
+  approachStyle: t('pipeline.columns.approachStyle'),
+  meeting: t('pipeline.columns.meeting'),
+  quizDone: t('pipeline.columns.quizDone'),
+  salesStyle: t('pipeline.columns.salesStyle'),
+  meetingDate: t('pipeline.columns.meetingDate'),
+  followUp: t('pipeline.columns.followUp'),
+  followUpDate: t('pipeline.columns.followUpDate'),
+  tnStage: t('pipeline.columns.tnStage'),
+  proposal: t('pipeline.columns.proposal'),
+  proposalValue: t('pipeline.columns.proposalValue'),
+  secured: t('pipeline.columns.secured'),
+  dateSecured: t('pipeline.columns.dateSecured'),
+  securedValue: t('pipeline.columns.securedValue'),
+  additionalWork: t('pipeline.columns.additionalWork'),
+  comments: t('pipeline.columns.comments')
+}));
 
-// Load saved header labels from localStorage
-function loadHeaderLabels(): Record<string, string> {
-  if (typeof window === "undefined") return { ...defaultHeaderLabels };
+// Load saved custom header labels from localStorage (only user overrides)
+function loadCustomHeaderLabels(): Record<string, string> {
+  if (typeof window === "undefined") return {};
   try {
     const saved = localStorage.getItem("pipeline-header-labels");
     if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...defaultHeaderLabels, ...parsed };
+      return JSON.parse(saved);
     }
   } catch {
     // ignore parse errors
   }
-  return { ...defaultHeaderLabels };
+  return {};
 }
 
-// Header labels for editing
-const headerLabels = ref<Record<string, string>>(loadHeaderLabels());
+// Store only custom overrides
+const customHeaderLabels = ref<Record<string, string>>(loadCustomHeaderLabels());
+
+// Header labels: merge translated defaults with custom overrides
+const headerLabels = computed<Record<string, string>>(() => ({
+  ...defaultHeaderLabels.value,
+  ...customHeaderLabels.value
+}));
 
 // Default column order
 const defaultColumnOrder = [
@@ -322,11 +327,17 @@ function getCellClass(col: string): string[] {
 // Save header label on edit
 function saveHeaderLabel(col: string, event: Event) {
   const target = event.target as HTMLElement;
-  const newLabel = target.innerText.trim() || defaultHeaderLabels[col];
-  headerLabels.value[col] = newLabel;
+  const newLabel = target.innerText.trim() || defaultHeaderLabels.value[col];
   target.innerText = newLabel;
+  // Only save if different from the translated default
+  if (newLabel !== defaultHeaderLabels.value[col]) {
+    customHeaderLabels.value[col] = newLabel;
+  } else {
+    // Remove custom override if user reset to default
+    delete customHeaderLabels.value[col];
+  }
   try {
-    localStorage.setItem("pipeline-header-labels", JSON.stringify(headerLabels.value));
+    localStorage.setItem("pipeline-header-labels", JSON.stringify(customHeaderLabels.value));
   } catch {
     // ignore storage errors
   }
@@ -450,7 +461,7 @@ async function removeItem(item: PipelineEntry) {
 onMounted(async () => {
   // Load column widths, header labels, and column order from localStorage on client
   Object.assign(columnWidths.value, loadColumnWidths());
-  Object.assign(headerLabels.value, loadHeaderLabels());
+  Object.assign(customHeaderLabels.value, loadCustomHeaderLabels());
   columnOrder.value = loadColumnOrder();
   await fetchLists();
   await Promise.all([loadItems(), loadCoiEntries()]);

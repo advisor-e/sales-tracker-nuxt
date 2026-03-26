@@ -9,30 +9,37 @@ const locales = [
   { code: 'fr', name: 'Français' }
 ];
 
-function changeLanguage(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  const newLocale = target.value;
-
-  // Set the cookie directly for persistence
-  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-  document.cookie = `i18n_locale=${newLocale}; expires=${expires}; path=/; SameSite=Lax`;
-
-  // Update the global locale - triggers reactivity everywhere
-  locale.value = newLocale;
-}
+// Use computed to ensure reactivity with v-model
+const currentLocale = computed({
+  get: () => locale.value,
+  set: (newLocale: string) => {
+    // Set the cookie directly for persistence
+    const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+    document.cookie = `i18n_locale=${newLocale}; expires=${expires}; path=/; SameSite=Lax`;
+    // Update the global locale
+    locale.value = newLocale;
+  }
+});
 </script>
 
 <template>
-  <select
-    class="language-switcher"
-    :value="locale"
-    @change="changeLanguage"
-    :aria-label="t('language.select')"
-  >
-    <option v-for="loc in locales" :key="loc.code" :value="loc.code">
-      {{ loc.name }}
-    </option>
-  </select>
+  <ClientOnly>
+    <select
+      class="language-switcher"
+      v-model="currentLocale"
+      :key="currentLocale"
+      :aria-label="t('language.select')"
+    >
+      <option v-for="loc in locales" :key="loc.code" :value="loc.code">
+        {{ loc.name }}
+      </option>
+    </select>
+    <template #fallback>
+      <select class="language-switcher" disabled>
+        <option>...</option>
+      </select>
+    </template>
+  </ClientOnly>
 </template>
 
 <style scoped>
