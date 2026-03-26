@@ -503,8 +503,8 @@ async function deleteInput(item: BlogInput) {
 onMounted(async () => {
   try {
     loadWordCountPrefs();
-    await fetchLists();
-    await Promise.all([loadInputs(), loadPosts(), loadReferences()]);
+    // Load all data in parallel for faster page load
+    await Promise.all([fetchLists(), loadInputs(), loadPosts(), loadReferences()]);
     resizeAllTextareas();
   } catch (error: unknown) {
     const e = error as { data?: { message?: string }; message?: string };

@@ -218,8 +218,8 @@ async function toggleProgress(entry: CoiEntry, field: "couldWe" | "howWouldWe" |
 }
 
 onMounted(async () => {
-  await fetchLists();
-  await Promise.all([loadSummary(), loadCoiEntries()]);
+  // Load all data in parallel for faster page load
+  await Promise.all([fetchLists(), loadSummary(), loadCoiEntries()]);
 });
 </script>
 

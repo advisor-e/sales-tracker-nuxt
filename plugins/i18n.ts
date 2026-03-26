@@ -2,11 +2,14 @@ import { createI18n } from 'vue-i18n';
 import en from '~/locales/en.json';
 import es from '~/locales/es.json';
 import fr from '~/locales/fr.json';
+import de from '~/locales/de.json';
+import pt from '~/locales/pt.json';
+import it from '~/locales/it.json';
 
-const messages = { en, es, fr };
+const messages = { en, es, fr, de, pt, it };
 
 export default defineNuxtPlugin((nuxtApp) => {
-  const validLocales = ['en', 'es', 'fr'];
+  const validLocales = ['en', 'es', 'fr', 'de', 'pt', 'it'];
 
   // Read locale from cookie - use different methods for server vs client
   let savedLocale = 'en';

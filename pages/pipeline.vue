@@ -463,8 +463,8 @@ onMounted(async () => {
   Object.assign(columnWidths.value, loadColumnWidths());
   Object.assign(customHeaderLabels.value, loadCustomHeaderLabels());
   columnOrder.value = loadColumnOrder();
-  await fetchLists();
-  await Promise.all([loadItems(), loadCoiEntries()]);
+  // Load all data in parallel for faster page load
+  await Promise.all([fetchLists(), loadItems(), loadCoiEntries()]);
 });
 </script>
 
