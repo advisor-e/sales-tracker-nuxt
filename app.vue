@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import { type UserRole } from "~/composables/useAuth";
 
-const { t } = useI18n({ useScope: 'global' });
+const { t, locale } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const { isAuthenticated, user, checkAuth, logout: authLogout } = useAuth();
 
@@ -52,7 +52,7 @@ onMounted(() => checkAuth());
         </ClientOnly>
       </div>
       <template v-if="showNav">
-        <nav class="nav-links">
+        <nav class="nav-links" :key="locale">
           <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" :class="item.className">{{ t(item.labelKey) }}</NuxtLink>
         </nav>
         <LanguageSwitcher />

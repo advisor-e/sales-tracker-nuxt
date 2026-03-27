@@ -1,6 +1,6 @@
 {
   "app": { "title": "Vertriebszentrale" },
-  "nav": { "home": "Startseite", "dashboard": "Dashboard", "pipeline": "Pipeline", "team": "Team", "coi": "Empfehlungsgeber", "blog": "Blog", "lists": "Listen" },
+  "nav": { "home": "Startseite", "dashboard": "Übersicht", "pipeline": "Vertrieb", "team": "Mitarbeiter", "coi": "Empfehlungsgeber", "blog": "Blog", "lists": "Listen" },
   "auth": { "signIn": "Anmelden", "signOut": "Abmelden", "signingIn": "Anmeldung...", "email": "E-Mail", "password": "Passwort" },
   "common": { "save": "Speichern", "cancel": "Abbrechen", "delete": "Löschen", "edit": "Bearbeiten", "add": "Hinzufügen", "search": "Suchen", "loading": "Laden...", "loadingDashboard": "Dashboard wird geladen...", "noData": "Keine Daten verfügbar", "confirm": "Bestätigen", "yes": "Ja", "no": "Nein", "refresh": "Aktualisieren", "active": "aktiv", "days": "Tage", "unassigned": "Nicht zugewiesen", "na": "N/V" },
   "language": { "select": "Sprache", "en": "Englisch", "es": "Spanisch", "fr": "Französisch", "de": "Deutsch", "pt": "Portugiesisch", "it": "Italienisch" },

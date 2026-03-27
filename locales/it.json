@@ -1,6 +1,6 @@
 {
   "app": { "title": "Centro di Comando Vendite" },
-  "nav": { "home": "Home", "dashboard": "Dashboard", "pipeline": "Pipeline", "team": "Team", "coi": "CDI", "blog": "Blog", "lists": "Liste" },
+  "nav": { "home": "Inizio", "dashboard": "Panoramica", "pipeline": "Vendite", "team": "Squadra", "coi": "CDI", "blog": "Blog", "lists": "Liste" },
   "auth": { "signIn": "Accedi", "signOut": "Esci", "signingIn": "Accesso in corso...", "email": "E-mail", "password": "Password" },
   "common": { "save": "Salva", "cancel": "Annulla", "delete": "Elimina", "edit": "Modifica", "add": "Aggiungi", "search": "Cerca", "loading": "Caricamento...", "loadingDashboard": "Caricamento dashboard...", "noData": "Nessun dato disponibile", "confirm": "Conferma", "yes": "Sì", "no": "No", "refresh": "Aggiorna", "active": "attivo", "days": "giorni", "unassigned": "Non assegnato", "na": "N/D" },
   "language": { "select": "Lingua", "en": "Inglese", "es": "Spagnolo", "fr": "Francese", "de": "Tedesco", "pt": "Portoghese", "it": "Italiano" },

@@ -7,6 +7,7 @@ definePageMeta({
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n({ useScope: 'global' });
+const { $addLocale, $removeLocale, $refreshLocales } = useNuxtApp();
 
 const { lists: listsData, loading: listsLoading, fetchLists, saveList, invalidateCache } = useLists();
 
@@ -18,9 +19,32 @@ const newItemText = ref("");
 const saving = ref(false);
 const saveMessage = ref("");
 
+// Language management state
+interface Language {
+  code: string;
+  name: string;
+  nativeName: string;
+  isBuiltIn: boolean;
+  isEnabled: boolean;
+}
+
+const languages = ref<Language[]>([]);
+const languagesLoading = ref(false);
+const showAddLanguage = ref(false);
+const newLanguage = reactive({
+  code: '',
+  name: '',
+  nativeName: '',
+  translations: {} as Record<string, unknown>
+});
+const languageSaving = ref(false);
+
 // Load lists on mount
 onMounted(async () => {
-  await fetchLists(true);
+  await Promise.all([
+    fetchLists(true),
+    loadLanguages()
+  ]);
   // Copy to local editable state
   Object.assign(lists, JSON.parse(JSON.stringify(listsData.value)));
 });
@@ -86,6 +110,87 @@ async function saveListToDb(key: string) {
 
   saving.value = false;
 }
+
+// Language management functions
+async function loadLanguages() {
+  languagesLoading.value = true;
+  try {
+    const response = await $fetch<{ languages: Language[] }>('/api/languages');
+    languages.value = response.languages;
+  } catch (e) {
+    console.error('Failed to load languages:', e);
+  } finally {
+    languagesLoading.value = false;
+  }
+}
+
+async function addNewLanguage() {
+  if (!newLanguage.code || !newLanguage.name || !newLanguage.nativeName) return;
+
+  languageSaving.value = true;
+  try {
+    const result = await $fetch<{
+      success: boolean;
+      language: { code: string; name: string; nativeName: string; isBuiltIn: boolean; isEnabled: boolean };
+      translations: Record<string, unknown>;
+    }>('/api/languages/translate', {
+      method: 'POST',
+      body: {
+        code: newLanguage.code.toLowerCase(),
+        name: newLanguage.name,
+        nativeName: newLanguage.nativeName
+      }
+    });
+
+    // Register with vue-i18n and add to dropdown immediately
+    if ($addLocale) {
+      $addLocale(result.language.code, result.language.name, result.language.nativeName, result.translations as object);
+    }
+
+    // Refresh the languages panel
+    await loadLanguages();
+
+    // Reset form
+    newLanguage.code = '';
+    newLanguage.name = '';
+    newLanguage.nativeName = '';
+    newLanguage.translations = {};
+    showAddLanguage.value = false;
+
+    saveMessage.value = t('lists.languageAdded');
+    setTimeout(() => { saveMessage.value = ''; }, 3000);
+  } catch (e: unknown) {
+    const error = e as { data?: { statusMessage?: string } };
+    saveMessage.value = error.data?.statusMessage || 'Translation failed. Please try again.';
+    setTimeout(() => { saveMessage.value = ''; }, 4000);
+  } finally {
+    languageSaving.value = false;
+  }
+}
+
+async function deleteLanguage(code: string) {
+  if (!confirm(t('lists.confirmDeleteLanguage'))) return;
+
+  try {
+    await $fetch(`/api/languages/${code}`, { method: 'DELETE' });
+
+    // Remove from i18n runtime
+    if ($removeLocale) {
+      $removeLocale(code);
+    }
+
+    // Refresh the languages list
+    await loadLanguages();
+    if ($refreshLocales) {
+      await $refreshLocales();
+    }
+
+    saveMessage.value = t('lists.languageDeleted');
+    setTimeout(() => { saveMessage.value = ''; }, 2000);
+  } catch (e) {
+    console.error('Failed to delete language:', e);
+  }
+}
 </script>
 
 <template>
@@ -107,8 +212,8 @@ async function saveListToDb(key: string) {
     </div>
 
     <!-- Save Status -->
-    <div v-if="saveMessage" class="save-banner" :class="{ error: saveMessage === 'Failed to save' }">
-      {{ saveMessage === 'Saved' ? t('lists.saved') : t('lists.failedToSave') }}
+    <div v-if="saveMessage" class="save-banner" :class="{ error: saveMessage.includes('Failed') }">
+      {{ saveMessage === 'Saved' ? t('lists.saved') : saveMessage }}
     </div>
 
     <!-- Info Banner -->
@@ -120,6 +225,93 @@ async function saveListToDb(key: string) {
       </svg>
       <p>{{ t('lists.infoBanner') }}</p>
     </div>
+
+    <!-- Languages Section -->
+    <section class="languages-section">
+      <div class="section-header">
+        <div>
+          <h2>{{ t('lists.languagesTitle') }}</h2>
+          <p>{{ t('lists.languagesDesc') }}</p>
+        </div>
+        <button
+          class="btn-add-language"
+          @click="showAddLanguage = !showAddLanguage"
+        >
+          {{ showAddLanguage ? '−' : '+' }} {{ t('lists.addLanguage') }}
+        </button>
+      </div>
+
+      <!-- Add Language Form -->
+      <div v-if="showAddLanguage" class="add-language-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>{{ t('lists.languageCode') }}</label>
+            <input
+              v-model="newLanguage.code"
+              :placeholder="t('lists.languageCodePlaceholder')"
+              maxlength="10"
+            />
+          </div>
+          <div class="form-group">
+            <label>{{ t('lists.languageName') }}</label>
+            <input
+              v-model="newLanguage.name"
+              :placeholder="t('lists.languageNamePlaceholder')"
+            />
+          </div>
+          <div class="form-group">
+            <label>{{ t('lists.nativeName') }}</label>
+            <input
+              v-model="newLanguage.nativeName"
+              :placeholder="t('lists.nativeNamePlaceholder')"
+            />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button
+            class="btn-save-language"
+            :disabled="!newLanguage.code || !newLanguage.name || !newLanguage.nativeName || languageSaving"
+            @click="addNewLanguage"
+          >
+            <span v-if="languageSaving" class="btn-spinner">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              Translating...
+            </span>
+            <span v-else>{{ t('lists.addLanguage') }}</span>
+          </button>
+        </div>
+        <p class="form-hint" v-if="!languageSaving">
+          AI will translate all app text into the new language. This takes about 30 seconds.
+        </p>
+        <p class="form-hint translating-hint" v-else>
+          Translating with AI — please wait, this takes about 30 seconds...
+        </p>
+      </div>
+
+      <!-- Languages List -->
+      <div class="languages-grid">
+        <div
+          v-for="lang in languages"
+          :key="lang.code"
+          class="language-card"
+          :class="{ 'built-in': lang.isBuiltIn }"
+        >
+          <div class="language-info">
+            <span class="language-code">{{ lang.code }}</span>
+            <span class="language-name">{{ lang.nativeName }}</span>
+            <span class="language-tag">{{ lang.isBuiltIn ? t('lists.builtIn') : t('lists.custom') }}</span>
+          </div>
+          <button
+            v-if="!lang.isBuiltIn"
+            class="btn-delete-lang"
+            @click="deleteLanguage(lang.code)"
+            :title="t('lists.deleteLanguage')"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- Lists Grid -->
     <div class="lists-grid">
@@ -263,19 +455,8 @@ async function saveListToDb(key: string) {
 .header-text h1 { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.2; }
 .header-text p { margin: 0.5rem 0 0; opacity: 0.9; font-size: 0.95rem; line-height: 1.4; max-width: 400px; }
 
-/* Loading Banner */
-.loading-banner {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  color: #166534;
-  text-align: center;
-  font-weight: 500;
-}
-
-/* Save Banner */
-.save-banner {
+/* Loading/Save Banners */
+.loading-banner, .save-banner {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   border-radius: 12px;
@@ -284,7 +465,6 @@ async function saveListToDb(key: string) {
   text-align: center;
   font-weight: 500;
 }
-
 .save-banner.error {
   background: #fef2f2;
   border-color: #fecaca;
@@ -302,17 +482,137 @@ async function saveListToDb(key: string) {
   padding: 1rem 1.25rem;
   color: #1e40af;
 }
+.info-banner svg { flex-shrink: 0; margin-top: 0.1rem; }
+.info-banner p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
 
-.info-banner svg {
-  flex-shrink: 0;
-  margin-top: 0.1rem;
+/* Languages Section */
+.languages-section {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.section-header h2 { margin: 0; font-size: 1.1rem; color: #1e293b; }
+.section-header p { margin: 0.25rem 0 0; font-size: 0.85rem; color: #64748b; }
+.btn-add-language {
+  background: linear-gradient(135deg, #0891b2, #0e7490);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-add-language:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
 }
 
-.info-banner p {
-  margin: 0;
+/* Add Language Form */
+.add-language-form {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.form-group label { font-size: 0.8rem; font-weight: 600; color: #475569; }
+.form-group input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-size: 0.875rem;
-  line-height: 1.5;
 }
+.form-group input:focus {
+  outline: none;
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+}
+.form-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.btn-save-language:disabled { opacity: 0.7; cursor: not-allowed; }
+.btn-save-language {
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-save-language:hover:not(:disabled) { background: #059669; }
+.form-hint { margin: 0.75rem 0 0; font-size: 0.8rem; color: #94a3b8; font-style: italic; }
+.translating-hint { color: #0891b2; font-style: normal; font-weight: 500; }
+.btn-spinner { display: flex; align-items: center; gap: 0.4rem; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Languages Grid */
+.languages-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.language-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  transition: all 0.15s;
+}
+.language-card:hover { border-color: #cbd5e1; background: #f1f5f9; }
+.language-card.built-in { border-color: #bbf7d0; background: #f0fdf4; }
+.language-info { display: flex; align-items: center; gap: 0.5rem; }
+.language-code {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0891b2;
+  background: #e0f7fa;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+.language-name { font-size: 0.875rem; font-weight: 500; color: #334155; }
+.language-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #64748b;
+}
+.language-card.built-in .language-tag { background: #dcfce7; color: #166534; }
+.btn-delete-lang {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.language-card:hover .btn-delete-lang { opacity: 1; }
+.btn-delete-lang:hover { background: #fecaca; }
 
 /* Lists Grid */
 .lists-grid {
@@ -320,7 +620,6 @@ async function saveListToDb(key: string) {
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1rem;
 }
-
 .list-card {
   background: white;
   border-radius: 16px;
@@ -328,15 +627,8 @@ async function saveListToDb(key: string) {
   overflow: hidden;
   transition: box-shadow 0.2s;
 }
-
-.list-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.list-card.expanded {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
+.list-card:hover { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
+.list-card.expanded { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); }
 .list-header {
   display: flex;
   justify-content: space-between;
@@ -345,30 +637,10 @@ async function saveListToDb(key: string) {
   cursor: pointer;
   transition: background-color 0.15s;
 }
-
-.list-header:hover {
-  background: #f8fafc;
-}
-
-.list-info h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.list-info p {
-  margin: 0.25rem 0 0;
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-.list-meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
+.list-header:hover { background: #f8fafc; }
+.list-info h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
+.list-info p { margin: 0.25rem 0 0; font-size: 0.8rem; color: #64748b; }
+.list-meta { display: flex; align-items: center; gap: 1rem; }
 .item-count {
   font-size: 0.75rem;
   color: #94a3b8;
@@ -376,7 +648,6 @@ async function saveListToDb(key: string) {
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
 }
-
 .expand-icon {
   width: 28px;
   height: 28px;
@@ -391,20 +662,8 @@ async function saveListToDb(key: string) {
 }
 
 /* List Content */
-.list-content {
-  border-top: 1px solid #f1f5f9;
-  padding: 1rem 1.5rem 1.5rem;
-}
-
-.items-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
+.list-content { border-top: 1px solid #f1f5f9; padding: 1rem 1.5rem 1.5rem; }
+.items-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .list-item {
   display: flex;
   justify-content: space-between;
@@ -414,30 +673,11 @@ async function saveListToDb(key: string) {
   border-radius: 8px;
   transition: transform 0.15s;
 }
-
-.list-item:hover {
-  transform: translateX(4px);
-}
-
-.item-text {
-  font-size: 0.875rem;
-  color: #334155;
-  font-weight: 500;
-}
-
-.item-actions {
-  display: flex;
-  gap: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.list-item:hover .item-actions {
-  opacity: 1;
-}
-
-.btn-move,
-.btn-remove {
+.list-item:hover { transform: translateX(4px); }
+.item-text { font-size: 0.875rem; color: #334155; font-weight: 500; }
+.item-actions { display: flex; gap: 0.25rem; opacity: 0; transition: opacity 0.15s; }
+.list-item:hover .item-actions { opacity: 1; }
+.btn-move, .btn-remove {
   width: 26px;
   height: 26px;
   border: none;
@@ -448,30 +688,11 @@ async function saveListToDb(key: string) {
   justify-content: center;
   font-size: 0.875rem;
 }
-
-.btn-move {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.btn-move:hover:not(:disabled) {
-  background: #cbd5e1;
-}
-
-.btn-move:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.btn-remove {
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 1.1rem;
-}
-
-.btn-remove:hover {
-  background: #fecaca;
-}
+.btn-move { background: #e2e8f0; color: #475569; }
+.btn-move:hover:not(:disabled) { background: #cbd5e1; }
+.btn-move:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-remove { background: #fee2e2; color: #dc2626; font-size: 1.1rem; }
+.btn-remove:hover { background: #fecaca; }
 
 /* Add Item Form */
 .add-item-form {
@@ -481,7 +702,6 @@ async function saveListToDb(key: string) {
   padding-top: 1rem;
   border-top: 1px solid #f1f5f9;
 }
-
 .add-item-form input {
   flex: 1;
   border: 1px solid #e2e8f0;
@@ -489,13 +709,11 @@ async function saveListToDb(key: string) {
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
 }
-
 .add-item-form input:focus {
   outline: none;
   border-color: #0891b2;
   box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
 }
-
 .btn-add {
   background: #0891b2;
   color: white;
@@ -504,17 +722,9 @@ async function saveListToDb(key: string) {
   padding: 0.5rem 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
 }
-
-.btn-add:hover:not(:disabled) {
-  background: #0e7490;
-}
-
-.btn-add:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.btn-add:hover:not(:disabled) { background: #0e7490; }
+.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Usage Guide */
 .usage-guide {
@@ -523,47 +733,18 @@ async function saveListToDb(key: string) {
   padding: 1.5rem 2rem;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
-
-.usage-guide h2 {
-  margin: 0 0 1rem;
-  font-size: 1.1rem;
-  color: #1e293b;
-}
-
+.usage-guide h2 { margin: 0 0 1rem; font-size: 1.1rem; color: #1e293b; }
 .usage-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
 }
-
-.usage-item {
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 10px;
-}
-
-.usage-item h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
-  color: #0891b2;
-  font-weight: 700;
-}
-
-.usage-item p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #64748b;
-  line-height: 1.5;
-}
+.usage-item { padding: 1rem; background: #f8fafc; border-radius: 10px; }
+.usage-item h4 { margin: 0 0 0.5rem; font-size: 0.875rem; color: #0891b2; font-weight: 700; }
+.usage-item p { margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.5; }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .lists-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .usage-grid {
-    grid-template-columns: 1fr;
-  }
+  .lists-grid, .usage-grid { grid-template-columns: 1fr; }
 }
 </style>

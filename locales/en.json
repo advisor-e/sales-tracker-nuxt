@@ -290,6 +290,24 @@
     "totalNeedsStage": "Total Needs Stage",
     "totalNeedsStageDesc": "For Total Needs sales, tracks progression through the 5-stage process.",
     "industry": "Industry",
-    "industryDesc": "Used in both Sales Activity and COI Development for industry segmentation."
+    "industryDesc": "Used in both Sales Activity and COI Development for industry segmentation.",
+    "languagesTitle": "Languages",
+    "languagesDesc": "Add custom languages for your team. Built-in languages cannot be removed.",
+    "addLanguage": "Add Language",
+    "languageCode": "Language Code",
+    "languageCodePlaceholder": "e.g., nl, ja, zh",
+    "languageName": "Language Name",
+    "languageNamePlaceholder": "e.g., Dutch, Japanese",
+    "nativeName": "Native Name",
+    "nativeNamePlaceholder": "e.g., Nederlands, 日本語",
+    "translations": "Translations",
+    "generateFromEnglish": "Generate from English",
+    "generating": "Generating...",
+    "builtIn": "Built-in",
+    "custom": "Custom",
+    "deleteLanguage": "Delete Language",
+    "confirmDeleteLanguage": "Are you sure you want to delete this language? This cannot be undone.",
+    "languageAdded": "Language added successfully",
+    "languageDeleted": "Language deleted"
   }
 }

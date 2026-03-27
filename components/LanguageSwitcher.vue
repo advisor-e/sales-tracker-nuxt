@@ -2,26 +2,18 @@
 import { useI18n } from 'vue-i18n';
 
 const { t, locale } = useI18n({ useScope: 'global' });
+const { $availableLocales, $setLocale } = useNuxtApp();
 
-const locales = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'de', name: 'Deutsch' },
-  { code: 'pt', name: 'Português' },
-  { code: 'it', name: 'Italiano' }
-];
+const locales = computed(() =>
+  ($availableLocales?.value ?? []).map((loc: { code: string; nativeName: string }) => ({
+    code: loc.code,
+    name: loc.nativeName
+  }))
+);
 
-// Use computed to ensure reactivity with v-model
 const currentLocale = computed({
   get: () => locale.value,
-  set: (newLocale: string) => {
-    // Set the cookie directly for persistence
-    const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-    document.cookie = `i18n_locale=${newLocale}; expires=${expires}; path=/; SameSite=Lax`;
-    // Update the global locale
-    locale.value = newLocale;
-  }
+  set: (newLocale: string) => ($setLocale as (l: string) => void)(newLocale)
 });
 </script>
 

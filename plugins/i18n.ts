@@ -6,55 +6,102 @@ import de from '~/locales/de.json';
 import pt from '~/locales/pt.json';
 import it from '~/locales/it.json';
 
-const messages = { en, es, fr, de, pt, it };
+const builtInMessages = { en, es, fr, de, pt, it };
 
-export default defineNuxtPlugin((nuxtApp) => {
-  const validLocales = ['en', 'es', 'fr', 'de', 'pt', 'it'];
+const builtInLocales = [
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español' },
+  { code: 'fr', name: 'French', nativeName: 'Français' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano' }
+];
 
-  // Read locale from cookie - use different methods for server vs client
-  let savedLocale = 'en';
-
-  if (import.meta.server) {
-    // Server: read from request cookies via useCookie
-    const localeCookie = useCookie<string>('i18n_locale');
-    savedLocale = localeCookie.value && validLocales.includes(localeCookie.value) ? localeCookie.value : 'en';
-  } else {
-    // Client: read directly from document.cookie for reliability
-    const match = document.cookie.match(/(?:^|; )i18n_locale=([^;]*)/);
-    const cookieValue = match ? match[1] : null;
-    savedLocale = cookieValue && validLocales.includes(cookieValue) ? cookieValue : 'en';
-  }
-
-  // Keep useCookie ref for SSR compatibility
+export default defineNuxtPlugin(async (nuxtApp) => {
   const localeCookie = useCookie<string>('i18n_locale', {
-    maxAge: 60 * 60 * 24 * 365, // 1 year
+    maxAge: 60 * 60 * 24 * 365,
     path: '/',
     sameSite: 'lax'
   });
+
+  const builtInCodes = Object.keys(builtInMessages);
+  const savedLocale = localeCookie.value && builtInCodes.includes(localeCookie.value)
+    ? localeCookie.value
+    : 'en';
 
   const i18n = createI18n({
     legacy: false,
     globalInjection: true,
     locale: savedLocale,
     fallbackLocale: 'en',
-    messages
+    messages: builtInMessages
   });
 
   nuxtApp.vueApp.use(i18n);
 
+  const availableLocales = ref([...builtInLocales]);
+
+  // Load custom languages from DB and register them with vue-i18n
+  try {
+    const response = await $fetch<{
+      translations: Record<string, object>;
+      metadata: Record<string, { name: string; nativeName: string }>;
+    }>('/api/languages/translations');
+
+    for (const [code, translations] of Object.entries(response.translations)) {
+      i18n.global.setLocaleMessage(code, translations as any);
+      const meta = response.metadata[code];
+      if (meta && !availableLocales.value.find(l => l.code === code)) {
+        availableLocales.value.push({ code, name: meta.name, nativeName: meta.nativeName });
+      }
+    }
+
+    // Apply saved locale if it's a custom one that just loaded
+    if (localeCookie.value && response.translations[localeCookie.value]) {
+      i18n.global.locale.value = localeCookie.value;
+    }
+  } catch {
+    // DB unavailable — continue with built-in locales only
+  }
+
   return {
     provide: {
       i18n: i18n.global,
+      availableLocales,
       setLocale: (newLocale: string) => {
-        if (validLocales.includes(newLocale)) {
-          i18n.global.locale.value = newLocale;
-          // Use both useCookie (for SSR) and direct cookie (for immediate browser write)
-          localeCookie.value = newLocale;
-          if (import.meta.client) {
-            // Directly write to document.cookie to ensure it's set before reload
-            const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-            document.cookie = `i18n_locale=${newLocale}; expires=${expires}; path=/; SameSite=Lax`;
+        i18n.global.locale.value = newLocale;
+        localeCookie.value = newLocale;
+      },
+      addLocale: (code: string, name: string, nativeName: string, translations: object) => {
+        i18n.global.setLocaleMessage(code, translations as any);
+        if (!availableLocales.value.find(l => l.code === code)) {
+          availableLocales.value.push({ code, name, nativeName });
+        }
+      },
+      removeLocale: (code: string) => {
+        const idx = availableLocales.value.findIndex(l => l.code === code);
+        if (idx !== -1) availableLocales.value.splice(idx, 1);
+        if (i18n.global.locale.value === code) {
+          i18n.global.locale.value = 'en';
+          localeCookie.value = 'en';
+        }
+      },
+      refreshLocales: async () => {
+        try {
+          const response = await $fetch<{
+            translations: Record<string, object>;
+            metadata: Record<string, { name: string; nativeName: string }>;
+          }>('/api/languages/translations');
+
+          for (const [code, translations] of Object.entries(response.translations)) {
+            i18n.global.setLocaleMessage(code, translations as any);
+            const meta = response.metadata[code];
+            if (meta && !availableLocales.value.find(l => l.code === code)) {
+              availableLocales.value.push({ code, name: meta.name, nativeName: meta.nativeName });
+            }
           }
+        } catch {
+          // ignore
         }
       }
     }
