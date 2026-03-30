@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
       outlineText: payload.outlineText,
       finalText: payload.finalText || null,
       isPinned: payload.isPinned ?? false,
-      metadataJson: (payload.metadata as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull
+      metadataJson: payload.metadata ?? Prisma.JsonNull
     }
   });
 

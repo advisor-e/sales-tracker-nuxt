@@ -1,11 +1,11 @@
-<script setup lang="ts">
-defineProps<{
-  label: string;
-  value: string | number;
-  badge?: string;
-  badgeColor?: 'blue' | 'green' | 'cyan' | 'teal' | 'orange' | 'pink';
-  footer?: string;
-}>();
+<script setup>
+defineProps({
+  label: String,
+  value: [String, Number],
+  badge: String,
+  badgeColor: String,
+  footer: String
+});
 </script>
 
 <template>

@@ -4,9 +4,9 @@ import { requireUser } from "~/server/utils/auth";
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event);
   const query = getQuery(event);
-  const topic = query.topic as string | undefined;
+  const topic = query.topic;
 
-  const where: { userId: number; topic?: string } = { userId: user.id };
+  const where = { userId: user.id };
   if (topic) {
     where.topic = topic;
   }

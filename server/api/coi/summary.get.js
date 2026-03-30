@@ -26,14 +26,7 @@ export default defineEventHandler(async (event) => {
   });
 
   // Aggregate by COI name (only valid COIs from the directory)
-  const coiStats = new Map<string, {
-    coiName: string;
-    totalReferrals: number;
-    converted: number;
-    proposedValue: number;
-    securedValue: number;
-    active: number;
-  }>();
+  const coiStats = new Map();
 
   for (const entry of pipelineEntries) {
     const coiName = String(entry.coiInvolved || "").trim();

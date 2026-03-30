@@ -1,23 +1,7 @@
-export type UserRole = "firm_manager" | "advisor";
-
-interface AuthUser {
-  id: number;
-  email: string;
-  displayName: string | null;
-  role: UserRole;
-}
-
-interface AuthState {
-  authenticated: boolean;
-  user: AuthUser | null;
-  checkedAt: number;
-  checking: boolean;
-}
-
 const AUTH_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 
 export function useAuth() {
-  const authState = useState<AuthState>("auth:state", () => ({
+  const authState = useState("auth:state", () => ({
     authenticated: false,
     user: null,
     checkedAt: 0,
@@ -30,14 +14,14 @@ export function useAuth() {
   const isAuthenticated = computed(() => authState.value.authenticated);
   const user = computed(() => authState.value.user);
 
-  const isCacheValid = (): boolean => {
+  const isCacheValid = () => {
     // Cache is valid if we have a recent check and are on client
     if (import.meta.server) return false;
     return authState.value.checkedAt > 0 &&
            Date.now() - authState.value.checkedAt < AUTH_CACHE_MS;
   };
 
-  const checkAuth = async (force = false): Promise<boolean> => {
+  const checkAuth = async (force = false) => {
     // Skip if already checking
     if (authState.value.checking) {
       return authState.value.authenticated;
@@ -51,7 +35,7 @@ export function useAuth() {
     authState.value.checking = true;
 
     try {
-      const res = await $fetch<{ authenticated: boolean; user: AuthUser | null }>("/api/auth/me", {
+      const res = await $fetch("/api/auth/me", {
         headers: requestHeaders
       });
 
@@ -78,7 +62,7 @@ export function useAuth() {
     };
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
       await $fetch("/api/auth/logout", { method: "POST" });
     } catch {

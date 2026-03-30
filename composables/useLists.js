@@ -1,33 +1,20 @@
-interface ListConfig {
-  name: string;
-  description: string;
-  items: string[];
-  colors?: Record<string, string>;
-}
-
-interface ListsState {
-  lists: Record<string, ListConfig>;
-  loading: boolean;
-  loaded: boolean;
-}
-
 const LISTS_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 
 export function useLists() {
-  const listsState = useState<ListsState>("lists:state", () => ({
+  const listsState = useState("lists:state", () => ({
     lists: {},
     loading: false,
     loaded: false
   }));
 
-  const lastFetchTime = useState<number>("lists:fetchTime", () => 0);
+  const lastFetchTime = useState("lists:fetchTime", () => 0);
 
-  const isCacheValid = (): boolean => {
+  const isCacheValid = () => {
     if (import.meta.server) return false;
     return listsState.value.loaded && Date.now() - lastFetchTime.value < LISTS_CACHE_MS;
   };
 
-  const fetchLists = async (force = false): Promise<Record<string, ListConfig>> => {
+  const fetchLists = async (force = false) => {
     // Skip if already loading
     if (listsState.value.loading) {
       return listsState.value.lists;
@@ -41,7 +28,7 @@ export function useLists() {
     listsState.value.loading = true;
 
     try {
-      const res = await $fetch<{ lists: Record<string, ListConfig> }>("/api/lists");
+      const res = await $fetch("/api/lists");
 
       listsState.value.lists = res.lists;
       listsState.value.loaded = true;
@@ -55,7 +42,7 @@ export function useLists() {
     return listsState.value.lists;
   };
 
-  const saveList = async (key: string, items: string[], colors?: Record<string, string>): Promise<boolean> => {
+  const saveList = async (key, items, colors) => {
     try {
       await $fetch("/api/lists", {
         method: "POST",
@@ -77,11 +64,11 @@ export function useLists() {
     }
   };
 
-  const getListItems = (key: string): string[] => {
+  const getListItems = (key) => {
     return listsState.value.lists[key]?.items || [];
   };
 
-  const getListColors = (key: string): Record<string, string> => {
+  const getListColors = (key) => {
     return listsState.value.lists[key]?.colors || {};
   };
 

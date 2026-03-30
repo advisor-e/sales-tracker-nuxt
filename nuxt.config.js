@@ -56,10 +56,4 @@ export default defineNuxtConfig({
       }
     ]
   },
-
-  // TypeScript configuration
-  typescript: {
-    strict: true,
-    shim: false
-  }
 });

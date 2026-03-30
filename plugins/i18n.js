@@ -18,7 +18,7 @@ const builtInLocales = [
 ];
 
 export default defineNuxtPlugin(async (nuxtApp) => {
-  const localeCookie = useCookie<string>('i18n_locale', {
+  const localeCookie = useCookie('i18n_locale', {
     maxAge: 60 * 60 * 24 * 365,
     path: '/',
     sameSite: 'lax'
@@ -43,13 +43,10 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
   // Load custom languages from DB and register them with vue-i18n
   try {
-    const response = await $fetch<{
-      translations: Record<string, object>;
-      metadata: Record<string, { name: string; nativeName: string }>;
-    }>('/api/languages/translations');
+    const response = await $fetch('/api/languages/translations');
 
     for (const [code, translations] of Object.entries(response.translations)) {
-      i18n.global.setLocaleMessage(code, translations as any);
+      i18n.global.setLocaleMessage(code, translations);
       const meta = response.metadata[code];
       if (meta && !availableLocales.value.find(l => l.code === code)) {
         availableLocales.value.push({ code, name: meta.name, nativeName: meta.nativeName });
@@ -68,17 +65,17 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     provide: {
       i18n: i18n.global,
       availableLocales,
-      setLocale: (newLocale: string) => {
+      setLocale: (newLocale) => {
         i18n.global.locale.value = newLocale;
         localeCookie.value = newLocale;
       },
-      addLocale: (code: string, name: string, nativeName: string, translations: object) => {
-        i18n.global.setLocaleMessage(code, translations as any);
+      addLocale: (code, name, nativeName, translations) => {
+        i18n.global.setLocaleMessage(code, translations);
         if (!availableLocales.value.find(l => l.code === code)) {
           availableLocales.value.push({ code, name, nativeName });
         }
       },
-      removeLocale: (code: string) => {
+      removeLocale: (code) => {
         const idx = availableLocales.value.findIndex(l => l.code === code);
         if (idx !== -1) availableLocales.value.splice(idx, 1);
         if (i18n.global.locale.value === code) {
@@ -88,13 +85,10 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       },
       refreshLocales: async () => {
         try {
-          const response = await $fetch<{
-            translations: Record<string, object>;
-            metadata: Record<string, { name: string; nativeName: string }>;
-          }>('/api/languages/translations');
+          const response = await $fetch('/api/languages/translations');
 
           for (const [code, translations] of Object.entries(response.translations)) {
-            i18n.global.setLocaleMessage(code, translations as any);
+            i18n.global.setLocaleMessage(code, translations);
             const meta = response.metadata[code];
             if (meta && !availableLocales.value.find(l => l.code === code)) {
               availableLocales.value.push({ code, name: meta.name, nativeName: meta.nativeName });

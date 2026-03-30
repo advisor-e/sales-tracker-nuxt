@@ -1,10 +1,10 @@
-<script setup lang="ts">
-defineProps<{
-  rate: number;
-  label: string;
-  count: string;
-  color?: 'cyan' | 'blue' | 'green' | 'orange' | 'teal' | 'amber' | 'lime' | 'emerald';
-}>();
+<script setup>
+defineProps({
+  rate: Number,
+  label: String,
+  count: String,
+  color: String
+});
 
 const circumference = 264; // 2 * PI * 42 (radius)
 </script>

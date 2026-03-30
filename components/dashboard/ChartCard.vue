@@ -1,10 +1,10 @@
-<script setup lang="ts">
-defineProps<{
-  title: string;
-  subtitle?: string;
-  chartType?: 'pie' | 'doughnut' | 'line' | 'bar-h' | 'bar-v';
-  wide?: boolean;
-}>();
+<script setup>
+defineProps({
+  title: String,
+  subtitle: String,
+  chartType: String,
+  wide: Boolean
+});
 </script>
 
 <template>

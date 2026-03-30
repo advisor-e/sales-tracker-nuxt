@@ -1,9 +1,0 @@
-{
-  "extends": "./.nuxt/tsconfig.json",
-  "compilerOptions": {
-    "types": ["node"],
-    "resolveJsonModule": true,
-    "esModuleInterop": true
-  },
-  "exclude": ["backups/**"]
-}

@@ -1,15 +1,13 @@
-<script setup lang="ts">
-defineProps<{
-  badge: string;
-  title: string;
-  subtitle: string;
-  refreshLabel?: string;
-  loading?: boolean;
-}>();
+<script setup>
+defineProps({
+  badge: String,
+  title: String,
+  subtitle: String,
+  refreshLabel: String,
+  loading: Boolean
+});
 
-defineEmits<{
-  refresh: [];
-}>();
+defineEmits(['refresh']);
 </script>
 
 <template>

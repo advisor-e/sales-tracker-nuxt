@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n({ useScope: 'global' });
@@ -23,8 +23,8 @@ async function submit() {
     // Force refresh auth state so header shows correct user
     await checkAuth(true);
     await navigateTo("/dashboard");
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     errorText.value = String(e?.data?.statusMessage || e?.message || "Login failed");
   } finally {
     busy.value = false;

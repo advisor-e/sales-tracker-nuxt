@@ -1,22 +1,12 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { getCookie, setCookie, deleteCookie, createError, getRequestProtocol, type H3Event } from "h3";
+import { getCookie, setCookie, deleteCookie, createError, getRequestProtocol } from "h3";
 import { prisma } from "./db";
 
 const SESSION_COOKIE = "st_session";
 const SESSION_DAYS = 30;
 const SESSION_CACHE_MS = 60 * 1000; // 1 minute cache
 
-// User roles
-export type UserRole = "firm_manager" | "advisor";
-
-// Simple in-memory session cache
-interface CachedSession {
-  user: { id: number; email: string; displayName: string | null; role: UserRole };
-  expiresAt: Date;
-  cachedAt: number;
-}
-
-const sessionCache = new Map<string, CachedSession>();
+const sessionCache = new Map();
 
 // Clean expired cache entries periodically
 setInterval(() => {
@@ -28,17 +18,17 @@ setInterval(() => {
   }
 }, 30000);
 
-function hashToken(token: string): string {
+function hashToken(token) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export function hashPassword(password: string): string {
+export function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
   return `${salt}:${hash}`;
 }
 
-export function verifyPassword(password: string, storedHash: string): boolean {
+export function verifyPassword(password, storedHash) {
   const [salt, expected] = String(storedHash || "").split(":");
   if (!salt || !expected) {
     return false;
@@ -52,7 +42,7 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   return timingSafeEqual(actualBuf, expectedBuf);
 }
 
-export async function createSession(event: H3Event, userId: number): Promise<void> {
+export async function createSession(event, userId) {
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
@@ -71,7 +61,7 @@ export async function createSession(event: H3Event, userId: number): Promise<voi
   });
 }
 
-export async function clearUserSession(event: H3Event): Promise<void> {
+export async function clearUserSession(event) {
   const token = getCookie(event, SESSION_COOKIE);
   if (token) {
     const tokenHash = hashToken(token);
@@ -81,7 +71,7 @@ export async function clearUserSession(event: H3Event): Promise<void> {
   deleteCookie(event, SESSION_COOKIE, { path: "/" });
 }
 
-export async function requireUser(event: H3Event): Promise<{ id: number; email: string; displayName: string | null; role: UserRole }> {
+export async function requireUser(event) {
   const token = getCookie(event, SESSION_COOKIE);
   if (!token) {
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
@@ -114,7 +104,7 @@ export async function requireUser(event: H3Event): Promise<{ id: number; email: 
     id: session.user.id,
     email: session.user.email,
     displayName: session.user.displayName,
-    role: (session.user.role || "advisor") as UserRole
+    role: session.user.role || "advisor"
   };
 
   // Cache the result
@@ -130,7 +120,7 @@ export async function requireUser(event: H3Event): Promise<{ id: number; email: 
 /**
  * Require user to have firm_manager role
  */
-export async function requireFirmManager(event: H3Event): Promise<{ id: number; email: string; displayName: string | null; role: UserRole }> {
+export async function requireFirmManager(event) {
   const user = await requireUser(event);
   if (user.role !== "firm_manager") {
     throw createError({ statusCode: 403, statusMessage: "Access denied. Firm Manager role required." });
@@ -138,7 +128,7 @@ export async function requireFirmManager(event: H3Event): Promise<{ id: number; 
   return user;
 }
 
-export async function getOptionalUser(event: H3Event): Promise<{ id: number; email: string; displayName: string | null; role: UserRole } | null> {
+export async function getOptionalUser(event) {
   try {
     return await requireUser(event);
   } catch {

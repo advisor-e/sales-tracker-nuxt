@@ -3,7 +3,7 @@
  * Automatically adds CSRF token header to all state-changing requests
  */
 export default defineNuxtPlugin(() => {
-  const getCsrfToken = (): string | null => {
+  const getCsrfToken = () => {
     if (typeof document === "undefined") return null;
     const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
     return match ? decodeURIComponent(match[1]) : null;
@@ -12,7 +12,7 @@ export default defineNuxtPlugin(() => {
   // Intercept global fetch to add CSRF header
   const originalFetch = globalThis.$fetch;
 
-  globalThis.$fetch = ((url: string, options: any = {}) => {
+  globalThis.$fetch = ((url, options = {}) => {
     const method = (options.method || "GET").toUpperCase();
 
     // Add CSRF token for state-changing methods
@@ -27,5 +27,5 @@ export default defineNuxtPlugin(() => {
     }
 
     return originalFetch(url, options);
-  }) as typeof originalFetch;
+  });
 });

@@ -1,22 +1,12 @@
-import { H3Event, getHeader } from "h3";
+import { getHeader } from "h3";
 import { prisma } from "./db";
 import { getClientIP } from "./ratelimit";
-
-export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT";
-
-export interface AuditLogData {
-  userId?: number | null;
-  action: AuditAction;
-  entityType: string;
-  entityId?: number | null;
-  changes?: Record<string, any> | null;
-}
 
 /**
  * Log an audit event
  * Non-blocking - errors are caught and logged but don't affect the request
  */
-export async function logAudit(event: H3Event, data: AuditLogData): Promise<void> {
+export async function logAudit(event, data) {
   try {
     const ipAddress = getClientIP(event);
     const userAgent = getHeader(event, "user-agent")?.slice(0, 500) || null;
@@ -41,7 +31,7 @@ export async function logAudit(event: H3Event, data: AuditLogData): Promise<void
 /**
  * Helper to log a CREATE action
  */
-export function logCreate(event: H3Event, userId: number, entityType: string, entityId: number, data?: Record<string, any>): void {
+export function logCreate(event, userId, entityType, entityId, data) {
   logAudit(event, {
     userId,
     action: "CREATE",
@@ -54,7 +44,7 @@ export function logCreate(event: H3Event, userId: number, entityType: string, en
 /**
  * Helper to log an UPDATE action
  */
-export function logUpdate(event: H3Event, userId: number, entityType: string, entityId: number, changes?: Record<string, any>): void {
+export function logUpdate(event, userId, entityType, entityId, changes) {
   logAudit(event, {
     userId,
     action: "UPDATE",
@@ -67,7 +57,7 @@ export function logUpdate(event: H3Event, userId: number, entityType: string, en
 /**
  * Helper to log a DELETE action
  */
-export function logDelete(event: H3Event, userId: number, entityType: string, entityId: number): void {
+export function logDelete(event, userId, entityType, entityId) {
   logAudit(event, {
     userId,
     action: "DELETE",
@@ -79,7 +69,7 @@ export function logDelete(event: H3Event, userId: number, entityType: string, en
 /**
  * Helper to log a LOGIN action
  */
-export function logLogin(event: H3Event, userId: number, email: string): void {
+export function logLogin(event, userId, email) {
   logAudit(event, {
     userId,
     action: "LOGIN",
@@ -92,7 +82,7 @@ export function logLogin(event: H3Event, userId: number, email: string): void {
 /**
  * Helper to log a LOGOUT action
  */
-export function logLogout(event: H3Event, userId: number): void {
+export function logLogout(event, userId) {
   logAudit(event, {
     userId,
     action: "LOGOUT",

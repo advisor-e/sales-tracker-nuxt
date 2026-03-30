@@ -1,5 +1,4 @@
-<script setup lang="ts">
-import type { Principle } from "~/types/blog";
+<script setup>
 import { marked } from "marked";
 import { useI18n } from 'vue-i18n';
 
@@ -7,53 +6,7 @@ const { t } = useI18n({ useScope: 'global' });
 
 // Use shared lists from database for Author dropdown
 const { fetchLists, getListItems } = useLists();
-const authorTypeOptions = ["Partner", "Lead Staff"] as const;
-
-type BlogPost = {
-  id: number;
-  kind: "draft" | "final";
-  title: string;
-  topic: string;
-  audience: string;
-  objective: string;
-  tone: string;
-  length: string;
-  cta: string;
-  selectedPerson?: string | null;
-  targetMode?: string | null;
-  outlineText: string;
-  finalText?: string | null;
-  isPinned: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type BlogInput = {
-  id: number;
-  signature: string;
-  topic: string;
-  audience: string;
-  objective: string;
-  tone: string;
-  length: string;
-  cta: string;
-  principlesJson: Principle[];
-  selectedPerson?: string | null;
-  targetMode?: string | null;
-  styleStrength?: string | null;
-  updatedAt: string;
-};
-
-type BlogReference = {
-  id: number;
-  title: string;
-  type: "document" | "url";
-  content?: string | null;
-  url?: string | null;
-  topic?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+const authorTypeOptions = ["Partner", "Lead Staff"];
 
 const tones = ["Professional", "Friendly", "Confident", "Educational"];
 const lengths = ["Short", "Medium", "Long"];
@@ -67,7 +20,7 @@ const form = reactive({
   length: "Medium",
   wordCount: "300-400",
   cta: "book a short strategy call",
-  authorType: "Lead Staff" as "Partner" | "Lead Staff",
+  authorType: "Lead Staff",
   author: "",
   polishLevel: "Strong",
   aiInstructions: ""
@@ -87,13 +40,13 @@ watch(() => form.authorType, () => {
 });
 
 // Word count preferences per length (reactive, persisted to localStorage)
-const defaultWordCounts: Record<string, string> = {
+const defaultWordCounts = {
   Short: "250-350",
   Medium: "400-600",
   Long: "800-1000"
 };
 
-const lengthWordCounts = reactive<Record<string, string>>({ ...defaultWordCounts });
+const lengthWordCounts = reactive({ ...defaultWordCounts });
 
 // Load saved word count preferences from localStorage on mount
 function loadWordCountPrefs() {
@@ -128,7 +81,7 @@ watch(() => form.length, (newLength) => {
 let isRestoring = false;
 
 // Save word count preference when user edits it (debounced to avoid excessive saves)
-let wordCountSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let wordCountSaveTimer = null;
 watch(() => form.wordCount, (newWordCount) => {
   // Skip saving when we're restoring from saved inputs
   if (isRestoring) return;
@@ -143,7 +96,7 @@ watch(() => form.wordCount, (newWordCount) => {
   }, 500);
 });
 
-const principles = ref<Principle[]>([
+const principles = ref([
   { title: "Market context", details: ["What changed and why it matters", "Which indicators to watch", "Where uncertainty is highest"] },
   { title: "Action plan", details: ["What to do this month", "How to sequence decisions", "How to avoid overreaction"] },
   { title: "Review cadence", details: ["What to review regularly", "When to adjust", "How to measure progress"] }
@@ -151,19 +104,19 @@ const principles = ref<Principle[]>([
 
 const draftText = ref("");
 const finalText = ref("");
-const aiSource = ref<"ai" | "template" | "">("");
+const aiSource = ref("");
 const aiError = ref("");
 const busy = ref(false);
-const generatingType = ref<"draft" | "final" | "">("");
+const generatingType = ref("");
 const startupError = ref("");
-const saveStatus = ref<{ type: "success" | "error"; message: string } | null>(null);
+const saveStatus = ref(null);
 const showPreview = ref(true);
 
 const draftHtml = computed(() => marked(draftText.value || ""));
 const finalHtml = computed(() => marked(finalText.value || ""));
 
 // Word count helpers
-function countWords(text: string): number {
+function countWords(text) {
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 const draftWordCount = computed(() => countWords(draftText.value));
@@ -175,16 +128,16 @@ const isWordCountShort = computed(() => {
   return finalWordCount.value < minWords;
 });
 
-const inputs = ref<BlogInput[]>([]);
-const draftPosts = ref<BlogPost[]>([]);
-const finalPosts = ref<BlogPost[]>([]);
-const references = ref<BlogReference[]>([]);
-const selectedReferenceIds = ref<number[]>([]);
+const inputs = ref([]);
+const draftPosts = ref([]);
+const finalPosts = ref([]);
+const references = ref([]);
+const selectedReferenceIds = ref([]);
 
 // New reference form
 const newRef = reactive({
   title: "",
-  type: "document" as "document" | "url",
+  type: "document",
   content: "",
   url: "",
   topic: ""
@@ -233,25 +186,25 @@ function signatureForInputs() {
   return parts.join("|").slice(0, 191);
 }
 
-function buildPostTitle(kind: "draft" | "final") {
+function buildPostTitle(kind) {
   const prefix = kind === "draft" ? "Draft" : "Final";
   return `${prefix}: ${form.topic || "Untitled"}`;
 }
 
 async function loadInputs() {
-  const res = await $fetch<{ items: BlogInput[] }>("/api/blog/inputs");
+  const res = await $fetch("/api/blog/inputs");
   inputs.value = res.items;
 }
 
 async function loadPosts() {
-  const drafts = await $fetch<{ items: BlogPost[] }>("/api/blog/posts", { query: { kind: "draft" } });
-  const finals = await $fetch<{ items: BlogPost[] }>("/api/blog/posts", { query: { kind: "final" } });
+  const drafts = await $fetch("/api/blog/posts", { query: { kind: "draft" } });
+  const finals = await $fetch("/api/blog/posts", { query: { kind: "final" } });
   draftPosts.value = drafts.items;
   finalPosts.value = finals.items;
 }
 
 async function loadReferences() {
-  const res = await $fetch<{ items: BlogReference[] }>("/api/blog/references");
+  const res = await $fetch("/api/blog/references");
   references.value = res.items;
 }
 
@@ -277,21 +230,21 @@ async function saveReference() {
     showRefForm.value = false;
     saveStatus.value = { type: "success", message: "Reference saved!" };
     setTimeout(() => { saveStatus.value = null; }, 3000);
-  } catch (error: unknown) {
-    const e = error as { data?: { message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     saveStatus.value = { type: "error", message: String(e?.data?.message || e?.message || "Failed to save reference") };
   } finally {
     busy.value = false;
   }
 }
 
-async function deleteReference(id: number) {
+async function deleteReference(id) {
   await $fetch(`/api/blog/references/${id}`, { method: "DELETE" });
   selectedReferenceIds.value = selectedReferenceIds.value.filter(rid => rid !== id);
   await loadReferences();
 }
 
-function toggleReference(id: number) {
+function toggleReference(id) {
   const idx = selectedReferenceIds.value.indexOf(id);
   if (idx >= 0) {
     selectedReferenceIds.value.splice(idx, 1);
@@ -300,7 +253,7 @@ function toggleReference(id: number) {
   }
 }
 
-function getSelectedReferencesText(): string {
+function getSelectedReferencesText() {
   const selected = references.value.filter(r => selectedReferenceIds.value.includes(r.id));
   return selected.map(r => {
     if (r.type === "url") {
@@ -315,7 +268,7 @@ async function generateDraft() {
   generatingType.value = "draft";
   aiError.value = "";
   try {
-    const res = await $fetch<{ text: string; source: "ai" | "template"; error?: string }>("/api/blog/generate/draft", {
+    const res = await $fetch("/api/blog/generate/draft", {
       method: "POST",
       body: {
         topic: form.topic,
@@ -345,7 +298,7 @@ async function generateFinal() {
   generatingType.value = "final";
   aiError.value = "";
   try {
-    const res = await $fetch<{ text: string; source: "ai" | "template"; error?: string }>("/api/blog/generate/final", {
+    const res = await $fetch("/api/blog/generate/final", {
       method: "POST",
       body: {
         outlineText: draftText.value,
@@ -391,15 +344,15 @@ async function saveInputs() {
     await loadInputs();
     saveStatus.value = { type: "success", message: "Inputs saved successfully!" };
     setTimeout(() => { saveStatus.value = null; }, 3000);
-  } catch (error: unknown) {
-    const e = error as { data?: { message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     saveStatus.value = { type: "error", message: String(e?.data?.message || e?.message || "Failed to save inputs") };
   } finally {
     busy.value = false;
   }
 }
 
-async function savePost(kind: "draft" | "final") {
+async function savePost(kind) {
   await $fetch("/api/blog/posts", {
     method: "POST",
     body: {
@@ -425,22 +378,22 @@ async function savePost(kind: "draft" | "final") {
   await loadPosts();
 }
 
-function autoResize(event: Event) {
-  const el = event.target as HTMLTextAreaElement;
+function autoResize(event) {
+  const el = event.target;
   el.style.height = "auto";
   el.style.height = el.scrollHeight + "px";
 }
 
 function resizeAllTextareas() {
   nextTick(() => {
-    document.querySelectorAll<HTMLTextAreaElement>(".auto-resize").forEach((el) => {
+    document.querySelectorAll(".auto-resize").forEach((el) => {
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
     });
   });
 }
 
-function restoreFromInput(item: BlogInput) {
+function restoreFromInput(item) {
   isRestoring = true;
   form.topic = item.topic;
   form.audience = item.audience;
@@ -450,14 +403,14 @@ function restoreFromInput(item: BlogInput) {
   // Use saved word count preference for this length, not the old input's value
   form.wordCount = lengthWordCounts[item.length] || defaultWordCounts[item.length];
   form.cta = item.cta;
-  form.authorType = (item as any).authorType || "Lead Staff";
-  form.author = (item as any).author || item.targetMode || "";
+  form.authorType = item.authorType || "Lead Staff";
+  form.author = item.author || item.targetMode || "";
   principles.value = Array.isArray(item.principlesJson) ? item.principlesJson : principles.value;
   resizeAllTextareas();
   nextTick(() => { isRestoring = false; });
 }
 
-function restoreDraft(item: BlogPost) {
+function restoreDraft(item) {
   isRestoring = true;
   form.topic = item.topic;
   form.audience = item.audience;
@@ -467,22 +420,22 @@ function restoreDraft(item: BlogPost) {
   // Use saved word count preference for this length, not the old post's value
   form.wordCount = lengthWordCounts[item.length] || defaultWordCounts[item.length];
   form.cta = item.cta;
-  form.authorType = (item as any).authorType || "Lead Staff";
-  form.author = (item as any).author || item.targetMode || "";
+  form.authorType = item.authorType || "Lead Staff";
+  form.author = item.author || item.targetMode || "";
   draftText.value = item.outlineText || "";
   nextTick(() => { isRestoring = false; });
 }
 
-function restoreFinal(item: BlogPost) {
+function restoreFinal(item) {
   restoreDraft(item);
   finalText.value = item.finalText || "";
 }
 
-function duplicateFinalToDraft(item: BlogPost) {
+function duplicateFinalToDraft(item) {
   draftText.value = item.finalText || item.outlineText || "";
 }
 
-async function setPinned(item: BlogPost, value: boolean) {
+async function setPinned(item, value) {
   await $fetch(`/api/blog/posts/${item.id}`, {
     method: "PATCH",
     body: { isPinned: value }
@@ -490,12 +443,12 @@ async function setPinned(item: BlogPost, value: boolean) {
   await loadPosts();
 }
 
-async function deletePost(item: BlogPost) {
+async function deletePost(item) {
   await $fetch(`/api/blog/posts/${item.id}`, { method: "DELETE" });
   await loadPosts();
 }
 
-async function deleteInput(item: BlogInput) {
+async function deleteInput(item) {
   await $fetch(`/api/blog/inputs/${item.id}`, { method: "DELETE" });
   await loadInputs();
 }
@@ -506,8 +459,8 @@ onMounted(async () => {
     // Load all data in parallel for faster page load
     await Promise.all([fetchLists(), loadInputs(), loadPosts(), loadReferences()]);
     resizeAllTextareas();
-  } catch (error: unknown) {
-    const e = error as { data?: { message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     startupError.value = String(e?.data?.message || e?.message || "Failed to load initial data");
   }
 });

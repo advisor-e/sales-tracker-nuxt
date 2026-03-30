@@ -2,7 +2,7 @@ import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
 
 // Default list configurations
-const defaultLists: Record<string, { name: string; description: string; items: string[]; colors?: Record<string, string> }> = {
+const defaultLists = {
   partner: {
     name: "Partner",
     description: "Partners responsible for client relationships",
@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
   );
 
   // Build lists object, merging defaults with saved data
-  const lists: Record<string, { name: string; description: string; items: string[]; colors?: Record<string, string> }> = {};
+  const lists = {};
 
   for (const [key, defaultList] of Object.entries(defaultLists)) {
     const configKey = `list:${key}`;

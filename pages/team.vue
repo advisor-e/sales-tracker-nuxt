@@ -1,15 +1,14 @@
-<script setup lang="ts">
+<script setup>
 // Protect this page - only Firm Managers can access
 definePageMeta({
   middleware: ["firm-manager"]
 });
 
-import type { TeamSummaryRow } from "~/types/sales";
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n({ useScope: 'global' });
 
-const rows = ref<TeamSummaryRow[]>([]);
+const rows = ref([]);
 const loading = ref(false);
 const errorText = ref("");
 
@@ -21,10 +20,10 @@ async function loadRows() {
   loading.value = true;
   errorText.value = "";
   try {
-    const res = await $fetch<{ items: TeamSummaryRow[] }>("/api/team/summary");
+    const res = await $fetch("/api/team/summary");
     rows.value = res.items;
-  } catch (error: unknown) {
-    const e = error as { statusCode?: number; data?: { statusCode?: number; statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     const status = Number(e?.statusCode || e?.data?.statusCode || 0);
     if (status === 401) {
       errorText.value = "Session expired. Redirecting to sign in...";

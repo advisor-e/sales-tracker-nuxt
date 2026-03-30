@@ -1,6 +1,5 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n';
-import { type UserRole } from "~/composables/useAuth";
 
 const { t, locale } = useI18n({ useScope: 'global' });
 const route = useRoute();
@@ -10,10 +9,10 @@ const allNavItems = [
   { to: "/home", labelKey: "nav.home", className: "nav-home" },
   { to: "/dashboard", labelKey: "nav.dashboard", className: "nav-dashboard" },
   { to: "/pipeline", labelKey: "nav.pipeline", className: "nav-pipeline" },
-  { to: "/team", labelKey: "nav.team", className: "nav-team", requiredRole: "firm_manager" as UserRole },
+  { to: "/team", labelKey: "nav.team", className: "nav-team", requiredRole: "firm_manager" },
   { to: "/coi", labelKey: "nav.coi", className: "nav-coi" },
   { to: "/", labelKey: "nav.blog", className: "nav-blog" },
-  { to: "/lists", labelKey: "nav.lists", className: "nav-lists", requiredRole: "firm_manager" as UserRole }
+  { to: "/lists", labelKey: "nav.lists", className: "nav-lists", requiredRole: "firm_manager" }
 ];
 
 // Show nav if authenticated OR if on a protected route (not login page)

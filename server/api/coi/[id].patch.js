@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
   const payload = schema.parse(await readBody(event));
 
   // Convert boolean progress fields to integers for database
-  const data: Record<string, unknown> = { ...payload };
+  const data = { ...payload };
   if (typeof payload.couldWe === "boolean") data.couldWe = payload.couldWe ? 1 : 0;
   if (typeof payload.howWouldWe === "boolean") data.howWouldWe = payload.howWouldWe ? 1 : 0;
   if (typeof payload.willWe === "boolean") data.willWe = payload.willWe ? 1 : 0;

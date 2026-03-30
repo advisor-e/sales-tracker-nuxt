@@ -23,20 +23,7 @@ export default defineEventHandler(async (event) => {
     }
   });
 
-  const byTeam = new Map<string, {
-    prospects: number;
-    approachesMade: number;
-    secureMeetings: number;
-    proposalsSent: number;
-    totalProposalValue: number;
-    engagementsSecured: number;
-    totalSecuredValue: number;
-    active: number;
-    awaitResearch: number;
-    completed: number;
-    dead: number;
-    onHold: number;
-  }>();
+  const byTeam = new Map();
 
   for (const row of rows) {
     const key = (row.leadStaff || "Unassigned").trim() || "Unassigned";
@@ -56,7 +43,7 @@ export default defineEventHandler(async (event) => {
         onHold: 0
       });
     }
-    const item = byTeam.get(key)!;
+    const item = byTeam.get(key);
     item.prospects += 1;
     item.approachesMade += row.approachStyle && row.approachStyle.trim() ? 1 : 0;
     item.secureMeetings += row.secureMeeting ? 1 : 0;

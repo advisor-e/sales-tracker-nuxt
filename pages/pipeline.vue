@@ -1,47 +1,11 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n({ useScope: 'global' });
 
-interface PipelineEntry {
-  id: number;
-  prospectName: string;
-  businessName: string | null;
-  partner: string | null;
-  leadStaff: string | null;
-  prospectStatus: string;
-  dateLastContact: string | null;
-  address: string | null;
-  contactPhone: string | null;
-  email: string | null;
-  industry: string | null;
-  existingFeeValue: string | null;
-  supportStaff: string | null;
-  relationshipType: string | null;
-  prospectSource: string | null;
-  coiInvolved: string | null;
-  approachDate: string | null;
-  approachStyle: string | null;
-  secureMeeting: boolean;
-  quizCompleted: boolean;
-  salesStyle: string | null;
-  meetingTheme: string | null;
-  meetingDate: string | null;
-  followUpMeeting: boolean;
-  followUpMeetingDate: string | null;
-  totalNeedsStage: string | null;
-  proposalSent: boolean;
-  proposalValue: number;
-  jobSecured: boolean;
-  dateSecured: string | null;
-  jobSecuredValue: number;
-  additionalWorkSecured: number;
-  comments: string | null;
-}
-
 const search = ref("");
 const ownerFilter = ref("");
-const items = ref<PipelineEntry[]>([]);
+const items = ref([]);
 const errorText = ref("");
 const loading = ref(false);
 const showAddForm = ref(false);
@@ -63,12 +27,12 @@ const industryOptions = computed(() => getListItems("industry"));
 const statusColors = computed(() => getListColors("prospectStatus"));
 
 // COI entries from database
-const coiEntries = ref<{ id: number; coiName: string }[]>([]);
+const coiEntries = ref([]);
 const coiOptions = computed(() => coiEntries.value.map(e => e.coiName));
 
 async function loadCoiEntries() {
   try {
-    const res = await $fetch<{ items: { id: number; coiName: string }[] }>("/api/coi");
+    const res = await $fetch("/api/coi");
     coiEntries.value = res.items;
   } catch {
     // Silently fail - COI dropdown will just be empty
@@ -113,7 +77,7 @@ const emptyDraft = () => ({
 const draft = reactive(emptyDraft());
 
 // Default column widths
-const defaultColumnWidths: Record<string, number> = {
+const defaultColumnWidths = {
   prospect: 180,
   business: 160,
   partner: 120,
@@ -143,7 +107,7 @@ const defaultColumnWidths: Record<string, number> = {
 };
 
 // Load saved widths from localStorage or use defaults
-function loadColumnWidths(): Record<string, number> {
+function loadColumnWidths() {
   if (typeof window === "undefined") return { ...defaultColumnWidths };
   try {
     const saved = localStorage.getItem("pipeline-column-widths");
@@ -158,10 +122,10 @@ function loadColumnWidths(): Record<string, number> {
 }
 
 // Column widths for resizing
-const columnWidths = ref<Record<string, number>>(loadColumnWidths());
+const columnWidths = ref(loadColumnWidths());
 
 // Default header labels (computed for i18n reactivity)
-const defaultHeaderLabels = computed<Record<string, string>>(() => ({
+const defaultHeaderLabels = computed(() => ({
   prospect: t('pipeline.columns.prospect'),
   business: t('pipeline.columns.business'),
   partner: t('pipeline.columns.partner'),
@@ -190,7 +154,7 @@ const defaultHeaderLabels = computed<Record<string, string>>(() => ({
 }));
 
 // Load saved custom header labels from localStorage (only user overrides)
-function loadCustomHeaderLabels(): Record<string, string> {
+function loadCustomHeaderLabels() {
   if (typeof window === "undefined") return {};
   try {
     const saved = localStorage.getItem("pipeline-header-labels");
@@ -204,10 +168,10 @@ function loadCustomHeaderLabels(): Record<string, string> {
 }
 
 // Store only custom overrides
-const customHeaderLabels = ref<Record<string, string>>(loadCustomHeaderLabels());
+const customHeaderLabels = ref(loadCustomHeaderLabels());
 
 // Header labels: merge translated defaults with custom overrides
-const headerLabels = computed<Record<string, string>>(() => ({
+const headerLabels = computed(() => ({
   ...defaultHeaderLabels.value,
   ...customHeaderLabels.value
 }));
@@ -221,7 +185,7 @@ const defaultColumnOrder = [
 ];
 
 // Load saved column order from localStorage
-function loadColumnOrder(): string[] {
+function loadColumnOrder() {
   if (typeof window === "undefined") return [...defaultColumnOrder];
   try {
     const saved = localStorage.getItem("pipeline-column-order");
@@ -239,13 +203,13 @@ function loadColumnOrder(): string[] {
 }
 
 // Column order for drag reordering
-const columnOrder = ref<string[]>(loadColumnOrder());
+const columnOrder = ref(loadColumnOrder());
 
 // Drag state for column reordering
-const draggingColumn = ref<string | null>(null);
-const dragOverColumn = ref<string | null>(null);
+const draggingColumn = ref(null);
+const dragOverColumn = ref(null);
 
-function onDragStart(col: string, event: DragEvent) {
+function onDragStart(col, event) {
   draggingColumn.value = col;
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move';
@@ -253,7 +217,7 @@ function onDragStart(col: string, event: DragEvent) {
   }
 }
 
-function onDragOver(col: string, event: DragEvent) {
+function onDragOver(col, event) {
   event.preventDefault();
   if (draggingColumn.value && draggingColumn.value !== col) {
     dragOverColumn.value = col;
@@ -264,7 +228,7 @@ function onDragLeave() {
   dragOverColumn.value = null;
 }
 
-function onDrop(col: string, event: DragEvent) {
+function onDrop(col, event) {
   event.preventDefault();
   if (!draggingColumn.value || draggingColumn.value === col) {
     draggingColumn.value = null;
@@ -299,8 +263,8 @@ function onDragEnd() {
 }
 
 // Get CSS class for a cell based on column type
-function getCellClass(col: string): string[] {
-  const classes: string[] = [];
+function getCellClass(col) {
+  const classes = [];
 
   // First column is sticky
   if (col === columnOrder.value[0]) {
@@ -325,8 +289,8 @@ function getCellClass(col: string): string[] {
 }
 
 // Save header label on edit
-function saveHeaderLabel(col: string, event: Event) {
-  const target = event.target as HTMLElement;
+function saveHeaderLabel(col, event) {
+  const target = event.target;
   const newLabel = target.innerText.trim() || defaultHeaderLabels.value[col];
   target.innerText = newLabel;
   // Only save if different from the translated default
@@ -344,9 +308,9 @@ function saveHeaderLabel(col: string, event: Event) {
 }
 
 // Resize state
-const resizing = ref<{ col: string; startX: number; startWidth: number } | null>(null);
+const resizing = ref(null);
 
-function startResize(col: string, event: MouseEvent) {
+function startResize(col, event) {
   event.preventDefault();
   resizing.value = {
     col,
@@ -357,7 +321,7 @@ function startResize(col: string, event: MouseEvent) {
   document.addEventListener("mouseup", stopResize);
 }
 
-function onResize(event: MouseEvent) {
+function onResize(event) {
   if (!resizing.value) return;
   const delta = event.clientX - resizing.value.startX;
   const newWidth = Math.max(50, resizing.value.startWidth + delta);
@@ -387,7 +351,7 @@ const totalProposalValue = computed(() => items.value.reduce((sum, i) => sum + N
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-function toInputDate(dateStr: string | null): string {
+function toInputDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "";
@@ -398,15 +362,15 @@ async function loadItems() {
   loading.value = true;
   errorText.value = "";
   try {
-    const res = await $fetch<{ items: PipelineEntry[] }>("/api/pipeline", {
+    const res = await $fetch("/api/pipeline", {
       query: {
         search: search.value || undefined,
         owner: ownerFilter.value || undefined
       }
     });
     items.value = res.items;
-  } catch (error: unknown) {
-    const e = error as { statusCode?: number; data?: { statusMessage?: string; message?: string } };
+  } catch (error) {
+    const e = error;
     if (Number(e?.statusCode) === 401) {
       await navigateTo("/login");
       return;
@@ -426,34 +390,34 @@ async function createItem() {
     Object.assign(draft, emptyDraft());
     showAddForm.value = false;
     await loadItems();
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
+  } catch (error) {
+    const e = error;
     errorText.value = String(e?.data?.statusMessage || "Failed to create");
   } finally {
     submitting.value = false;
   }
 }
 
-async function updateField(item: PipelineEntry, field: keyof PipelineEntry, value: unknown) {
+async function updateField(item, field, value) {
   try {
     await $fetch(`/api/pipeline/${item.id}`, {
       method: "PATCH",
       body: { [field]: value }
     });
-    (item as Record<string, unknown>)[field] = value;
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
+    item[field] = value;
+  } catch (error) {
+    const e = error;
     errorText.value = String(e?.data?.statusMessage || "Failed to update");
   }
 }
 
-async function removeItem(item: PipelineEntry) {
+async function removeItem(item) {
   if (!confirm(`Delete prospect "${item.prospectName}"?`)) return;
   try {
     await $fetch(`/api/pipeline/${item.id}`, { method: "DELETE" });
     await loadItems();
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
+  } catch (error) {
+    const e = error;
     errorText.value = String(e?.data?.statusMessage || "Failed to delete");
   }
 }
@@ -644,7 +608,7 @@ onMounted(async () => {
               @dragend="onDragEnd"
             >
               <span class="drag-handle" title="Drag to reorder">⠿</span>
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="($event.target as HTMLElement).blur()">{{ headerLabels[col] }}</span>
+              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="$event.target.blur()">{{ headerLabels[col] }}</span>
               <span class="resize-handle" @mousedown="startResize(col, $event)"></span>
             </th>
             <th class="actions-col" :style="{ width: columnWidths.actions + 'px' }"></th>
@@ -700,10 +664,10 @@ onMounted(async () => {
               </select>
 
               <!-- Date inputs -->
-              <input v-else-if="col === 'approachDate'" :value="toInputDate(item.approachDate)" type="date" class="cell-input date" @change="updateField(item, 'approachDate', ($event.target as HTMLInputElement).value)" />
-              <input v-else-if="col === 'meetingDate'" :value="toInputDate(item.meetingDate)" type="date" class="cell-input date" @change="updateField(item, 'meetingDate', ($event.target as HTMLInputElement).value)" />
-              <input v-else-if="col === 'followUpDate'" :value="toInputDate(item.followUpMeetingDate)" type="date" class="cell-input date" @change="updateField(item, 'followUpMeetingDate', ($event.target as HTMLInputElement).value)" />
-              <input v-else-if="col === 'dateSecured'" :value="toInputDate(item.dateSecured)" type="date" class="cell-input date" @change="updateField(item, 'dateSecured', ($event.target as HTMLInputElement).value)" />
+              <input v-else-if="col === 'approachDate'" :value="toInputDate(item.approachDate)" type="date" class="cell-input date" @change="updateField(item, 'approachDate', $event.target.value)" />
+              <input v-else-if="col === 'meetingDate'" :value="toInputDate(item.meetingDate)" type="date" class="cell-input date" @change="updateField(item, 'meetingDate', $event.target.value)" />
+              <input v-else-if="col === 'followUpDate'" :value="toInputDate(item.followUpMeetingDate)" type="date" class="cell-input date" @change="updateField(item, 'followUpMeetingDate', $event.target.value)" />
+              <input v-else-if="col === 'dateSecured'" :value="toInputDate(item.dateSecured)" type="date" class="cell-input date" @change="updateField(item, 'dateSecured', $event.target.value)" />
 
               <!-- Checkboxes -->
               <input v-else-if="col === 'meeting'" type="checkbox" :checked="item.secureMeeting" @change="updateField(item, 'secureMeeting', !item.secureMeeting)" />
@@ -713,9 +677,9 @@ onMounted(async () => {
               <input v-else-if="col === 'secured'" type="checkbox" :checked="item.jobSecured" @change="updateField(item, 'jobSecured', !item.jobSecured)" />
 
               <!-- Number inputs -->
-              <input v-else-if="col === 'proposalValue'" :value="item.proposalValue" type="number" class="cell-input number" @blur="updateField(item, 'proposalValue', Number(($event.target as HTMLInputElement).value))" />
-              <input v-else-if="col === 'securedValue'" :value="item.jobSecuredValue" type="number" class="cell-input number" @blur="updateField(item, 'jobSecuredValue', Number(($event.target as HTMLInputElement).value))" />
-              <input v-else-if="col === 'additionalWork'" :value="item.additionalWorkSecured" type="number" class="cell-input number" @blur="updateField(item, 'additionalWorkSecured', Number(($event.target as HTMLInputElement).value))" />
+              <input v-else-if="col === 'proposalValue'" :value="item.proposalValue" type="number" class="cell-input number" @blur="updateField(item, 'proposalValue', Number($event.target.value))" />
+              <input v-else-if="col === 'securedValue'" :value="item.jobSecuredValue" type="number" class="cell-input number" @blur="updateField(item, 'jobSecuredValue', Number($event.target.value))" />
+              <input v-else-if="col === 'additionalWork'" :value="item.additionalWorkSecured" type="number" class="cell-input number" @blur="updateField(item, 'additionalWorkSecured', Number($event.target.value))" />
             </td>
             <td class="actions-col">
               <button class="btn-delete" @click="removeItem(item)" title="Delete">×</button>

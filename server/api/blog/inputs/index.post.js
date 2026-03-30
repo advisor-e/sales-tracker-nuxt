@@ -46,8 +46,8 @@ export default defineEventHandler(async (event) => {
     targetMode: payload.targetMode || null,
     styleStrength: payload.styleStrength || null,
     styleTitlesJson: payload.styleTitles ?? Prisma.JsonNull,
-    lengthRangesJson: (payload.lengthRanges as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull,
-    styleThresholdsJson: (payload.styleThresholds as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull
+    lengthRangesJson: payload.lengthRanges ?? Prisma.JsonNull,
+    styleThresholdsJson: payload.styleThresholds ?? Prisma.JsonNull
   };
 
   const item = existing

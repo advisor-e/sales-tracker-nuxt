@@ -44,7 +44,7 @@ Rules:
 English JSON:
 ${JSON.stringify(en, null, 2)}`;
 
-  let translated: Record<string, unknown>;
+  let translated;
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",

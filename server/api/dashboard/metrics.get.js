@@ -2,7 +2,7 @@ import { prisma } from "~/server/utils/db";
 import { requireUser } from "~/server/utils/auth";
 
 // Simple in-memory cache for dashboard metrics (5 second TTL)
-let metricsCache: { data: any; timestamp: number } | null = null;
+let metricsCache = null;
 const CACHE_TTL_MS = 5000;
 
 export default defineEventHandler(async (event) => {
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
         SUM(CASE WHEN willWe > 0 THEN 1 ELSE 0 END) as willWe,
         SUM(CASE WHEN testReview > 0 THEN 1 ELSE 0 END) as testReview
       FROM CoiEntry
-    ` as Promise<Array<{ couldWe: bigint; howWouldWe: bigint; willWe: bigint; testReview: bigint }>>,
+    `,
     // COI industries
     prisma.coiEntry.findMany({
       select: { industry: true, coiName: true }
@@ -101,10 +101,10 @@ export default defineEventHandler(async (event) => {
   let proposalCount = 0;
   let campaignApproaches = 0, campaignMeetings = 0, campaignProposals = 0, campaignSecured = 0;
   let totalNeedsApproaches = 0, totalNeedsMeetings = 0, totalNeedsProposals = 0, totalNeedsSecured = 0;
-  const campaignSecuredEntries: Array<{ jobSecuredValue: any; approachDate: Date | null; dateSecured: Date | null }> = [];
-  const totalNeedsSecuredEntries: Array<{ jobSecuredValue: any; approachDate: Date | null; dateSecured: Date | null }> = [];
-  const staffTotals = new Map<string, number>();
-  const monthlyMap = new Map<string, number>();
+  const campaignSecuredEntries = [];
+  const totalNeedsSecuredEntries = [];
+  const staffTotals = new Map();
+  const monthlyMap = new Map();
   const validCoiNames = new Set(coiIndustryRows.map(c => c.coiName?.toLowerCase()).filter(Boolean));
   let coiReferralsCount = 0, coiConvertedCount = 0, coiProposalFeeValue = 0, coiSecuredFeeValue = 0;
 
@@ -179,7 +179,7 @@ export default defineEventHandler(async (event) => {
     .sort((a, b) => a.month.localeCompare(b.month));
 
   // Process COI industry breakdown
-  const industryMap = new Map<string, number>();
+  const industryMap = new Map();
   for (const row of coiIndustryRows) {
     const key = String(row.industry || "").trim();
     if (key) industryMap.set(key, (industryMap.get(key) || 0) + 1);
@@ -189,7 +189,7 @@ export default defineEventHandler(async (event) => {
     .sort((a, b) => b.relationships - a.relationships);
 
   // Calculate funnel stats
-  function calculateFunnelStats(entries: Array<{ jobSecuredValue: any; approachDate: Date | null; dateSecured: Date | null }>) {
+  function calculateFunnelStats(entries) {
     if (!entries.length) return { avgFee: 0, avgDaysElapsed: 0 };
 
     const totalFee = entries.reduce((sum, e) => sum + Number(e.jobSecuredValue || 0), 0);
@@ -198,8 +198,8 @@ export default defineEventHandler(async (event) => {
     const daysElapsedList = entries
       .filter(e => e.approachDate && e.dateSecured)
       .map(e => {
-        const start = new Date(e.approachDate!).getTime();
-        const end = new Date(e.dateSecured!).getTime();
+        const start = new Date(e.approachDate).getTime();
+        const end = new Date(e.dateSecured).getTime();
         return Math.round((end - start) / (1000 * 60 * 60 * 24));
       })
       .filter(d => d >= 0);
@@ -215,7 +215,7 @@ export default defineEventHandler(async (event) => {
   const totalNeedsStats = calculateFunnelStats(totalNeedsSecuredEntries);
 
   // Get stored config values
-  const configMap = new Map(appConfigRows.map((r: { configKey: string; configVal: string }) => [r.configKey, r.configVal]));
+  const configMap = new Map(appConfigRows.map((r) => [r.configKey, r.configVal]));
   const storedCampaignAvgDays = parseFloat(configMap.get("campaignAvgDays") || "0");
   const storedTotalNeedsAvgDays = parseFloat(configMap.get("totalNeedsAvgDays") || "0");
 

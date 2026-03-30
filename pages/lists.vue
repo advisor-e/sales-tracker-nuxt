@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 // Protect this page - only Firm Managers can access
 definePageMeta({
   middleware: ["firm-manager"]
@@ -12,30 +12,21 @@ const { $addLocale, $removeLocale, $refreshLocales } = useNuxtApp();
 const { lists: listsData, loading: listsLoading, fetchLists, saveList, invalidateCache } = useLists();
 
 // Local editable copy of lists
-const lists = reactive<Record<string, { name: string; description: string; items: string[]; colors?: Record<string, string> }>>({});
+const lists = reactive({});
 
-const expandedList = ref<string | null>(null);
+const expandedList = ref(null);
 const newItemText = ref("");
 const saving = ref(false);
 const saveMessage = ref("");
 
-// Language management state
-interface Language {
-  code: string;
-  name: string;
-  nativeName: string;
-  isBuiltIn: boolean;
-  isEnabled: boolean;
-}
-
-const languages = ref<Language[]>([]);
+const languages = ref([]);
 const languagesLoading = ref(false);
 const showAddLanguage = ref(false);
 const newLanguage = reactive({
   code: '',
   name: '',
   nativeName: '',
-  translations: {} as Record<string, unknown>
+  translations: {}
 });
 const languageSaving = ref(false);
 
@@ -56,12 +47,12 @@ watch(listsData, (newLists) => {
   }
 }, { deep: true });
 
-function toggleExpand(key: string) {
+function toggleExpand(key) {
   expandedList.value = expandedList.value === key ? null : key;
   newItemText.value = "";
 }
 
-async function addItem(key: string) {
+async function addItem(key) {
   const text = newItemText.value.trim();
   if (text && lists[key] && !lists[key].items.includes(text)) {
     lists[key].items.push(text);
@@ -70,7 +61,7 @@ async function addItem(key: string) {
   }
 }
 
-async function removeItem(key: string, item: string) {
+async function removeItem(key, item) {
   if (!lists[key]) return;
   const idx = lists[key].items.indexOf(item);
   if (idx !== -1) {
@@ -79,7 +70,7 @@ async function removeItem(key: string, item: string) {
   }
 }
 
-async function moveItem(key: string, index: number, direction: -1 | 1) {
+async function moveItem(key, index, direction) {
   if (!lists[key]) return;
   const arr = lists[key].items;
   const newIndex = index + direction;
@@ -91,7 +82,7 @@ async function moveItem(key: string, index: number, direction: -1 | 1) {
   }
 }
 
-async function saveListToDb(key: string) {
+async function saveListToDb(key) {
   if (!lists[key]) return;
   saving.value = true;
   saveMessage.value = "";
@@ -115,7 +106,7 @@ async function saveListToDb(key: string) {
 async function loadLanguages() {
   languagesLoading.value = true;
   try {
-    const response = await $fetch<{ languages: Language[] }>('/api/languages');
+    const response = await $fetch('/api/languages');
     languages.value = response.languages;
   } catch (e) {
     console.error('Failed to load languages:', e);
@@ -129,11 +120,7 @@ async function addNewLanguage() {
 
   languageSaving.value = true;
   try {
-    const result = await $fetch<{
-      success: boolean;
-      language: { code: string; name: string; nativeName: string; isBuiltIn: boolean; isEnabled: boolean };
-      translations: Record<string, unknown>;
-    }>('/api/languages/translate', {
+    const result = await $fetch('/api/languages/translate', {
       method: 'POST',
       body: {
         code: newLanguage.code.toLowerCase(),
@@ -144,7 +131,7 @@ async function addNewLanguage() {
 
     // Register with vue-i18n and add to dropdown immediately
     if ($addLocale) {
-      $addLocale(result.language.code, result.language.name, result.language.nativeName, result.translations as object);
+      $addLocale(result.language.code, result.language.name, result.language.nativeName, result.translations);
     }
 
     // Refresh the languages panel
@@ -159,16 +146,15 @@ async function addNewLanguage() {
 
     saveMessage.value = t('lists.languageAdded');
     setTimeout(() => { saveMessage.value = ''; }, 3000);
-  } catch (e: unknown) {
-    const error = e as { data?: { statusMessage?: string } };
-    saveMessage.value = error.data?.statusMessage || 'Translation failed. Please try again.';
+  } catch (e) {
+    saveMessage.value = e?.data?.statusMessage || 'Translation failed. Please try again.';
     setTimeout(() => { saveMessage.value = ''; }, 4000);
   } finally {
     languageSaving.value = false;
   }
 }
 
-async function deleteLanguage(code: string) {
+async function deleteLanguage(code) {
   if (!confirm(t('lists.confirmDeleteLanguage'))) return;
 
   try {
@@ -338,7 +324,7 @@ async function deleteLanguage(code: string) {
               v-for="(item, idx) in list.items"
               :key="item"
               class="list-item"
-              :style="(list as any).colors?.[item] ? { backgroundColor: (list as any).colors[item] } : {}"
+              :style="list.colors?.[item] ? { backgroundColor: list.colors[item] } : {}"
             >
               <span class="item-text">{{ item }}</span>
               <div class="item-actions">

@@ -1,30 +1,29 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n';
-import type { DashboardMetrics, TeamSummaryRow, CoiEntry, PipelineEntry } from "~/types/sales";
 
 const { t } = useI18n({ useScope: 'global' });
 
-const metrics = ref<DashboardMetrics | null>(null);
-const teamRows = ref<TeamSummaryRow[]>([]);
-const coiRows = ref<CoiEntry[]>([]);
-const pipelineRows = ref<PipelineEntry[]>([]);
+const metrics = ref(null);
+const teamRows = ref([]);
+const coiRows = ref([]);
+const pipelineRows = ref([]);
 const errorText = ref("");
 
 async function loadHomeData() {
   errorText.value = "";
   try {
     const [metricsRes, teamRes, coiRes, pipelineRes] = await Promise.all([
-      $fetch<DashboardMetrics>("/api/dashboard/metrics"),
-      $fetch<{ items: TeamSummaryRow[] }>("/api/team/summary"),
-      $fetch<{ items: CoiEntry[] }>("/api/coi"),
-      $fetch<{ items: PipelineEntry[] }>("/api/pipeline")
+      $fetch("/api/dashboard/metrics"),
+      $fetch("/api/team/summary"),
+      $fetch("/api/coi"),
+      $fetch("/api/pipeline")
     ]);
     metrics.value = metricsRes;
     teamRows.value = teamRes.items;
     coiRows.value = coiRes.items;
     pipelineRows.value = pipelineRes.items.slice(0, 8);
-  } catch (error: unknown) {
-    const e = error as { statusCode?: number; data?: { statusCode?: number; statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     const status = Number(e?.statusCode || e?.data?.statusCode || 0);
     if (status === 401) {
       await navigateTo("/login");

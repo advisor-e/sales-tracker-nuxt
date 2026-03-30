@@ -8,11 +8,11 @@ export default defineEventHandler(async () => {
   });
 
   // Return as a map of code -> translations
-  const translations: Record<string, object> = {};
-  const metadata: Record<string, { name: string; nativeName: string }> = {};
+  const translations = {};
+  const metadata = {};
 
   for (const lang of customLanguages) {
-    translations[lang.code] = lang.translations as object;
+    translations[lang.code] = lang.translations;
     metadata[lang.code] = {
       name: lang.name,
       nativeName: lang.nativeName

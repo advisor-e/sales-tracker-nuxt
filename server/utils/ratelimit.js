@@ -3,13 +3,9 @@
  * Tracks attempts by IP address with sliding window
  */
 
-interface RateLimitEntry {
-  attempts: number;
-  firstAttempt: number;
-  blockedUntil: number;
-}
+import { getHeader } from "h3";
 
-const loginAttempts = new Map<string, RateLimitEntry>();
+const loginAttempts = new Map();
 
 // Configuration
 const MAX_ATTEMPTS = 5;           // Max attempts before blocking
@@ -30,7 +26,7 @@ setInterval(() => {
  * Check if an IP is rate limited
  * Returns { allowed: true } or { allowed: false, retryAfter: seconds }
  */
-export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+export function checkLoginRateLimit(ip) {
   const now = Date.now();
   const entry = loginAttempts.get(ip);
 
@@ -68,7 +64,7 @@ export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?
 /**
  * Record a login attempt for an IP
  */
-export function recordLoginAttempt(ip: string): void {
+export function recordLoginAttempt(ip) {
   const now = Date.now();
   const entry = loginAttempts.get(ip);
 
@@ -94,14 +90,14 @@ export function recordLoginAttempt(ip: string): void {
 /**
  * Clear rate limit for an IP (call on successful login)
  */
-export function clearLoginRateLimit(ip: string): void {
+export function clearLoginRateLimit(ip) {
   loginAttempts.delete(ip);
 }
 
 /**
  * Get client IP from request event
  */
-export function getClientIP(event: any): string {
+export function getClientIP(event) {
   // Check common proxy headers
   const forwarded = getHeader(event, "x-forwarded-for");
   if (forwarded) {
@@ -116,6 +112,3 @@ export function getClientIP(event: any): string {
   // Fallback to remote address
   return event.node?.req?.socket?.remoteAddress || "unknown";
 }
-
-// Import h3 helper
-import { getHeader } from "h3";

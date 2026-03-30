@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import { dedupeParagraphs } from "./text";
-import type { BlogDraftRequest, BlogFinalRequest } from "~/types/blog";
 
 function getClient() {
   const config = useRuntimeConfig();
@@ -11,7 +10,7 @@ function getClient() {
   return new OpenAI({ apiKey: key });
 }
 
-function buildDraftTemplate(payload: BlogDraftRequest): string {
+function buildDraftTemplate(payload) {
   const principleBlock = payload.principles
     .filter((p) => p.title.trim() || p.details.some((d) => d.trim()))
     .slice(0, 3)
@@ -28,11 +27,11 @@ function buildDraftTemplate(payload: BlogDraftRequest): string {
   return dedupeParagraphs(`# ${payload.topic}: Practical guide for ${payload.audience}\n\nThis outline is focused on ${payload.objective.toLowerCase()}.\n\n${principleBlock}\n\n## Final takeaway\n${payload.cta}.`);
 }
 
-function buildFinalTemplate(payload: BlogFinalRequest): string {
+function buildFinalTemplate(payload) {
   return dedupeParagraphs(`# ${payload.topic}\n\n${payload.outlineText}\n\nIn summary, the key objective is ${payload.objective.toLowerCase()}. ${payload.cta}.`);
 }
 
-export async function generateDraft(payload: BlogDraftRequest): Promise<{ text: string; source: "ai" | "template"; error?: string }> {
+export async function generateDraft(payload) {
   const client = getClient();
   if (!client) {
     return { text: buildDraftTemplate(payload), source: "template", error: "OpenAI key not configured" };
@@ -68,13 +67,13 @@ export async function generateDraft(payload: BlogDraftRequest): Promise<{ text: 
       return { text: buildDraftTemplate(payload), source: "template", error: "Empty AI response" };
     }
     return { text, source: "ai" };
-  } catch (error: unknown) {
+  } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return { text: buildDraftTemplate(payload), source: "template", error: msg };
   }
 }
 
-export async function generateFinal(payload: BlogFinalRequest): Promise<{ text: string; source: "ai" | "template"; error?: string }> {
+export async function generateFinal(payload) {
   const client = getClient();
   if (!client) {
     return { text: buildFinalTemplate(payload), source: "template", error: "OpenAI key not configured" };
@@ -109,7 +108,7 @@ export async function generateFinal(payload: BlogFinalRequest): Promise<{ text: 
       return { text: buildFinalTemplate(payload), source: "template", error: "Empty AI response" };
     }
     return { text, source: "ai" };
-  } catch (error: unknown) {
+  } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return { text: buildFinalTemplate(payload), source: "template", error: msg };
   }

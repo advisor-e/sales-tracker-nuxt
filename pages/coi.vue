@@ -1,53 +1,13 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n({ useScope: 'global' });
 
-interface CoiSummaryItem {
-  coiName: string;
-  totalReferrals: number;
-  converted: number;
-  proposedValue: number;
-  securedValue: number;
-  active: number;
-}
-
-interface CoiSummaryResponse {
-  items: CoiSummaryItem[];
-  totals: {
-    relationships: number;
-    totalReferrals: number;
-    totalConverted: number;
-    totalProposedValue: number;
-    totalSecuredValue: number;
-    conversionRate: number;
-  };
-}
-
-interface CoiEntry {
-  id: number;
-  coiName: string;
-  email: string | null;
-  cell: string | null;
-  entity: string | null;
-  position: string | null;
-  industry: string | null;
-  leadRelationshipPartner: string | null;
-  relationshipSupport: string | null;
-  couldWe: number;
-  howWouldWe: number;
-  willWe: number;
-  testReview: number;
-  totalReferrals: number;
-  totalConverted: number;
-  feeValue: number;
-}
-
 const { fetchLists, getListItems } = useLists();
 
 // Summary data from pipeline
-const summaryItems = ref<CoiSummaryItem[]>([]);
-const totals = ref<CoiSummaryResponse["totals"]>({
+const summaryItems = ref([]);
+const totals = ref({
   relationships: 0,
   totalReferrals: 0,
   totalConverted: 0,
@@ -59,9 +19,9 @@ const loading = ref(false);
 const errorText = ref("");
 
 // COI Entries from database
-const coiEntries = ref<CoiEntry[]>([]);
+const coiEntries = ref([]);
 const loadingEntries = ref(false);
-const selectedIds = ref<Set<number>>(new Set());
+const selectedIds = ref(new Set());
 const deletingSelected = ref(false);
 
 // Form state for adding new COI
@@ -86,11 +46,11 @@ async function loadSummary() {
   loading.value = true;
   errorText.value = "";
   try {
-    const res = await $fetch<CoiSummaryResponse>("/api/coi/summary");
+    const res = await $fetch("/api/coi/summary");
     summaryItems.value = res.items;
     totals.value = res.totals;
-  } catch (error: unknown) {
-    const e = error as { statusCode?: number; data?: { statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     const status = Number(e?.statusCode || 0);
     if (status === 401) {
       errorText.value = "Session expired. Redirecting to sign in...";
@@ -106,10 +66,10 @@ async function loadSummary() {
 async function loadCoiEntries() {
   loadingEntries.value = true;
   try {
-    const res = await $fetch<{ items: CoiEntry[] }>("/api/coi");
+    const res = await $fetch("/api/coi");
     coiEntries.value = res.items;
-  } catch (error: unknown) {
-    const e = error as { statusCode?: number; data?: { statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     console.error("Failed to load COI entries:", e);
   } finally {
     loadingEntries.value = false;
@@ -150,15 +110,15 @@ async function addCoi() {
 
     // Reload entries
     await loadCoiEntries();
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     alert(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to add COI");
   } finally {
     savingCoi.value = false;
   }
 }
 
-function toggleSelection(id: number) {
+function toggleSelection(id) {
   if (selectedIds.value.has(id)) {
     selectedIds.value.delete(id);
   } else {
@@ -194,15 +154,15 @@ async function removeSelectedCois() {
     await Promise.all(ids.map(id => $fetch(`/api/coi/${id}`, { method: "DELETE" })));
     selectedIds.value = new Set();
     await loadCoiEntries();
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     alert(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to remove COIs");
   } finally {
     deletingSelected.value = false;
   }
 }
 
-async function toggleProgress(entry: CoiEntry, field: "couldWe" | "howWouldWe" | "willWe" | "testReview") {
+async function toggleProgress(entry, field) {
   const newValue = !entry[field];
   try {
     await $fetch(`/api/coi/${entry.id}`, {
@@ -211,8 +171,8 @@ async function toggleProgress(entry: CoiEntry, field: "couldWe" | "howWouldWe" |
     });
     // Update local state
     entry[field] = newValue ? 1 : 0;
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string; message?: string }; message?: string };
+  } catch (error) {
+    const e = error;
     alert(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to update progress");
   }
 }

@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { H3Event, getCookie, setCookie, getHeader, createError, getMethod } from "h3";
+import { getCookie, setCookie, getHeader, createError, getMethod } from "h3";
 
 const CSRF_COOKIE = "csrf_token";
 const CSRF_HEADER = "x-csrf-token";
@@ -8,14 +8,14 @@ const TOKEN_LENGTH = 32;
 /**
  * Generate a new CSRF token
  */
-export function generateCSRFToken(): string {
+export function generateCSRFToken() {
   return randomBytes(TOKEN_LENGTH).toString("hex");
 }
 
 /**
  * Ensure CSRF cookie is set and return the token
  */
-export function ensureCSRFToken(event: H3Event): string {
+export function ensureCSRFToken(event) {
   let token = getCookie(event, CSRF_COOKIE);
 
   if (!token) {
@@ -39,7 +39,7 @@ export function ensureCSRFToken(event: H3Event): string {
  * - Login endpoint (no cookie yet)
  * - Requests with valid API key header (future API use)
  */
-export function validateCSRF(event: H3Event): void {
+export function validateCSRF(event) {
   const method = getMethod(event);
 
   // Only check state-changing methods

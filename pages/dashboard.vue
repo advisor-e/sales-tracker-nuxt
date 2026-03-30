@@ -1,14 +1,13 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
 import { Pie, Doughnut, Bar, Line } from 'vue-chartjs';
-import type { DashboardMetrics } from "~/types/sales";
 
 const { t } = useI18n({ useScope: 'global' });
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
-const metrics = ref<DashboardMetrics | null>(null);
+const metrics = ref(null);
 const loading = ref(false);
 const errorText = ref("");
 
@@ -100,7 +99,7 @@ const totalNeedsOverallRate = computed(() => {
 });
 
 // Status colors mapped to specific statuses
-const statusColors: Record<string, string> = {
+const statusColors = {
   'Active': '#22c55e',      // Green
   'Await Research': '#f59e0b', // Amber
   'Completed': '#3b82f6',   // Blue
@@ -154,7 +153,7 @@ const staffBarData = computed(() => ({
   datasets: [{
     label: 'Work Secured ($)',
     data: metrics.value?.staffSecuredBreakdown.map(s => s.value) || [],
-    backgroundColor: (ctx: any) => {
+    backgroundColor: (ctx) => {
       const gradient = ctx.chart.ctx.createLinearGradient(0, 0, ctx.chart.width, 0);
       gradient.addColorStop(0, '#00b1e0');
       gradient.addColorStop(1, '#38bdf8');
@@ -204,7 +203,7 @@ const monthlyTrendData = computed(() => ({
     label: 'Secured Value',
     data: metrics.value?.monthlySecuredTrend.map(s => s.value) || [],
     borderColor: '#00b1e0',
-    backgroundColor: (ctx: any) => {
+    backgroundColor: (ctx) => {
       const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
       gradient.addColorStop(0, 'rgba(0, 177, 224, 0.3)');
       gradient.addColorStop(1, 'rgba(0, 177, 224, 0.02)');
@@ -226,7 +225,7 @@ const pieOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'right' as const,
+      position: 'right',
       labels: {
         padding: 12,
         usePointStyle: true,
@@ -236,8 +235,8 @@ const pieOptions = {
     },
     tooltip: {
       callbacks: {
-        label: (context: any) => {
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+        label: (context) => {
+          const total = context.dataset.data.reduce((a, b) => a + b, 0);
           const percentage = Math.round((context.raw / total) * 100);
           return ` ${context.raw} (${percentage}%)`;
         }
@@ -252,7 +251,7 @@ const doughnutOptions = {
   cutout: '55%',
   plugins: {
     legend: {
-      position: 'right' as const,
+      position: 'right',
       labels: {
         padding: 12,
         usePointStyle: true,
@@ -262,8 +261,8 @@ const doughnutOptions = {
     },
     tooltip: {
       callbacks: {
-        label: (context: any) => {
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+        label: (context) => {
+          const total = context.dataset.data.reduce((a, b) => a + b, 0);
           const percentage = Math.round((context.raw / total) * 100);
           return ` ${context.raw} (${percentage}%)`;
         }
@@ -273,7 +272,7 @@ const doughnutOptions = {
 };
 
 const horizontalBarOptions = {
-  indexAxis: 'y' as const,
+  indexAxis: 'y',
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -283,12 +282,12 @@ const horizontalBarOptions = {
     x: {
       grid: { color: 'rgba(0,0,0,0.05)' },
       ticks: {
-        callback: (value: any) => '$' + (value / 1000).toFixed(0) + 'k'
+        callback: (value) => '$' + (value / 1000).toFixed(0) + 'k'
       }
     },
     y: {
       grid: { display: false },
-      ticks: { font: { weight: 'bold' as const } }
+      ticks: { font: { weight: 'bold' } }
     }
   }
 };
@@ -302,7 +301,7 @@ const verticalBarOptions = {
   scales: {
     x: {
       grid: { display: false },
-      ticks: { font: { weight: 'normal' as const } }
+      ticks: { font: { weight: 'normal' } }
     },
     y: {
       grid: { color: 'rgba(0,0,0,0.05)' },
@@ -325,13 +324,13 @@ const lineOptions = {
     y: {
       grid: { color: 'rgba(0,0,0,0.05)' },
       ticks: {
-        callback: (value: any) => '$' + (value / 1000).toFixed(0) + 'k'
+        callback: (value) => '$' + (value / 1000).toFixed(0) + 'k'
       }
     }
   },
   interaction: {
     intersect: false,
-    mode: 'index' as const
+    mode: 'index'
   }
 };
 
@@ -339,9 +338,9 @@ async function loadMetrics() {
   loading.value = true;
   errorText.value = "";
   try {
-    metrics.value = await $fetch<DashboardMetrics>("/api/dashboard/metrics");
-  } catch (error: unknown) {
-    const e = error as { statusCode?: number; data?: { statusCode?: number; statusMessage?: string; message?: string }; message?: string };
+    metrics.value = await $fetch("/api/dashboard/metrics");
+  } catch (error) {
+    const e = error;
     const status = Number(e?.statusCode || e?.data?.statusCode || 0);
     if (status === 401) {
       errorText.value = "Session expired. Redirecting to sign in...";
