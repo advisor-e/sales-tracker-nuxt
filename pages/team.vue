@@ -83,7 +83,7 @@ export default {
           .level-item
             div
               b-tag(type="is-info is-light" rounded) {{ $t('team.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('team.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('team.title') }}
               p.subtitle.has-text-white-ter {{ $t('team.subtitle') }}
         .level-right
           .level-item
@@ -155,6 +155,7 @@ export default {
 
 <style scoped>
 .team-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #f0fafd 0%, #e6f7fc 100%);
 }

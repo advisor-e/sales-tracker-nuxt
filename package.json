@@ -2,7 +2,7 @@
   "name": "sales-tracker-nuxt",
   "private": true,
   "scripts": {
-    "dev": "node node_modules/nuxt/bin/nuxt.js",
+    "dev": "node --max-old-space-size=4096 node_modules/nuxt/bin/nuxt.js",
     "build": "node node_modules/nuxt/bin/nuxt.js build",
     "start": "node node_modules/nuxt/bin/nuxt.js start",
     "prisma:generate": "prisma generate",

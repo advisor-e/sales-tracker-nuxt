@@ -362,7 +362,7 @@ export default {
           .level-item
             div
               b-tag(type="is-link is-light" rounded) {{ $t('dashboard.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('dashboard.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('dashboard.title') }}
               p.subtitle.has-text-white-ter {{ $t('dashboard.subtitle') }}
         .level-right
           .level-item
@@ -374,63 +374,56 @@ export default {
 
     template(v-if="metrics")
       //- Stats strip
-      .columns.is-multiline.mb-4
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.totalProspects')"
-            :value="metrics.totalProspects"
-            :badge="$t('dashboard.pipeline')"
-            badge-color="blue"
-            :footer="metrics.activeProspects + ' ' + $t('common.active')"
-          )
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.approachMeeting')"
-            :value="combinedMeetingRate + '%'"
-            :badge="$t('dashboard.combined')"
-            badge-color="cyan"
-            :footer="combinedMeetings + '/' + combinedApproaches"
-          )
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.meetingProposal')"
-            :value="combinedProposalRate + '%'"
-            :badge="$t('dashboard.combined')"
-            badge-color="blue"
-            :footer="combinedProposals + '/' + combinedMeetings"
-          )
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.proposalSecured')"
-            :value="combinedSecuredRate + '%'"
-            :badge="$t('dashboard.combined')"
-            badge-color="teal"
-            :footer="combinedSecured + '/' + combinedProposals"
-          )
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.overallWinRate')"
-            :value="combinedOverallRate + '%'"
-            :badge="$t('dashboard.combined')"
-            badge-color="green"
-            :footer="combinedSecured + '/' + combinedApproaches"
-          )
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.pipelineValue')"
-            :value="money.format(metrics.totalProposalValue)"
-            :badge="$t('dashboard.proposals')"
-            badge-color="cyan"
-            :footer="$t('dashboard.outstandingProposals')"
-          )
-        .column.is-auto
-          stat-card(
-            :label="$t('dashboard.workSecured')"
-            :value="money.format(metrics.totalSecuredValue)"
-            :badge="$t('dashboard.revenue')"
-            badge-color="green"
-            :footer="$t('dashboard.totalClosedValue')"
-          )
+      .stats-strip.mb-4
+        stat-card(
+          :label="$t('dashboard.totalProspects')"
+          :value="metrics.totalProspects"
+          :badge="$t('dashboard.pipeline')"
+          badge-color="blue"
+          :footer="metrics.activeProspects + ' ' + $t('common.active')"
+        )
+        stat-card(
+          :label="$t('dashboard.approachMeeting')"
+          :value="combinedMeetingRate + '%'"
+          :badge="$t('dashboard.combined')"
+          badge-color="cyan"
+          :footer="combinedMeetings + '/' + combinedApproaches"
+        )
+        stat-card(
+          :label="$t('dashboard.meetingProposal')"
+          :value="combinedProposalRate + '%'"
+          :badge="$t('dashboard.combined')"
+          badge-color="blue"
+          :footer="combinedProposals + '/' + combinedMeetings"
+        )
+        stat-card(
+          :label="$t('dashboard.proposalSecured')"
+          :value="combinedSecuredRate + '%'"
+          :badge="$t('dashboard.combined')"
+          badge-color="teal"
+          :footer="combinedSecured + '/' + combinedProposals"
+        )
+        stat-card(
+          :label="$t('dashboard.overallWinRate')"
+          :value="combinedOverallRate + '%'"
+          :badge="$t('dashboard.combined')"
+          badge-color="green"
+          :footer="combinedSecured + '/' + combinedApproaches"
+        )
+        stat-card(
+          :label="$t('dashboard.pipelineValue')"
+          :value="money.format(metrics.totalProposalValue)"
+          :badge="$t('dashboard.proposals')"
+          badge-color="cyan"
+          :footer="$t('dashboard.outstandingProposals')"
+        )
+        stat-card(
+          :label="$t('dashboard.workSecured')"
+          :value="money.format(metrics.totalSecuredValue)"
+          :badge="$t('dashboard.revenue')"
+          badge-color="green"
+          :footer="$t('dashboard.totalClosedValue')"
+        )
 
       //- Campaign results
       .box.rates-section.campaign.mb-4
@@ -601,8 +594,15 @@ export default {
 
 <style scoped>
 .dashboard-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #e6f9ff 0%, #f0fcff 100%);
+}
+
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.75rem;
 }
 
 .dashboard-header {

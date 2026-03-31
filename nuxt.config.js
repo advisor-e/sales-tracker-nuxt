@@ -49,7 +49,10 @@ module.exports = {
   modules: [],
 
   // Component auto-import (Nuxt 2 style)
-  components: true,
+  // pathPrefix: false so components/dashboard/StatCard.vue registers as <stat-card> not <dashboard-stat-card>
+  components: [
+    { path: '~/components', pathPrefix: false }
+  ],
 
   // Head defaults
   head: {

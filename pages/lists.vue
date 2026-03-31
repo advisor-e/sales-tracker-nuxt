@@ -220,7 +220,7 @@ export default {
           .level-item
             div
               b-tag(type="is-link is-light" rounded) {{ $t('lists.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('lists.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('lists.title') }}
               p.subtitle.has-text-white-ter {{ $t('lists.subtitle') }}
 
     //- Loading / save banners
@@ -365,6 +365,7 @@ export default {
 
 <style scoped>
 .lists-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #ecfeff 0%, #cffafe 100%);
 }

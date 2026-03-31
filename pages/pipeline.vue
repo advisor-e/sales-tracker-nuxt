@@ -451,7 +451,7 @@ export default {
           .level-item
             div
               b-tag(type="is-light" rounded) {{ $t('pipeline.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('pipeline.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('pipeline.title') }}
               p.subtitle.has-text-white-ter {{ $t('pipeline.subtitle') }}
         .level-right
           .level-item
@@ -671,6 +671,7 @@ export default {
 
 <style scoped>
 .pipeline-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #f0f5fa 0%, #e8eff6 100%);
 }

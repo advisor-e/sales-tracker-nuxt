@@ -88,7 +88,7 @@ export default {
           .level-item
             div
               b-tag(type="is-warning is-light" rounded) {{ $t('home.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('home.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('home.title') }}
               p.subtitle.has-text-white-ter {{ $t('home.subtitle') }}
 
     b-notification(v-if="errorText" type="is-danger is-light" :closable="false") {{ errorText }}
@@ -152,6 +152,7 @@ export default {
 
 <style scoped>
 .home-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(160deg, #fff7ed 0%, #ffffff 100%);
 }

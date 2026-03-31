@@ -27,10 +27,11 @@ function validateCSRF(req, res) {
   // Only check state-changing methods
   if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return
 
-  const path = req.path || ''
+  const path = req.path || req.url || ''
 
   // Skip CSRF for login (user doesn't have token yet)
-  if (path === '/auth/login') return
+  // req.path is Express-only; in Nuxt serverMiddleware req.url includes /api prefix
+  if (path === '/auth/login' || path.endsWith('/auth/login')) return
 
   const cookieToken = req.cookies && req.cookies[CSRF_COOKIE]
   const headerToken = req.headers[CSRF_HEADER]

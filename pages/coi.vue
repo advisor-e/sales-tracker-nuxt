@@ -210,7 +210,7 @@ export default {
           .level-item
             div
               b-tag(type="is-success is-light" rounded) {{ $t('coi.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('coi.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('coi.title') }}
               p.subtitle.has-text-white-ter {{ $t('coi.subtitle') }}
         .level-right
           .level-item
@@ -386,6 +386,7 @@ export default {
 
 <style scoped>
 .coi-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #f0faf2 0%, #e8f7ec 100%);
 }

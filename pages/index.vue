@@ -497,7 +497,7 @@ export default {
           .level-item
             div
               b-tag(type="is-link is-light" rounded) {{ $t('blog.badge') }}
-              h1.title.has-text-white.mt-2 {{ $t('blog.title') }}
+              h1.title.is-spaced.has-text-white.mt-2 {{ $t('blog.title') }}
               p.subtitle.has-text-white-ter {{ $t('blog.subtitle') }}
 
     //- Stats strip
@@ -755,6 +755,7 @@ export default {
 
 <style scoped>
 .blog-page {
+  padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #fdf0fd 0%, #fcecfc 100%);
 }
