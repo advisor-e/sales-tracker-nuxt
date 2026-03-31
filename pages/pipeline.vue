@@ -443,119 +443,162 @@ export default {
 </script>
 
 <template lang="pug">
-  .pipeline-page
-    header.page-header
-      .header-content
-        .header-text
-          span.header-badge {{ $t('pipeline.badge') }}
-          h1 {{ $t('pipeline.title') }}
-          p {{ $t('pipeline.subtitle') }}
-        .header-actions
-          button.btn-primary(@click="showAddForm = !showAddForm")
-            | {{ showAddForm ? $t('common.cancel') : $t('pipeline.addProspect') }}
-          button.btn-secondary(@click="loadItems") {{ $t('common.refresh') }}
+  section.section.pipeline-page
+    //- Page header
+    header.pipeline-header.mb-4
+      .level.is-mobile
+        .level-left
+          .level-item
+            div
+              b-tag(type="is-light" rounded) {{ $t('pipeline.badge') }}
+              h1.title.has-text-white.mt-2 {{ $t('pipeline.title') }}
+              p.subtitle.has-text-white-ter {{ $t('pipeline.subtitle') }}
+        .level-right
+          .level-item
+            .buttons
+              b-button(
+                @click="showAddForm = !showAddForm"
+                type="is-white"
+                rounded
+              ) {{ showAddForm ? $t('common.cancel') : $t('pipeline.addProspect') }}
+              b-button(
+                @click="loadItems"
+                :loading="loading"
+                type="is-white"
+                outlined
+                rounded
+              ) {{ $t('common.refresh') }}
 
-    section.stats-bar
-      .stat-item
-        span.stat-label {{ $t('pipeline.totalProspects') }}
-        span.stat-value {{ totalProspects }}
-      .stat-item.active
-        span.stat-label {{ $t('pipeline.active') }}
-        span.stat-value {{ activeProspects }}
-      .stat-item
-        span.stat-label {{ $t('pipeline.meetings') }}
-        span.stat-value {{ meetingsCount }}
-      .stat-item
-        span.stat-label {{ $t('pipeline.proposals') }}
-        span.stat-value {{ proposalsSent }}
-      .stat-item.secured
-        span.stat-label {{ $t('pipeline.secured') }}
-        span.stat-value {{ securedCount }}
-      .stat-item.money
-        span.stat-label {{ $t('pipeline.proposalValue') }}
-        span.stat-value {{ money.format(totalProposalValue) }}
-      .stat-item.money.secured
-        span.stat-label {{ $t('pipeline.securedValue') }}
-        span.stat-value {{ money.format(totalSecuredValue) }}
+    //- Stats bar
+    .columns.is-multiline.mb-3
+      .column.is-auto
+        .box.has-text-centered.stat-box
+          p.heading {{ $t('pipeline.totalProspects') }}
+          p.title.is-4 {{ totalProspects }}
+      .column.is-auto
+        .box.has-text-centered.stat-box.is-active
+          p.heading {{ $t('pipeline.active') }}
+          p.title.is-4 {{ activeProspects }}
+      .column.is-auto
+        .box.has-text-centered.stat-box
+          p.heading {{ $t('pipeline.meetings') }}
+          p.title.is-4 {{ meetingsCount }}
+      .column.is-auto
+        .box.has-text-centered.stat-box
+          p.heading {{ $t('pipeline.proposals') }}
+          p.title.is-4 {{ proposalsSent }}
+      .column.is-auto
+        .box.has-text-centered.stat-box.is-secured
+          p.heading {{ $t('pipeline.secured') }}
+          p.title.is-4 {{ securedCount }}
+      .column
+        .box.has-text-centered.stat-box
+          p.heading {{ $t('pipeline.proposalValue') }}
+          p.title.is-5 {{ money.format(totalProposalValue) }}
+      .column
+        .box.has-text-centered.stat-box.is-secured
+          p.heading {{ $t('pipeline.securedValue') }}
+          p.title.is-5 {{ money.format(totalSecuredValue) }}
 
-    section.add-form-panel(v-if="showAddForm")
-      h2 {{ $t('pipeline.newProspect') }}
-      .form-grid
-        .form-group
-          label Prospect Name *
-          input(v-model="draft.prospectName" placeholder="Name")
-        .form-group
-          label Business Name
-          input(v-model="draft.businessName" placeholder="Business")
-        .form-group
-          label Partner
-          select(v-model="draft.partner")
-            option(value="") Select...
-            option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Lead Staff
-          select(v-model="draft.leadStaff")
-            option(value="") Select...
-            option(v-for="opt in leadStaffOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Status
-          select(v-model="draft.prospectStatus")
-            option(v-for="opt in statusOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Relationship Type
-          select(v-model="draft.relationshipType")
-            option(v-for="opt in relationshipOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Source
-          select(v-model="draft.prospectSource")
-            option(value="") Select...
-            option(v-for="opt in sourceOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Industry
-          select(v-model="draft.industry")
-            option(value="") Select...
-            option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Email
-          input(v-model="draft.email" type="email" placeholder="Email")
-        .form-group
-          label Phone
-          input(v-model="draft.contactPhone" placeholder="Phone")
-        .form-group
-          label Approach Date
-          input(v-model="draft.approachDate" type="date")
-        .form-group
-          label Approach Style
-          select(v-model="draft.approachStyle")
-            option(value="") Select...
-            option(v-for="opt in approachOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label Sales Style
-          select(v-model="draft.salesStyle")
-            option(value="") Select...
-            option(v-for="opt in salesStyleOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group
-          label COI Involved
-          select(v-model="draft.coiInvolved" :disabled="draft.prospectSource !== 'Referral'")
-            option(value="") {{ draft.prospectSource === 'Referral' ? 'Select COI...' : 'N/A' }}
-            option(v-for="opt in coiOptions" :key="opt" :value="opt") {{ opt }}
-        .form-group.full-width
-          label Comments
-          textarea(v-model="draft.comments" rows="2" placeholder="Notes...")
-      .form-actions
-        button.btn-primary(:disabled="!draft.prospectName.trim() || submitting" @click="createItem")
-          | {{ submitting ? $t('pipeline.saving') : $t('pipeline.saveProspect') }}
-        button.btn-secondary(@click="showAddForm = false") {{ $t('common.cancel') }}
+    //- Add form
+    .box.mb-4(v-if="showAddForm")
+      p.title.is-5.mb-4 {{ $t('pipeline.newProspect') }}
+      .columns.is-multiline
+        .column.is-3
+          b-field(label="Prospect Name *")
+            b-input(v-model="draft.prospectName" placeholder="Name" expanded)
+        .column.is-3
+          b-field(label="Business Name")
+            b-input(v-model="draft.businessName" placeholder="Business" expanded)
+        .column.is-3
+          b-field(label="Partner")
+            b-select(v-model="draft.partner" expanded)
+              option(value="") Select...
+              option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Lead Staff")
+            b-select(v-model="draft.leadStaff" expanded)
+              option(value="") Select...
+              option(v-for="opt in leadStaffOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Status")
+            b-select(v-model="draft.prospectStatus" expanded)
+              option(v-for="opt in statusOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Relationship Type")
+            b-select(v-model="draft.relationshipType" expanded)
+              option(v-for="opt in relationshipOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Source")
+            b-select(v-model="draft.prospectSource" expanded)
+              option(value="") Select...
+              option(v-for="opt in sourceOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Industry")
+            b-select(v-model="draft.industry" expanded)
+              option(value="") Select...
+              option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Email")
+            b-input(v-model="draft.email" type="email" placeholder="Email" expanded)
+        .column.is-3
+          b-field(label="Phone")
+            b-input(v-model="draft.contactPhone" placeholder="Phone" expanded)
+        .column.is-3
+          b-field(label="Approach Date")
+            b-input(v-model="draft.approachDate" type="date" expanded)
+        .column.is-3
+          b-field(label="Approach Style")
+            b-select(v-model="draft.approachStyle" expanded)
+              option(value="") Select...
+              option(v-for="opt in approachOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="Sales Style")
+            b-select(v-model="draft.salesStyle" expanded)
+              option(value="") Select...
+              option(v-for="opt in salesStyleOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(label="COI Involved")
+            b-select(v-model="draft.coiInvolved" :disabled="draft.prospectSource !== 'Referral'" expanded)
+              option(value="") {{ draft.prospectSource === 'Referral' ? 'Select COI...' : 'N/A' }}
+              option(v-for="opt in coiOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-12
+          b-field(label="Comments")
+            b-input(v-model="draft.comments" type="textarea" rows="2" placeholder="Notes..." expanded)
+      .buttons
+        b-button(
+          type="is-primary"
+          :loading="submitting"
+          :disabled="!draft.prospectName.trim()"
+          @click="createItem"
+        ) {{ $t('pipeline.saveProspect') }}
+        b-button(@click="showAddForm = false") {{ $t('common.cancel') }}
 
-    section.filters-bar
-      input(v-model="search" :placeholder="$t('pipeline.searchProspects')" @keyup.enter="loadItems")
-      input(v-model="ownerFilter" :placeholder="$t('pipeline.filterByOwner')" @keyup.enter="loadItems")
-      button.btn-secondary(@click="loadItems") {{ $t('pipeline.apply') }}
+    //- Filters
+    .box.mb-3
+      .field.is-grouped.is-grouped-multiline
+        .control.is-expanded
+          b-input(
+            v-model="search"
+            :placeholder="$t('pipeline.searchProspects')"
+            @keyup.native.enter="loadItems"
+            expanded
+          )
+        .control.is-expanded
+          b-input(
+            v-model="ownerFilter"
+            :placeholder="$t('pipeline.filterByOwner')"
+            @keyup.native.enter="loadItems"
+            expanded
+          )
+        .control
+          b-button(type="is-info" @click="loadItems") {{ $t('pipeline.apply') }}
 
-    p.error-msg(v-if="errorText") {{ errorText }}
-    p.loading-msg(v-if="loading") {{ $t('pipeline.loadingData') }}
+    b-notification(v-if="errorText" type="is-danger is-light" :closable="false") {{ errorText }}
+    loading-spinner(v-if="loading && !items.length" :message="$t('pipeline.loadingData')")
 
-    .table-container
+    //- Data table (kept custom — drag/resize/inline-edit)
+    .data-table-wrap
       table.data-table(:class="{ resizing: resizing }")
         thead
           tr
@@ -572,7 +615,7 @@ export default {
               @dragend="onDragEnd"
             )
               span.drag-handle(title="Drag to reorder") ⠿
-              span.header-text(contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="$event.target.blur()") {{ headerLabels[col] }}
+              span.header-label(contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="$event.target.blur()") {{ headerLabels[col] }}
               span.resize-handle(@mousedown="startResize(col, $event)")
             th.actions-col(:style="{ width: columnWidths.actions + 'px' }")
         tbody
@@ -629,309 +672,41 @@ export default {
 <style scoped>
 .pipeline-page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, rgba(0, 43, 100, 0.08) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(127, 211, 241, 0.1) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(0, 177, 224, 0.08) 0%, transparent 35%),
-    linear-gradient(180deg, #f0f5fa 0%, #e8eff6 100%);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  background: linear-gradient(180deg, #f0f5fa 0%, #e8eff6 100%);
 }
 
-/* Header */
-.page-header {
+.pipeline-header {
   background:
     radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(127, 211, 241, 0.25) 0%, transparent 40%),
-    radial-gradient(ellipse at 60% 80%, rgba(0, 177, 224, 0.2) 0%, transparent 45%),
-    linear-gradient(135deg, #004080 0%, #003366 25%, #002b64 50%, #00224d 75%, #001a3d 100%);
-  border-radius: 24px;
+    linear-gradient(135deg, #004080 0%, #002b64 50%, #001a3d 100%);
+  border-radius: 20px;
   padding: 2.5rem 2rem;
-  color: white;
-  box-shadow:
-    0 20px 60px rgba(0, 43, 100, 0.4),
-    0 8px 25px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 43, 100, 0.4);
 }
 
-.page-header::before {
+.pipeline-header::before {
   content: '';
   position: absolute;
   top: -50%;
   right: -20%;
   width: 60%;
   height: 200%;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
   transform: rotate(25deg);
   pointer-events: none;
 }
 
-.page-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-}
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.header-badge {
-  display: inline-block;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
-  padding: 0.3rem 0.9rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(4px);
-}
-.header-text h1 {
-  margin: 0;
-  font-size: 2.25rem;
-  font-weight: 800;
-  line-height: 1.1;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  letter-spacing: -0.02em;
-}
-.header-text p {
-  margin: 0.6rem 0 0;
-  opacity: 0.9;
-  font-size: 1rem;
-  line-height: 1.5;
-  max-width: 420px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-.header-actions {
-  display: flex;
-  gap: 0.75rem;
-}
+.stat-box.is-active { background: linear-gradient(135deg, #dcfce7, #bbf7d0); }
+.stat-box.is-secured { background: linear-gradient(135deg, #fef3c7, #fde68a); }
 
-/* Buttons */
-.btn-primary {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  color: #002b64;
-  border: none;
-  border-radius: 12px;
-  padding: 0.7rem 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, transparent 40%, rgba(0, 43, 100, 0.1) 100%);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-}
-
-.btn-primary:hover::before {
-  opacity: 1;
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  padding: 0.7rem 1.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
-}
-
-.btn-secondary:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-1px);
-}
-
-/* Stats Bar */
-.stats-bar {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.stat-item {
-  background: white;
-  border-radius: 12px;
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  min-width: 100px;
-  flex: 1;
-  text-align: center;
-}
-
-.stat-item.active {
-  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-}
-
-.stat-item.secured {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-}
-
-.stat-item.money {
-  min-width: 140px;
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
-  font-weight: 600;
-}
-
-.stat-value {
-  display: block;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-/* Add Form */
-.add-form-panel {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.add-form-panel h2 {
-  margin: 0 0 1rem;
-  font-size: 1.1rem;
-  color: #1e293b;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.75rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-group label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.form-actions .btn-primary {
-  background: linear-gradient(135deg, #003d80 0%, #002b64 100%);
-  color: white;
-}
-
-.form-actions .btn-secondary {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-/* Filters */
-.filters-bar {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.filters-bar input,
-.filters-bar select {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  min-width: 150px;
-}
-
-.filters-bar .btn-secondary {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-/* Messages */
-.error-msg {
-  color: #dc2626;
-  font-weight: 600;
-  padding: 0.75rem;
-  background: #fef2f2;
-  border-radius: 8px;
-}
-
-.loading-msg {
-  color: #64748b;
-  font-style: italic;
-}
-
-/* Data Table */
-.table-container {
+/* Data Table wrapper */
+.data-table-wrap {
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: auto;
-  flex: 1;
 }
 
 .data-table {
@@ -966,62 +741,30 @@ export default {
   position: relative;
 }
 
-.header-text {
+.header-label {
   display: inline-block;
   padding: 0.1rem 0.25rem;
   border-radius: 3px;
   cursor: text;
-  transition: background-color 0.15s, box-shadow 0.15s;
   outline: none;
   min-width: 20px;
 }
 
-.header-text:hover {
-  background: rgba(0, 43, 100, 0.1);
-}
+.header-label:hover { background: rgba(0, 43, 100, 0.1); }
+.header-label:focus { background: white; box-shadow: 0 0 0 2px rgba(0, 43, 100, 0.3); }
 
-.header-text:focus {
-  background: white;
-  box-shadow: 0 0 0 2px rgba(0, 43, 100, 0.3);
-}
-
-/* Drag handle */
 .drag-handle {
   cursor: grab;
   opacity: 0.4;
   font-size: 0.9rem;
   margin-right: 0.35rem;
   user-select: none;
-  transition: opacity 0.15s;
 }
+.drag-handle:hover { opacity: 0.8; }
+.drag-handle:active { cursor: grabbing; }
 
-.drag-handle:hover {
-  opacity: 0.8;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
-
-/* Dragging state */
-.data-table th.dragging {
-  opacity: 0.5;
-  background: #e0e7ff;
-}
-
-.data-table th.drag-over {
-  border-left: 3px solid #002b64;
-  background: #e6eef8;
-}
-
-.data-table th[draggable="true"] {
-  cursor: grab;
-}
-
-.data-table th[draggable="true"]:active {
-  cursor: grabbing;
-}
-
+.data-table th.dragging { opacity: 0.5; background: #e0e7ff; }
+.data-table th.drag-over { border-left: 3px solid #002b64; background: #e6eef8; }
 
 .resize-handle {
   position: absolute;
@@ -1032,20 +775,9 @@ export default {
   cursor: col-resize;
   background: transparent;
   border-right: 2px solid transparent;
-  transition: border-color 0.15s, background-color 0.15s;
   z-index: 20;
 }
-
-.resize-handle:hover {
-  border-right-color: #002b64;
-  background: rgba(0, 43, 100, 0.15);
-}
-
-.resize-handle:active,
-.data-table.resizing .resize-handle {
-  border-right-color: #001a3d;
-  background: rgba(0, 43, 100, 0.25);
-}
+.resize-handle:hover { border-right-color: #002b64; background: rgba(0, 43, 100, 0.15); }
 
 .data-table td {
   padding: 0.25rem 0.35rem;
@@ -1062,58 +794,21 @@ export default {
   background: white;
 }
 
-.data-table th.sticky-col {
-  z-index: 15;
-  background: #f8fafc;
-}
+.data-table th.sticky-col { z-index: 15; background: #f8fafc; }
 
-.actions-col {
-  width: 40px;
-  text-align: center;
-}
+.actions-col { width: 40px; text-align: center; }
 
-/* Row status colors */
-.status-active td {
-  background: #f0fdf4;
-}
+.status-active td { background: #f0fdf4; }
+.status-active .sticky-col { background: #f0fdf4; }
+.status-on-hold td { background: #fefce8; }
+.status-on-hold .sticky-col { background: #fefce8; }
+.status-await-research td { background: #eff6ff; }
+.status-await-research .sticky-col { background: #eff6ff; }
+.status-completed td { background: #f0fdf4; }
+.status-completed .sticky-col { background: #f0fdf4; }
+.status-dead td { background: #fef2f2; }
+.status-dead .sticky-col { background: #fef2f2; }
 
-.status-active .sticky-col {
-  background: #f0fdf4;
-}
-
-.status-on-hold td {
-  background: #fefce8;
-}
-
-.status-on-hold .sticky-col {
-  background: #fefce8;
-}
-
-.status-await-research td {
-  background: #eff6ff;
-}
-
-.status-await-research .sticky-col {
-  background: #eff6ff;
-}
-
-.status-completed td {
-  background: #f0fdf4;
-}
-
-.status-completed .sticky-col {
-  background: #f0fdf4;
-}
-
-.status-dead td {
-  background: #fef2f2;
-}
-
-.status-dead .sticky-col {
-  background: #fef2f2;
-}
-
-/* Cell inputs */
 .cell-input,
 .cell-select {
   width: 100%;
@@ -1127,47 +822,13 @@ export default {
   box-sizing: border-box;
 }
 
-.cell-input:hover,
-.cell-select:hover {
-  border-color: #cbd5e1;
-  background: white;
-}
+.cell-input:hover, .cell-select:hover { border-color: #cbd5e1; background: white; }
+.cell-input:focus, .cell-select:focus { outline: none; border-color: #002b64; background: white; box-shadow: 0 0 0 2px rgba(0, 43, 100, 0.1); }
+.cell-input.number { text-align: right; }
+.money-cell.secured .cell-input { color: #16a34a; font-weight: 600; }
+.center { text-align: center; }
+.money-cell { text-align: right; }
 
-.cell-input:focus,
-.cell-select:focus {
-  outline: none;
-  border-color: #002b64;
-  background: white;
-  box-shadow: 0 0 0 2px rgba(0, 43, 100, 0.1);
-}
-
-.cell-input.date {
-  width: 100%;
-}
-
-.cell-input.number {
-  width: 100%;
-  text-align: right;
-}
-
-.cell-input.wide {
-  width: 100%;
-}
-
-.center {
-  text-align: center;
-}
-
-.money-cell {
-  text-align: right;
-}
-
-.money-cell.secured .cell-input {
-  color: #16a34a;
-  font-weight: 600;
-}
-
-/* Delete button */
 .btn-delete {
   background: #fee2e2;
   color: #dc2626;
@@ -1181,25 +842,5 @@ export default {
   align-items: center;
   justify-content: center;
 }
-
-.btn-delete:hover {
-  background: #fecaca;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .stats-bar {
-    flex-direction: column;
-  }
-
-  .stat-item {
-    width: 100%;
-  }
-}
+.btn-delete:hover { background: #fecaca; }
 </style>

@@ -354,78 +354,86 @@ export default {
 </script>
 
 <template lang="pug">
-  .dashboard
-    header.dashboard-header
-      .header-content
-        .header-text
-          span.header-badge {{ $t('dashboard.badge') }}
-          h1 {{ $t('dashboard.title') }}
-          p {{ $t('dashboard.subtitle') }}
-        button.refresh-btn(@click="loadMetrics" :disabled="loading")
-          svg(xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-            path(d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8")
-            path(d="M21 3v5h-5")
-          | {{ loading ? $t('common.loading') : $t('common.refresh') }}
+  section.section.dashboard-page
+    //- Page header
+    header.dashboard-header.mb-5
+      .level.is-mobile
+        .level-left
+          .level-item
+            div
+              b-tag(type="is-link is-light" rounded) {{ $t('dashboard.badge') }}
+              h1.title.has-text-white.mt-2 {{ $t('dashboard.title') }}
+              p.subtitle.has-text-white-ter {{ $t('dashboard.subtitle') }}
+        .level-right
+          .level-item
+            b-button(@click="loadMetrics" :loading="loading" type="is-white" rounded)
+              | {{ loading ? $t('common.loading') : $t('common.refresh') }}
 
-    p.error-message(v-if="errorText") {{ errorText }}
-
-    .loading-state(v-if="loading && !metrics")
-      .spinner
-      p {{ $t('common.loadingDashboard') }}
+    b-notification(v-if="errorText" type="is-danger is-light" :closable="false") {{ errorText }}
+    loading-spinner(v-if="loading && !metrics" :message="$t('common.loadingDashboard')")
 
     template(v-if="metrics")
-      section.stats-grid
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.totalProspects') }}
-            span.stat-badge.blue {{ $t('dashboard.pipeline') }}
-          strong.stat-value {{ metrics.totalProspects }}
-          .stat-footer
-            span.stat-sub {{ metrics.activeProspects }} {{ $t('common.active') }}
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.approachMeeting') }}
-            span.stat-badge.cyan {{ $t('dashboard.combined') }}
-          strong.stat-value {{ combinedMeetingRate }}%
-          .stat-footer
-            span.stat-sub {{ combinedMeetings }}/{{ combinedApproaches }}
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.meetingProposal') }}
-            span.stat-badge.blue {{ $t('dashboard.combined') }}
-          strong.stat-value {{ combinedProposalRate }}%
-          .stat-footer
-            span.stat-sub {{ combinedProposals }}/{{ combinedMeetings }}
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.proposalSecured') }}
-            span.stat-badge.teal {{ $t('dashboard.combined') }}
-          strong.stat-value {{ combinedSecuredRate }}%
-          .stat-footer
-            span.stat-sub {{ combinedSecured }}/{{ combinedProposals }}
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.overallWinRate') }}
-            span.stat-badge.green {{ $t('dashboard.combined') }}
-          strong.stat-value {{ combinedOverallRate }}%
-          .stat-footer
-            span.stat-sub {{ combinedSecured }}/{{ combinedApproaches }}
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.pipelineValue') }}
-            span.stat-badge.cyan {{ $t('dashboard.proposals') }}
-          strong.stat-value {{ money.format(metrics.totalProposalValue) }}
-          .stat-footer
-            span.stat-sub {{ $t('dashboard.outstandingProposals') }}
-        .stat-card
-          .stat-header
-            span.stat-label {{ $t('dashboard.workSecured') }}
-            span.stat-badge.green {{ $t('dashboard.revenue') }}
-          strong.stat-value {{ money.format(metrics.totalSecuredValue) }}
-          .stat-footer
-            span.stat-sub {{ $t('dashboard.totalClosedValue') }}
+      //- Stats strip
+      .columns.is-multiline.mb-4
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.totalProspects')"
+            :value="metrics.totalProspects"
+            :badge="$t('dashboard.pipeline')"
+            badge-color="blue"
+            :footer="metrics.activeProspects + ' ' + $t('common.active')"
+          )
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.approachMeeting')"
+            :value="combinedMeetingRate + '%'"
+            :badge="$t('dashboard.combined')"
+            badge-color="cyan"
+            :footer="combinedMeetings + '/' + combinedApproaches"
+          )
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.meetingProposal')"
+            :value="combinedProposalRate + '%'"
+            :badge="$t('dashboard.combined')"
+            badge-color="blue"
+            :footer="combinedProposals + '/' + combinedMeetings"
+          )
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.proposalSecured')"
+            :value="combinedSecuredRate + '%'"
+            :badge="$t('dashboard.combined')"
+            badge-color="teal"
+            :footer="combinedSecured + '/' + combinedProposals"
+          )
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.overallWinRate')"
+            :value="combinedOverallRate + '%'"
+            :badge="$t('dashboard.combined')"
+            badge-color="green"
+            :footer="combinedSecured + '/' + combinedApproaches"
+          )
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.pipelineValue')"
+            :value="money.format(metrics.totalProposalValue)"
+            :badge="$t('dashboard.proposals')"
+            badge-color="cyan"
+            :footer="$t('dashboard.outstandingProposals')"
+          )
+        .column.is-auto
+          stat-card(
+            :label="$t('dashboard.workSecured')"
+            :value="money.format(metrics.totalSecuredValue)"
+            :badge="$t('dashboard.revenue')"
+            badge-color="green"
+            :footer="$t('dashboard.totalClosedValue')"
+          )
 
-      section.rates-section.campaign
+      //- Campaign results
+      .box.rates-section.campaign.mb-4
         h2.section-title
           span.title-icon.cyan
             svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
@@ -479,7 +487,8 @@ export default {
             span.stat-label {{ $t('dashboard.avgDays') }}
             strong.stat-value {{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}
 
-      section.rates-section.total-needs
+      //- Total needs results
+      .box.rates-section.total-needs.mb-4
         h2.section-title
           span.title-icon.orange
             svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
@@ -535,7 +544,8 @@ export default {
             span.stat-label {{ $t('dashboard.avgDays') }}
             strong.stat-value {{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}
 
-      section.rates-section.coi-performance
+      //- COI performance
+      .box.rates-section.coi-performance.mb-4
         h2.section-title
           span.title-icon.teal
             svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
@@ -570,60 +580,40 @@ export default {
             .coi-chart-inner
               Bar(:chart-data="coiIndustryBarData" :chart-options="verticalBarOptions")
 
-      section.charts-row
-        .chart-card
-          h3 {{ $t('dashboard.prospectStatus') }}
-          p.chart-subtitle {{ $t('dashboard.statusDistribution') }}
-          .chart-container.pie
+      //- Charts row
+      .columns.mb-4
+        .column.is-3
+          chart-card(:title="$t('dashboard.prospectStatus')" :subtitle="$t('dashboard.statusDistribution')" chart-type="pie")
             Pie(:chart-data="statusPieData" :chart-options="pieOptions")
-        .chart-card
-          h3 {{ $t('dashboard.leadSources') }}
-          p.chart-subtitle {{ $t('dashboard.whereProspectsCome') }}
-          .chart-container.doughnut
+        .column.is-3
+          chart-card(:title="$t('dashboard.leadSources')" :subtitle="$t('dashboard.whereProspectsCome')" chart-type="doughnut")
             Doughnut(:chart-data="sourceDoughnutData" :chart-options="doughnutOptions")
-        .chart-card.wide
-          h3 {{ $t('dashboard.monthlyTrend') }}
-          p.chart-subtitle {{ $t('dashboard.revenueOverTime') }}
-          .chart-container.line
+        .column.is-6
+          chart-card(:title="$t('dashboard.monthlyTrend')" :subtitle="$t('dashboard.revenueOverTime')" chart-type="line")
             LineChart(:chart-data="monthlyTrendData" :chart-options="lineOptions")
 
-      section.charts-row.single
-        .chart-card.wide
-          h3 {{ $t('dashboard.workSecuredByTeam') }}
-          p.chart-subtitle {{ $t('dashboard.individualPerformance') }}
-          .chart-container.bar-h
+      //- Staff bar chart
+      .columns
+        .column
+          chart-card(:title="$t('dashboard.workSecuredByTeam')" :subtitle="$t('dashboard.individualPerformance')" chart-type="bar-h")
             Bar(:chart-data="staffBarData" :chart-options="horizontalBarOptions")
 </template>
 
 <style scoped>
-.dashboard {
+.dashboard-page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, rgba(0, 177, 224, 0.08) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(0, 200, 255, 0.06) 0%, transparent 30%),
-    linear-gradient(180deg, #e6f9ff 0%, #f0fcff 100%);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  overflow-x: hidden;
+  background: linear-gradient(180deg, #e6f9ff 0%, #f0fcff 100%);
 }
 
-/* Header */
 .dashboard-header {
   background:
     radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(0, 200, 255, 0.2) 0%, transparent 40%),
-    linear-gradient(135deg, #00c4e8 0%, #00b1e0 25%, #009fc8 50%, #008db3 75%, #007a99 100%);
-  border-radius: 24px;
+    linear-gradient(135deg, #00c4e8 0%, #00b1e0 40%, #007a99 100%);
+  border-radius: 20px;
   padding: 2.5rem 2rem;
-  color: white;
-  box-shadow:
-    0 20px 60px rgba(0, 177, 224, 0.35),
-    0 8px 25px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 177, 224, 0.3);
 }
 
 .dashboard-header::before {
@@ -633,134 +623,14 @@ export default {
   right: -20%;
   width: 60%;
   height: 200%;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
   transform: rotate(25deg);
   pointer-events: none;
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.header-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-}
-
-.header-text h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.header-text p {
-  margin: 0.5rem 0 0;
-  opacity: 0.9;
-  font-size: 0.95rem;
-}
-
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
-  font-weight: 600;
-  color: #008db3;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.refresh-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1rem;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 14px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
-}
-
-.stat-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-
-.stat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.stat-badge {
-  font-size: 0.65rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.stat-badge.blue { background: #dbeafe; color: #2563eb; }
-.stat-badge.green { background: #dcfce7; color: #16a34a; }
-.stat-badge.cyan { background: #cffafe; color: #0891b2; }
-.stat-badge.teal { background: #ccfbf1; color: #0d9488; }
-.stat-badge.orange { background: #ffedd5; color: #ea580c; }
-.stat-badge.pink { background: #fce7f3; color: #db2777; }
-
-.stat-value {
-  display: block;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.stat-footer {
-  font-size: 0.8rem;
-  color: #94a3b8;
-}
-
 /* Rates Section */
 .rates-section {
-  background: white;
   border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .section-title {
@@ -1064,39 +934,6 @@ export default {
 
 .chart-container.bar-v {
   height: 240px;
-}
-
-/* Loading & Error States */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 4rem;
-  color: #64748b;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #00b1e0;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.error-message {
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 500;
-  border: 1px solid #fecaca;
 }
 
 /* Responsive */

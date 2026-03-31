@@ -18,7 +18,7 @@ export default {
 </script>
 
 <template lang="pug">
-  .rate-card
+  .rate-card.has-text-centered
     .rate-ring
       svg(viewBox="0 0 100 100")
         circle.ring-bg(cx="50" cy="50" r="42")
@@ -31,8 +31,8 @@ export default {
           :stroke-dashoffset="circumference - (circumference * rate / 100)"
         )
       .rate-value {{ rate }}%
-    span.rate-label {{ label }}
-    span.rate-count {{ count }}
+    p.is-size-7.has-text-grey.mt-2.mb-0 {{ label }}
+    p.is-size-7.has-text-grey-light {{ count }}
 </template>
 
 <style scoped>
@@ -40,7 +40,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.25rem;
 }
 
 .rate-ring {
@@ -85,18 +85,5 @@ export default {
   font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
-}
-
-.rate-label {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 500;
-  text-align: center;
-}
-
-.rate-count {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  font-weight: 500;
 }
 </style>

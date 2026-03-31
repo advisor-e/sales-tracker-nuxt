@@ -9,23 +9,14 @@ export default {
 </script>
 
 <template lang="pug">
-  .loading-state
+  .has-text-centered.p-6
     .spinner
-    p(v-if="message") {{ message }}
+    p.mt-4.has-text-grey(v-if="message") {{ message }}
 </template>
 
 <style scoped>
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 4rem;
-  color: #64748b;
-}
-
 .spinner {
+  display: inline-block;
   width: 40px;
   height: 40px;
   border: 3px solid #e2e8f0;

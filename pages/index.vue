@@ -489,602 +489,334 @@ export default {
 </script>
 
 <template lang="pug">
-  main.page
-    header.page-header
-      .header-content
-        .header-text
-          span.header-badge {{ $t('blog.badge') }}
-          h1 {{ $t('blog.title') }}
-          p {{ $t('blog.subtitle') }}
-
-    section.stats-strip
-      article
-        span {{ $t('blog.savedInputs') }}
-        strong {{ inputs.length }}
-      article
-        span {{ $t('blog.drafts') }}
-        strong {{ draftPosts.length }}
-      article
-        span {{ $t('blog.finals') }}
-        strong {{ finalPosts.length }}
-
-    p.error(v-if="startupError") Startup warning: {{ startupError }}
-
-    section.card.form-card
-      h2 {{ $t('blog.blogInputs') }}
-      .grid
-        label
-          | {{ $t('blog.topic') }}
-          input(v-model="form.topic" :placeholder="$t('blog.topicPlaceholder')")
-        label
-          | {{ $t('blog.audience') }}
-          input(v-model="form.audience")
-        label
-          | {{ $t('blog.objective') }}
-          input(v-model="form.objective")
-        label
-          | {{ $t('blog.tone') }}
-          select(v-model="form.tone")
-            option(v-for="tone in tones" :key="tone" :value="tone") {{ tone }}
-        label
-          | {{ $t('blog.length') }}
-          select(v-model="form.length")
-            option(v-for="length in lengths" :key="length" :value="length") {{ length }}
-        label
-          | {{ $t('blog.wordCount') }}
-          input(v-model="form.wordCount" :placeholder="$t('blog.wordCountPlaceholder')")
-        label
-          | {{ $t('blog.cta') }}
-          input(v-model="form.cta")
-        label
-          | {{ $t('blog.authorType') }}
-          select(v-model="form.authorType")
-            option(v-for="opt in authorTypeOptions" :key="opt" :value="opt") {{ opt }}
-        label
-          | {{ $t('blog.author') }}
-          select(v-model="form.author")
-            option(value="") {{ $t('blog.selectAuthor') }}
-            option(v-for="opt in authorOptions" :key="opt" :value="opt") {{ opt }}
-
-      h3 {{ $t('blog.principles') }}
-      .principles
-        article.principle(v-for="(p, index) in principles" :key="index")
-          h4 {{ $t('blog.principle') }} {{ index + 1 }}
-          textarea.auto-resize(v-model="p.title" rows="1" @input="autoResize")
-          label(v-for="(detail, detailIndex) in p.details" :key="detailIndex")
-            | {{ $t('blog.detail') }} {{ detailIndex + 1 }}
-            textarea.auto-resize(v-model="p.details[detailIndex]" rows="1" @input="autoResize")
-
-      h3 {{ $t('blog.references') }}
-      p.ref-hint {{ $t('blog.refHint') }}
-
-      .ref-list
-        .ref-item(v-for="ref in references" :key="ref.id" :class="{ selected: selectedReferenceIds.includes(ref.id) }")
-          label.ref-checkbox
-            input(type="checkbox" :checked="selectedReferenceIds.includes(ref.id)" @change="toggleReference(ref.id)")
-            span.ref-title {{ ref.title }}
-            span.ref-type {{ ref.type === 'url' ? 'URL' : $t('blog.doc') }}
-          button.ref-delete(@click="deleteReference(ref.id)") {{ $t('common.delete') }}
-        p.ref-empty(v-if="references.length === 0") {{ $t('blog.noReferences') }}
-
-      button.ref-toggle(@click="showRefForm = !showRefForm")
-        | {{ showRefForm ? $t('common.cancel') : $t('blog.addReference') }}
-
-      .ref-form(v-if="showRefForm")
-        label
-          | {{ $t('blog.refTitle') }}
-          input(v-model="newRef.title" :placeholder="$t('blog.refTitlePlaceholder')")
-        label
-          | {{ $t('blog.refType') }}
-          select(v-model="newRef.type")
-            option(value="document") {{ $t('blog.document') }}
-            option(value="url") {{ $t('blog.urlLink') }}
-        label(v-if="newRef.type === 'url'")
-          | URL
-          input(v-model="newRef.url" placeholder="https://...")
-        label(v-if="newRef.type === 'document'")
-          | {{ $t('blog.content') }}
-          textarea(v-model="newRef.content" rows="6" :placeholder="$t('blog.contentPlaceholder')")
-        label
-          | {{ $t('blog.topicOptional') }}
-          input(v-model="newRef.topic" :placeholder="$t('blog.topicOptionalPlaceholder')")
-        button(:disabled="busy || !newRef.title.trim()" @click="saveReference") {{ $t('blog.saveReference') }}
-
-      .actions
-        button(:disabled="busy" @click="saveInputs") {{ $t('blog.saveInputs') }}
-        button(:disabled="busy || !form.topic.trim()" @click="generateDraft")
-          span.spinner(v-if="busy && generatingType === 'draft'")
-          | {{ busy && generatingType === 'draft' ? $t('blog.generating') : $t('blog.generateDraft') }}
-        button(:disabled="busy || !draftText.trim()" @click="generateFinal")
-          span.spinner(v-if="busy && generatingType === 'final'")
-          | {{ busy && generatingType === 'final' ? $t('blog.generating') : $t('blog.generateFinal') }}
-        button(:disabled="busy || !draftText.trim()" @click="savePost('draft')") {{ $t('blog.saveDraft') }}
-        button(:disabled="busy || !finalText.trim()" @click="savePost('final')") {{ $t('blog.saveFinal') }}
-
-      p(v-if="saveStatus" :class="saveStatus.type === 'success' ? 'status' : 'error'") {{ saveStatus.message }}
-      p.status(v-if="aiSource")
-        | Last generation source:
-        strong {{ aiSource }}
-      p.error(v-if="aiError") {{ aiError }}
-
-    section.columns
-      article.card
-        h2 {{ $t('blog.savedInputs') }}
-        .list
-          .list-item(v-for="item in inputs" :key="item.id")
+  section.section.blog-page
+    //- Page header
+    header.blog-header.mb-4
+      .level.is-mobile
+        .level-left
+          .level-item
             div
-              strong {{ item.topic }}
-              p {{ new Date(item.updatedAt).toLocaleString() }}
-            .row-actions
-              button(@click="restoreFromInput(item)") {{ $t('blog.restore') }}
-              button(@click="deleteInput(item)") {{ $t('common.delete') }}
+              b-tag(type="is-link is-light" rounded) {{ $t('blog.badge') }}
+              h1.title.has-text-white.mt-2 {{ $t('blog.title') }}
+              p.subtitle.has-text-white-ter {{ $t('blog.subtitle') }}
 
-      article.card
-        h2 {{ $t('blog.draftOutlines') }}
-        .filters
-          input(v-model="draftSearch" :placeholder="$t('blog.searchDrafts')")
-          label
-            input(v-model="draftPinnedOnly" type="checkbox")
-            | {{ $t('blog.pinnedOnly') }}
-        .list
-          .list-item(v-for="item in filteredDrafts" :key="item.id")
-            div
-              strong {{ item.title }}
-              p {{ new Date(item.updatedAt).toLocaleString() }} &bull; {{ item.isPinned ? $t('blog.pinned') : $t('blog.unpinned') }}
-            .row-actions.wrap
-              button(@click="restoreDraft(item)") {{ $t('blog.restore') }}
-              button(@click="setPinned(item, !item.isPinned)") {{ item.isPinned ? $t('blog.unpin') : $t('blog.pin') }}
-              button(@click="deletePost(item)") {{ $t('common.delete') }}
+    //- Stats strip
+    .columns.is-mobile.mb-4
+      .column
+        .box.stat-strip-box
+          p.heading {{ $t('blog.savedInputs') }}
+          p.title.is-4 {{ inputs.length }}
+      .column
+        .box.stat-strip-box
+          p.heading {{ $t('blog.drafts') }}
+          p.title.is-4 {{ draftPosts.length }}
+      .column
+        .box.stat-strip-box
+          p.heading {{ $t('blog.finals') }}
+          p.title.is-4 {{ finalPosts.length }}
 
-      article.card
-        h2 {{ $t('blog.finalPosts') }}
-        .filters
-          input(v-model="finalSearch" :placeholder="$t('blog.searchFinals')")
-          label
-            input(v-model="finalPinnedOnly" type="checkbox")
-            | {{ $t('blog.pinnedOnly') }}
-        .list
-          .list-item(v-for="item in filteredFinals" :key="item.id")
-            div
-              strong {{ item.title }}
-              p {{ new Date(item.updatedAt).toLocaleString() }} &bull; {{ item.isPinned ? $t('blog.pinned') : $t('blog.unpinned') }}
-            .row-actions.wrap
-              button(@click="restoreFinal(item)") {{ $t('blog.restore') }}
-              button(@click="duplicateFinalToDraft(item)") {{ $t('blog.duplicateToDraft') }}
-              button(@click="setPinned(item, !item.isPinned)") {{ item.isPinned ? $t('blog.unpin') : $t('blog.pin') }}
-              button(@click="deletePost(item)") {{ $t('common.delete') }}
+    b-notification(v-if="startupError" type="is-warning is-light" :closable="false")
+      | Startup warning: {{ startupError }}
 
-    section.card.editor-card
-      .editor-header
-        h2
-          | {{ $t('blog.draftOutline') }}
-          span.word-count(v-if="draftWordCount > 0") {{ draftWordCount }} {{ $t('blog.words') }}
-        button.preview-toggle(:class="{ editing: !showPreview }" @click="showPreview = !showPreview")
-          | {{ showPreview ? $t('blog.editMode') : $t('blog.saveChanges') }}
-      textarea(v-if="!showPreview" v-model="draftText" rows="14")
+    //- Blog inputs form
+    .box.mb-4
+      p.title.is-5 {{ $t('blog.blogInputs') }}
+      .columns.is-multiline
+        .column.is-6
+          b-field(:label="$t('blog.topic')")
+            b-input(v-model="form.topic" :placeholder="$t('blog.topicPlaceholder')" expanded)
+        .column.is-6
+          b-field(:label="$t('blog.audience')")
+            b-input(v-model="form.audience" expanded)
+        .column.is-6
+          b-field(:label="$t('blog.objective')")
+            b-input(v-model="form.objective" expanded)
+        .column.is-3
+          b-field(:label="$t('blog.tone')")
+            b-select(v-model="form.tone" expanded)
+              option(v-for="tone in tones" :key="tone" :value="tone") {{ tone }}
+        .column.is-3
+          b-field(:label="$t('blog.length')")
+            b-select(v-model="form.length" expanded)
+              option(v-for="length in lengths" :key="length" :value="length") {{ length }}
+        .column.is-3
+          b-field(:label="$t('blog.wordCount')")
+            b-input(v-model="form.wordCount" :placeholder="$t('blog.wordCountPlaceholder')" expanded)
+        .column.is-3
+          b-field(:label="$t('blog.cta')")
+            b-input(v-model="form.cta" expanded)
+        .column.is-3
+          b-field(:label="$t('blog.authorType')")
+            b-select(v-model="form.authorType" expanded)
+              option(v-for="opt in authorTypeOptions" :key="opt" :value="opt") {{ opt }}
+        .column.is-3
+          b-field(:label="$t('blog.author')")
+            b-select(v-model="form.author" expanded)
+              option(value="") {{ $t('blog.selectAuthor') }}
+              option(v-for="opt in authorOptions" :key="opt" :value="opt") {{ opt }}
+
+      //- Principles
+      p.title.is-6.mb-2 {{ $t('blog.principles') }}
+      .columns.is-multiline
+        .column.is-4(v-for="(p, index) in principles" :key="index")
+          .box.has-background-light
+            p.has-text-weight-bold.has-text-purple.mb-2 {{ $t('blog.principle') }} {{ index + 1 }}
+            b-field
+              b-input(v-model="p.title" type="textarea" rows="1" custom-class="auto-resize" @input.native="autoResize" expanded)
+            b-field(v-for="(detail, detailIndex) in p.details" :key="detailIndex" :label="$t('blog.detail') + ' ' + (detailIndex + 1)")
+              b-input(v-model="p.details[detailIndex]" type="textarea" rows="1" custom-class="auto-resize" @input.native="autoResize" expanded)
+
+      //- References
+      p.title.is-6.mb-2 {{ $t('blog.references') }}
+      p.is-size-7.has-text-grey.mb-3 {{ $t('blog.refHint') }}
+
+      .ref-list.mb-3
+        .level.is-mobile.ref-item(v-for="ref in references" :key="ref.id" :class="{ 'is-selected-ref': selectedReferenceIds.includes(ref.id) }")
+          .level-left
+            .level-item
+              b-checkbox(:value="selectedReferenceIds.includes(ref.id)" @input="toggleReference(ref.id)")
+            .level-item
+              span.has-text-weight-medium.is-size-7 {{ ref.title }}
+            .level-item
+              b-tag(size="is-small" type="is-light") {{ ref.type === 'url' ? 'URL' : $t('blog.doc') }}
+          .level-right
+            .level-item
+              b-button(size="is-small" type="is-danger is-light" @click="deleteReference(ref.id)") {{ $t('common.delete') }}
+        p.has-text-grey.is-italic.is-size-7(v-if="references.length === 0") {{ $t('blog.noReferences') }}
+
+      b-button.mb-3(
+        size="is-small"
+        @click="showRefForm = !showRefForm"
+      ) {{ showRefForm ? $t('common.cancel') : $t('blog.addReference') }}
+
+      .box.has-background-light.mb-3(v-if="showRefForm")
+        .columns.is-multiline
+          .column.is-6
+            b-field(:label="$t('blog.refTitle')")
+              b-input(v-model="newRef.title" :placeholder="$t('blog.refTitlePlaceholder')" expanded)
+          .column.is-6
+            b-field(:label="$t('blog.refType')")
+              b-select(v-model="newRef.type" expanded)
+                option(value="document") {{ $t('blog.document') }}
+                option(value="url") {{ $t('blog.urlLink') }}
+          .column.is-12(v-if="newRef.type === 'url'")
+            b-field(label="URL")
+              b-input(v-model="newRef.url" placeholder="https://..." expanded)
+          .column.is-12(v-if="newRef.type === 'document'")
+            b-field(:label="$t('blog.content')")
+              b-input(v-model="newRef.content" type="textarea" rows="6" :placeholder="$t('blog.contentPlaceholder')" expanded)
+          .column.is-6
+            b-field(:label="$t('blog.topicOptional')")
+              b-input(v-model="newRef.topic" :placeholder="$t('blog.topicOptionalPlaceholder')" expanded)
+        b-button(
+          type="is-success"
+          :disabled="busy || !newRef.title.trim()"
+          @click="saveReference"
+        ) {{ $t('blog.saveReference') }}
+
+      //- Action buttons
+      .buttons.mt-4
+        b-button(:disabled="busy" @click="saveInputs") {{ $t('blog.saveInputs') }}
+        b-button(
+          type="is-primary"
+          :loading="busy && generatingType === 'draft'"
+          :disabled="busy || !form.topic.trim()"
+          @click="generateDraft"
+        ) {{ $t('blog.generateDraft') }}
+        b-button(
+          type="is-info"
+          :loading="busy && generatingType === 'final'"
+          :disabled="busy || !draftText.trim()"
+          @click="generateFinal"
+        ) {{ $t('blog.generateFinal') }}
+        b-button(:disabled="busy || !draftText.trim()" @click="savePost('draft')") {{ $t('blog.saveDraft') }}
+        b-button(:disabled="busy || !finalText.trim()" @click="savePost('final')") {{ $t('blog.saveFinal') }}
+
+      b-notification(v-if="saveStatus" :type="saveStatus.type === 'success' ? 'is-success is-light' : 'is-danger is-light'" :closable="false")
+        | {{ saveStatus.message }}
+      p.is-size-7.has-text-grey.mt-2(v-if="aiSource")
+        | Last generation source: #[strong {{ aiSource }}]
+      b-notification(v-if="aiError" type="is-warning is-light" :closable="false") {{ aiError }}
+
+    //- Saved lists
+    .columns.mb-4
+      .column.is-4
+        .box
+          p.title.is-5 {{ $t('blog.savedInputs') }}
+          .saved-list
+            .level.is-mobile.saved-item(v-for="item in inputs" :key="item.id")
+              .level-left
+                .level-item
+                  div
+                    p.has-text-weight-bold.is-size-7 {{ item.topic }}
+                    p.has-text-grey.is-size-7 {{ new Date(item.updatedAt).toLocaleString() }}
+              .level-right
+                .level-item
+                  b-button(size="is-small" @click="restoreFromInput(item)") {{ $t('blog.restore') }}
+                .level-item
+                  b-button(size="is-small" type="is-danger is-light" @click="deleteInput(item)") {{ $t('common.delete') }}
+
+      .column.is-4
+        .box
+          p.title.is-5 {{ $t('blog.draftOutlines') }}
+          .field.is-grouped.mb-3
+            .control.is-expanded
+              b-input(v-model="draftSearch" :placeholder="$t('blog.searchDrafts')" size="is-small" expanded)
+            .control
+              b-checkbox(v-model="draftPinnedOnly" size="is-small") {{ $t('blog.pinnedOnly') }}
+          .saved-list
+            .saved-item(v-for="item in filteredDrafts" :key="item.id")
+              .level.is-mobile
+                .level-left
+                  .level-item
+                    div
+                      p.has-text-weight-bold.is-size-7 {{ item.title }}
+                      p.has-text-grey.is-size-7
+                        | {{ new Date(item.updatedAt).toLocaleString() }}
+                        b-tag.ml-1(size="is-small" :type="item.isPinned ? 'is-warning is-light' : 'is-light'")
+                          | {{ item.isPinned ? $t('blog.pinned') : $t('blog.unpinned') }}
+              .buttons.are-small.mt-1
+                b-button(size="is-small" @click="restoreDraft(item)") {{ $t('blog.restore') }}
+                b-button(size="is-small" @click="setPinned(item, !item.isPinned)") {{ item.isPinned ? $t('blog.unpin') : $t('blog.pin') }}
+                b-button(size="is-small" type="is-danger is-light" @click="deletePost(item)") {{ $t('common.delete') }}
+
+      .column.is-4
+        .box
+          p.title.is-5 {{ $t('blog.finalPosts') }}
+          .field.is-grouped.mb-3
+            .control.is-expanded
+              b-input(v-model="finalSearch" :placeholder="$t('blog.searchFinals')" size="is-small" expanded)
+            .control
+              b-checkbox(v-model="finalPinnedOnly" size="is-small") {{ $t('blog.pinnedOnly') }}
+          .saved-list
+            .saved-item(v-for="item in filteredFinals" :key="item.id")
+              .level.is-mobile
+                .level-left
+                  .level-item
+                    div
+                      p.has-text-weight-bold.is-size-7 {{ item.title }}
+                      p.has-text-grey.is-size-7
+                        | {{ new Date(item.updatedAt).toLocaleString() }}
+                        b-tag.ml-1(size="is-small" :type="item.isPinned ? 'is-warning is-light' : 'is-light'")
+                          | {{ item.isPinned ? $t('blog.pinned') : $t('blog.unpinned') }}
+              .buttons.are-small.mt-1
+                b-button(size="is-small" @click="restoreFinal(item)") {{ $t('blog.restore') }}
+                b-button(size="is-small" @click="duplicateFinalToDraft(item)") {{ $t('blog.duplicateToDraft') }}
+                b-button(size="is-small" @click="setPinned(item, !item.isPinned)") {{ item.isPinned ? $t('blog.unpin') : $t('blog.pin') }}
+                b-button(size="is-small" type="is-danger is-light" @click="deletePost(item)") {{ $t('common.delete') }}
+
+    //- Editor
+    .box
+      .level.mb-3
+        .level-left
+          .level-item
+            p.title.is-5.mb-0 {{ $t('blog.draftOutline') }}
+          .level-item(v-if="draftWordCount > 0")
+            b-tag(:type="'is-success is-light'") {{ draftWordCount }} {{ $t('blog.words') }}
+        .level-right
+          .level-item
+            b-button(
+              :type="showPreview ? 'is-primary' : 'is-success'"
+              size="is-small"
+              @click="showPreview = !showPreview"
+            ) {{ showPreview ? $t('blog.editMode') : $t('blog.saveChanges') }}
+
+      b-input(v-if="!showPreview" v-model="draftText" type="textarea" rows="14" expanded)
       .markdown-preview(v-else v-html="draftHtml")
 
-      .ai-instructions-section(v-if="draftText.trim()")
-        h3 {{ $t('blog.aiInstructions') }}
-        p.ai-instructions-hint {{ $t('blog.aiInstructionsHint') }}
-        textarea.ai-instructions-input(
+      .box.has-background-light.mt-3(v-if="draftText.trim()")
+        p.title.is-6 {{ $t('blog.aiInstructions') }}
+        p.is-size-7.has-text-grey.mb-2 {{ $t('blog.aiInstructionsHint') }}
+        b-input(
           v-model="form.aiInstructions"
+          type="textarea"
           rows="3"
           :placeholder="$t('blog.aiInstructionsPlaceholder')"
+          expanded
         )
 
-      h2
-        | {{ $t('blog.finalPost') }}
-        span.word-count(v-if="finalWordCount > 0" :class="{ 'word-count-short': isWordCountShort }")
-          | {{ finalWordCount }} {{ $t('blog.words') }}
-          template(v-if="isWordCountShort") ({{ $t('blog.target') }}: {{ form.wordCount }})
-      label
-        | {{ $t('blog.polishLevel') }}
-        select(v-model="form.polishLevel")
-          option(v-for="level in polishLevels" :key="level" :value="level") {{ level }}
-      textarea(v-if="!showPreview" v-model="finalText" rows="16")
+      .level.mt-4.mb-2
+        .level-left
+          .level-item
+            p.title.is-5.mb-0 {{ $t('blog.finalPost') }}
+          .level-item(v-if="finalWordCount > 0")
+            b-tag(:type="isWordCountShort ? 'is-danger is-light' : 'is-success is-light'")
+              | {{ finalWordCount }} {{ $t('blog.words') }}
+              template(v-if="isWordCountShort")  ({{ $t('blog.target') }}: {{ form.wordCount }})
+        .level-right
+          .level-item
+            b-field(:label="$t('blog.polishLevel')" horizontal)
+              b-select(v-model="form.polishLevel")
+                option(v-for="level in polishLevels" :key="level" :value="level") {{ level }}
+
+      b-input(v-if="!showPreview" v-model="finalText" type="textarea" rows="16" expanded)
       .markdown-preview(v-else v-html="finalHtml")
 </template>
 
 <style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  color: #0f172a;
+.blog-page {
   min-height: 100vh;
-  padding: 1.5rem;
-  background:
-    radial-gradient(circle at top right, rgba(208, 21, 213, 0.1) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(255, 150, 255, 0.08) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(208, 21, 213, 0.06) 0%, transparent 35%),
-    linear-gradient(180deg, #fdf0fd 0%, #fcecfc 100%);
+  background: linear-gradient(180deg, #fdf0fd 0%, #fcecfc 100%);
 }
 
-.page-header {
+.blog-header {
   background:
     radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(255, 150, 255, 0.25) 0%, transparent 40%),
-    linear-gradient(135deg, #e020e5 0%, #d015d5 25%, #b312b8 50%, #960f9a 75%, #7a0c7e 100%);
-  border-radius: 24px;
+    linear-gradient(135deg, #e020e5 0%, #b312b8 50%, #7a0c7e 100%);
+  border-radius: 20px;
   padding: 2.5rem 2rem;
-  color: white;
-  box-shadow:
-    0 20px 60px rgba(208, 21, 213, 0.35),
-    0 8px 25px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(208, 21, 213, 0.3);
 }
 
-.page-header::before {
+.blog-header::before {
   content: '';
   position: absolute;
   top: -50%;
   right: -20%;
   width: 60%;
   height: 200%;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
   transform: rotate(25deg);
   pointer-events: none;
 }
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.header-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-}
-.header-text h1 { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.2; }
-.header-text p { margin: 0.5rem 0 0; opacity: 0.9; font-size: 0.95rem; line-height: 1.4; max-width: 400px; }
 
-.stats-strip {
-  display: grid;
-  gap: 0.58rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.stats-strip article {
-  border-radius: 18px;
-  padding: 0.62rem 0.7rem;
+.stat-strip-box {
   background: linear-gradient(180deg, #fce8fc, #f7ccf7);
-  box-shadow: 0 12px 28px rgba(208, 21, 213, 0.12);
-}
-.stats-strip span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8a0e8e; }
-.stats-strip strong { display: block; margin-top: 0.2rem; font-size: 1.2rem; color: #6a0b6e; }
-
-.card {
-  background: #ffffff;
-  border: 1px solid rgba(208, 21, 213, 0.14);
-  border-radius: 18px;
-  padding: 0.72rem;
-  box-shadow: 0 12px 28px rgba(208, 21, 213, 0.08);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-input,
-select,
-textarea,
-button {
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 0.36rem 0.48rem;
-  font-size: 0.84rem;
-  line-height: 1.2;
-}
-
-textarea {
-  width: 100%;
-  margin: 0.25rem 0 0.55rem;
-  font-family: inherit;
-}
-
-.actions {
-  display: flex;
-  gap: 0.38rem;
-  flex-wrap: wrap;
-  margin-top: 0.55rem;
-}
-
-button {
-  cursor: pointer;
-  background: #fdf4ff;
-  border-color: rgba(208, 21, 213, 0.25);
-  font-size: 0.8rem;
-  line-height: 1.1;
-  padding: 0.34rem 0.48rem;
-}
-
-button:hover:enabled {
-  background: #fae8fa;
-  border-color: rgba(208, 21, 213, 0.4);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(208, 21, 213, 0.3);
-  border-top-color: #d015d5;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.ai-instructions-section {
-  margin: 1rem 0;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-  border: 1px solid rgba(208, 21, 213, 0.2);
-  border-radius: 12px;
-}
-
-.ai-instructions-section h3 {
-  margin: 0 0 0.25rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #6a0b6e;
-}
-
-.ai-instructions-hint {
-  margin: 0 0 0.5rem;
-  font-size: 0.75rem;
-  color: #64748b;
-}
-
-.ai-instructions-input {
-  width: 100%;
-  min-height: 60px;
-  resize: vertical;
-  font-family: inherit;
-  background: white;
-}
-
-.principles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.46rem;
-  margin-top: 0.45rem;
-}
-
-.principle {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.48rem;
-}
-
-.principle h4 {
-  margin: 0 0 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #6a0b6e;
-}
-
-.auto-resize {
-  width: 100%;
-  min-height: 2rem;
-  resize: none;
-  overflow: hidden;
-  line-height: 1.4;
-}
-
-.ref-hint {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin: 0 0 0.5rem;
+  text-align: center;
 }
 
 .ref-list {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  margin-bottom: 0.5rem;
 }
 
 .ref-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 0.4rem 0.5rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #fafafa;
 }
 
-.ref-item.selected {
+.is-selected-ref {
   border-color: #d015d5;
   background: #fdf4ff;
 }
 
-.ref-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  cursor: pointer;
-}
-
-.ref-checkbox input {
-  width: auto;
-}
-
-.ref-title {
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.ref-type {
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  background: #e2e8f0;
-  border-radius: 4px;
-  color: #64748b;
-}
-
-.ref-delete {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.4rem;
-  background: transparent;
-  border: 1px solid #fca5a5;
-  color: #b91c1c;
-}
-
-.ref-delete:hover {
-  background: #fee2e2;
-}
-
-.ref-empty {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  font-style: italic;
-  margin: 0;
-}
-
-.ref-toggle {
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-}
-
-.ref-form {
+.saved-list {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  padding: 0.6rem;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.saved-item {
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #f8fafc;
-  margin-bottom: 0.6rem;
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.32rem;
-  max-height: 360px;
-  overflow: auto;
-}
-
-.list-item {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.4rem 0.48rem;
-}
-
-.list-item p {
-  margin: 0.16rem 0 0;
-  color: #475569;
-  font-size: 0.75rem;
-}
-
-.row-actions {
-  display: flex;
-  gap: 0.3rem;
-  margin-top: 0.3rem;
-}
-
-.row-actions.wrap {
-  flex-wrap: wrap;
-}
-
-.filters {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.42rem;
-  align-items: center;
-}
-
-.status {
-  color: #a21caf;
-}
-
-.error {
-  color: #b91c1c;
-}
-
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.editor-header h2 {
-  margin: 0;
-}
-
-.word-count {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #16a34a;
-  background: #dcfce7;
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-  margin-left: 0.5rem;
-}
-
-.word-count-short {
-  color: #dc2626;
-  background: #fee2e2;
-}
-
-.preview-toggle {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.preview-toggle:hover {
-  background: #4f46e5;
-}
-
-.preview-toggle.editing {
-  background: #16a34a;
-}
-
-.preview-toggle.editing:hover {
-  background: #15803d;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
 }
 
 .markdown-preview {
@@ -1098,12 +830,13 @@ button:disabled {
   line-height: 1.6;
 }
 
-@media (max-width: 980px) {
-  .stats-strip,
-  .grid,
-  .principles,
-  .columns {
-    grid-template-columns: 1fr;
-  }
+.auto-resize {
+  min-height: 2rem;
+  resize: none;
+  overflow: hidden;
+}
+
+.has-text-purple {
+  color: #6a0b6e;
 }
 </style>

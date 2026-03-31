@@ -21,8 +21,14 @@ module.exports = {
     }
   },
 
+  // Global CSS
+  css: [
+    'buefy/dist/buefy.css'
+  ],
+
   // Plugins
   plugins: [
+    '~/plugins/buefy.js',
     '~/plugins/i18n.js',
     { src: '~/plugins/csrf.client.js', mode: 'client' }
   ],

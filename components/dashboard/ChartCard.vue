@@ -12,34 +12,17 @@ export default {
 </script>
 
 <template lang="pug">
-  .chart-card(:class="{ wide }")
-    h3 {{ title }}
-    p.chart-subtitle(v-if="subtitle") {{ subtitle }}
+  .box.chart-card(:class="{ wide }")
+    p.title.is-6.mb-1 {{ title }}
+    p.is-size-7.has-text-grey-light.mb-3(v-if="subtitle") {{ subtitle }}
     .chart-container(:class="chartType || 'default'")
       slot
 </template>
 
 <style scoped>
 .chart-card {
-  background: white;
-  border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   min-width: 0;
-}
-
-.chart-card h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.chart-subtitle {
-  margin: 0.25rem 0 1rem;
-  font-size: 0.8rem;
-  color: #94a3b8;
 }
 
 .chart-container {

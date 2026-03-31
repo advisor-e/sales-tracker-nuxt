@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
+    "buefy": "^0.9.25",
     "chart.js": "^3.9.1",
     "cookie-parser": "^1.4.6",
     "express": "^4.18.2",

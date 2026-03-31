@@ -202,408 +202,226 @@ export default {
 </script>
 
 <template lang="pug">
-  section.page-wrap
-    header.page-header
-      .header-content
-        .header-text
-          span.header-badge {{ $t('coi.badge') }}
-          h1 {{ $t('coi.title') }}
-          p {{ $t('coi.subtitle') }}
-        button.refresh-btn(@click="loadSummary(); loadCoiEntries();") {{ $t('coi.refresh') }}
+  section.section.coi-page
+    //- Page header
+    header.coi-header.mb-5
+      .level.is-mobile
+        .level-left
+          .level-item
+            div
+              b-tag(type="is-success is-light" rounded) {{ $t('coi.badge') }}
+              h1.title.has-text-white.mt-2 {{ $t('coi.title') }}
+              p.subtitle.has-text-white-ter {{ $t('coi.subtitle') }}
+        .level-right
+          .level-item
+            b-button(@click="loadSummary(); loadCoiEntries();" :loading="loading" type="is-white" rounded)
+              | {{ $t('coi.refresh') }}
 
-    section.summary-strip
-      article
-        span {{ $t('coi.coiRelationships') }}
-        strong {{ totals.relationships }}
-      article
-        span {{ $t('coi.totalReferrals') }}
-        strong {{ totals.totalReferrals }}
-      article
-        span {{ $t('coi.converted') }}
-        strong {{ totals.totalConverted }}
-      article
-        span {{ $t('coi.conversionRate') }}
-        strong {{ (totals.conversionRate * 100).toFixed(1) }}%
-      article
-        span {{ $t('coi.proposedFeeValue') }}
-        strong ${{ totals.totalProposedValue.toLocaleString() }}
-      article
-        span {{ $t('coi.securedFeeValue') }}
-        strong ${{ totals.totalSecuredValue.toLocaleString() }}
+    //- Summary strip
+    .columns.is-multiline.mb-4
+      .column.is-2-desktop.is-4-tablet
+        .box.summary-box
+          p.heading {{ $t('coi.coiRelationships') }}
+          p.title.is-4 {{ totals.relationships }}
+      .column.is-2-desktop.is-4-tablet
+        .box.summary-box
+          p.heading {{ $t('coi.totalReferrals') }}
+          p.title.is-4 {{ totals.totalReferrals }}
+      .column.is-2-desktop.is-4-tablet
+        .box.summary-box
+          p.heading {{ $t('coi.converted') }}
+          p.title.is-4 {{ totals.totalConverted }}
+      .column.is-2-desktop.is-4-tablet
+        .box.summary-box
+          p.heading {{ $t('coi.conversionRate') }}
+          p.title.is-4 {{ (totals.conversionRate * 100).toFixed(1) }}%
+      .column.is-2-desktop.is-4-tablet
+        .box.summary-box
+          p.heading {{ $t('coi.proposedFeeValue') }}
+          p.title.is-4 ${{ totals.totalProposedValue.toLocaleString() }}
+      .column.is-2-desktop.is-4-tablet
+        .box.summary-box
+          p.heading {{ $t('coi.securedFeeValue') }}
+          p.title.is-4 ${{ totals.totalSecuredValue.toLocaleString() }}
 
-    section.card.add-section
-      h2 {{ $t('coi.addCoi') }}
-      p.section-desc {{ $t('coi.addCoiDesc') }}
-      form.coi-form(@submit.prevent="addCoi")
-        .form-row
-          .form-group
-            label
-              | {{ $t('coi.coiName') }}
-              span.required *
-            input(v-model="newCoi.coiName" :placeholder="$t('coi.placeholderName')" required)
-          .form-group
-            label {{ $t('coi.email') }}
-            input(v-model="newCoi.email" type="email" :placeholder="$t('coi.placeholderEmail')")
-          .form-group
-            label {{ $t('coi.cellPhone') }}
-            input(v-model="newCoi.cell" :placeholder="$t('coi.placeholderPhone')")
-        .form-row
-          .form-group
-            label {{ $t('coi.entityCompany') }}
-            input(v-model="newCoi.entity" :placeholder="$t('coi.placeholderCompany')")
-          .form-group
-            label {{ $t('coi.position') }}
-            input(v-model="newCoi.position" :placeholder="$t('coi.placeholderPosition')")
-          .form-group
-            label {{ $t('coi.industry') }}
-            select(v-model="newCoi.industry")
-              option(value="") {{ $t('coi.selectIndustry') }}
-              option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
-        .form-row
-          .form-group
-            label {{ $t('coi.leadPartner') }}
-            select(v-model="newCoi.leadRelationshipPartner")
-              option(value="") {{ $t('coi.selectPartner') }}
-              option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
-          .form-group
-            label {{ $t('coi.relationshipSupport') }}
-            select(v-model="newCoi.relationshipSupport")
-              option(value="") {{ $t('coi.selectStaff') }}
-              option(v-for="opt in staffOptions" :key="opt" :value="opt") {{ opt }}
-          .form-group.btn-group
-            button.btn-add(type="submit" :disabled="!newCoi.coiName.trim() || savingCoi")
-              | {{ savingCoi ? $t('coi.saving') : $t('coi.addCoiBtn') }}
+    b-notification(v-if="errorText" type="is-danger is-light" :closable="false") {{ errorText }}
 
-    section.card
-      .card-header-row
-        div
-          h2 {{ $t('coi.directory') }}
-          p.section-desc {{ $t('coi.directoryDesc') }}
-        button.btn-remove-selected(
-          v-if="selectedIds.length > 0"
-          :disabled="deletingSelected"
-          @click="removeSelectedCois"
-        ) {{ deletingSelected ? $t('coi.removing') : $t('coi.removeSelected', { count: selectedIds.length }) }}
+    //- Add COI form
+    .box.add-section.mb-4
+      p.title.is-5 {{ $t('coi.addCoi') }}
+      p.is-size-7.has-text-grey.mb-4 {{ $t('coi.addCoiDesc') }}
+      form(@submit.prevent="addCoi")
+        .columns.is-multiline
+          .column.is-4
+            b-field(:label="$t('coi.coiName')" label-for="coi-name")
+              b-input#coi-name(v-model="newCoi.coiName" :placeholder="$t('coi.placeholderName')" required expanded)
+          .column.is-4
+            b-field(:label="$t('coi.email')" label-for="coi-email")
+              b-input#coi-email(v-model="newCoi.email" type="email" :placeholder="$t('coi.placeholderEmail')" expanded)
+          .column.is-4
+            b-field(:label="$t('coi.cellPhone')" label-for="coi-cell")
+              b-input#coi-cell(v-model="newCoi.cell" :placeholder="$t('coi.placeholderPhone')" expanded)
+          .column.is-4
+            b-field(:label="$t('coi.entityCompany')" label-for="coi-entity")
+              b-input#coi-entity(v-model="newCoi.entity" :placeholder="$t('coi.placeholderCompany')" expanded)
+          .column.is-4
+            b-field(:label="$t('coi.position')" label-for="coi-position")
+              b-input#coi-position(v-model="newCoi.position" :placeholder="$t('coi.placeholderPosition')" expanded)
+          .column.is-4
+            b-field(:label="$t('coi.industry')" label-for="coi-industry")
+              b-select#coi-industry(v-model="newCoi.industry" expanded)
+                option(value="") {{ $t('coi.selectIndustry') }}
+                option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
+          .column.is-4
+            b-field(:label="$t('coi.leadPartner')" label-for="coi-partner")
+              b-select#coi-partner(v-model="newCoi.leadRelationshipPartner" expanded)
+                option(value="") {{ $t('coi.selectPartner') }}
+                option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
+          .column.is-4
+            b-field(:label="$t('coi.relationshipSupport')" label-for="coi-support")
+              b-select#coi-support(v-model="newCoi.relationshipSupport" expanded)
+                option(value="") {{ $t('coi.selectStaff') }}
+                option(v-for="opt in staffOptions" :key="opt" :value="opt") {{ opt }}
+          .column.is-4.is-flex.is-align-items-flex-end
+            b-button(
+              native-type="submit"
+              type="is-success"
+              :loading="savingCoi"
+              :disabled="!newCoi.coiName.trim()"
+              expanded
+            ) {{ $t('coi.addCoiBtn') }}
 
-      p(v-if="loadingEntries") {{ $t('coi.loadingEntries') }}
-      table(v-else-if="coiEntries.length > 0")
-        thead
-          tr
-            th.checkbox-col
-              input(
-                type="checkbox"
-                :checked="allSelected"
-                @change="toggleSelectAll"
-                :title="$t('coi.selectAll')"
-              )
-            th {{ $t('coi.name') }}
-            th {{ $t('coi.entity') }}
-            th {{ $t('coi.industry') }}
-            th {{ $t('coi.email') }}
-            th {{ $t('coi.cell') }}
-            th {{ $t('coi.leadPartner') }}
-            th.progress-col {{ $t('coi.couldWe') }}
-            th.progress-col {{ $t('coi.howWouldWe') }}
-            th.progress-col {{ $t('coi.willWe') }}
-            th.progress-col {{ $t('coi.testReview') }}
-        tbody
-          tr(
-            v-for="entry in coiEntries"
-            :key="entry.id"
-            :class="{ 'row-selected': selectedIds.includes(entry.id) }"
-          )
-            td.checkbox-col
-              input(
-                type="checkbox"
-                :checked="selectedIds.includes(entry.id)"
-                @change="toggleSelection(entry.id)"
-              )
-            td {{ entry.coiName }}
-            td {{ entry.entity || "-" }}
-            td {{ entry.industry || "-" }}
-            td {{ entry.email || "-" }}
-            td {{ entry.cell || "-" }}
-            td {{ entry.leadRelationshipPartner || "-" }}
-            td.progress-col
-              input(type="checkbox" :checked="!!entry.couldWe" @change="toggleProgress(entry, 'couldWe')")
-            td.progress-col
-              input(type="checkbox" :checked="!!entry.howWouldWe" @change="toggleProgress(entry, 'howWouldWe')")
-            td.progress-col
-              input(type="checkbox" :checked="!!entry.willWe" @change="toggleProgress(entry, 'willWe')")
-            td.progress-col
-              input(type="checkbox" :checked="!!entry.testReview" @change="toggleProgress(entry, 'testReview')")
-      p.empty-table(v-else) {{ $t('coi.noEntries') }}
+    //- COI Directory
+    .box.mb-4
+      .level.mb-3
+        .level-left
+          .level-item
+            div
+              p.title.is-5.mb-1 {{ $t('coi.directory') }}
+              p.is-size-7.has-text-grey {{ $t('coi.directoryDesc') }}
+        .level-right
+          .level-item(v-if="selectedIds.length > 0")
+            b-button(
+              type="is-danger"
+              :loading="deletingSelected"
+              @click="removeSelectedCois"
+              size="is-small"
+            ) {{ $t('coi.removeSelected', { count: selectedIds.length }) }}
 
-    p.error(v-if="errorText") {{ errorText }}
-    p(v-if="loading") {{ $t('coi.loadingSummary') }}
+      loading-spinner(v-if="loadingEntries")
+      .table-container(v-else-if="coiEntries.length > 0")
+        table.table.is-fullwidth.is-striped.is-hoverable.is-size-7
+          thead
+            tr
+              th.checkbox-col
+                b-checkbox(
+                  :value="allSelected"
+                  @input="toggleSelectAll"
+                  :title="$t('coi.selectAll')"
+                )
+              th {{ $t('coi.name') }}
+              th {{ $t('coi.entity') }}
+              th {{ $t('coi.industry') }}
+              th {{ $t('coi.email') }}
+              th {{ $t('coi.cell') }}
+              th {{ $t('coi.leadPartner') }}
+              th.has-text-centered {{ $t('coi.couldWe') }}
+              th.has-text-centered {{ $t('coi.howWouldWe') }}
+              th.has-text-centered {{ $t('coi.willWe') }}
+              th.has-text-centered {{ $t('coi.testReview') }}
+          tbody
+            tr(
+              v-for="entry in coiEntries"
+              :key="entry.id"
+              :class="{ 'is-selected': selectedIds.includes(entry.id) }"
+            )
+              td.checkbox-col
+                b-checkbox(
+                  :value="selectedIds.includes(entry.id)"
+                  @input="toggleSelection(entry.id)"
+                )
+              td {{ entry.coiName }}
+              td {{ entry.entity || "-" }}
+              td {{ entry.industry || "-" }}
+              td {{ entry.email || "-" }}
+              td {{ entry.cell || "-" }}
+              td {{ entry.leadRelationshipPartner || "-" }}
+              td.has-text-centered
+                b-checkbox(:value="!!entry.couldWe" @input="toggleProgress(entry, 'couldWe')")
+              td.has-text-centered
+                b-checkbox(:value="!!entry.howWouldWe" @input="toggleProgress(entry, 'howWouldWe')")
+              td.has-text-centered
+                b-checkbox(:value="!!entry.willWe" @input="toggleProgress(entry, 'willWe')")
+              td.has-text-centered
+                b-checkbox(:value="!!entry.testReview" @input="toggleProgress(entry, 'testReview')")
+      p.has-text-grey.is-italic(v-else) {{ $t('coi.noEntries') }}
 
-    section.card
-      h2 {{ $t('coi.performanceTitle') }}
-      p.section-desc {{ $t('coi.performanceDesc') }}
-      table(v-if="summaryItems.length > 0")
-        thead
-          tr
-            th {{ $t('coi.coiName') }}
-            th {{ $t('coi.referrals') }}
-            th {{ $t('coi.active') }}
-            th {{ $t('coi.converted') }}
-            th {{ $t('coi.conversionRate') }}
-            th {{ $t('coi.proposedFeeValue') }}
-            th {{ $t('coi.securedFeeValue') }}
-        tbody
-          tr(v-for="item in summaryItems" :key="item.coiName")
-            td {{ item.coiName }}
-            td {{ item.totalReferrals }}
-            td {{ item.active }}
-            td {{ item.converted }}
-            td {{ item.totalReferrals > 0 ? ((item.converted / item.totalReferrals) * 100).toFixed(1) : '0.0' }}%
-            td ${{ item.proposedValue.toLocaleString() }}
-            td ${{ item.securedValue.toLocaleString() }}
-      p.empty-table(v-else) {{ $t('coi.noReferralData') }}
+    //- Performance table
+    .box
+      p.title.is-5 {{ $t('coi.performanceTitle') }}
+      p.is-size-7.has-text-grey.mb-4 {{ $t('coi.performanceDesc') }}
+      loading-spinner(v-if="loading")
+      .table-container(v-else-if="summaryItems.length > 0")
+        table.table.is-fullwidth.is-striped.is-hoverable.is-size-7
+          thead
+            tr
+              th {{ $t('coi.coiName') }}
+              th {{ $t('coi.referrals') }}
+              th {{ $t('coi.active') }}
+              th {{ $t('coi.converted') }}
+              th {{ $t('coi.conversionRate') }}
+              th {{ $t('coi.proposedFeeValue') }}
+              th {{ $t('coi.securedFeeValue') }}
+          tbody
+            tr(v-for="item in summaryItems" :key="item.coiName")
+              td {{ item.coiName }}
+              td {{ item.totalReferrals }}
+              td {{ item.active }}
+              td {{ item.converted }}
+              td {{ item.totalReferrals > 0 ? ((item.converted / item.totalReferrals) * 100).toFixed(1) : '0.0' }}%
+              td ${{ item.proposedValue.toLocaleString() }}
+              td ${{ item.securedValue.toLocaleString() }}
+      p.has-text-grey.is-italic(v-else-if="!loading") {{ $t('coi.noReferralData') }}
 </template>
 
 <style scoped>
-.page-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.coi-page {
   min-height: 100vh;
-  padding: 1.5rem;
-  background:
-    radial-gradient(circle at top right, rgba(31, 157, 64, 0.1) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(150, 230, 170, 0.08) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(31, 157, 64, 0.06) 0%, transparent 35%),
-    linear-gradient(180deg, #f0faf2 0%, #e8f7ec 100%);
-}
-.page-header {
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(150, 230, 170, 0.25) 0%, transparent 40%),
-    linear-gradient(135deg, #2cb850 0%, #1f9d40 25%, #1a8537 50%, #156d2d 75%, #105523 100%);
-  border-radius: 24px;
-  padding: 2.5rem 2rem;
-  color: white;
-  box-shadow:
-    0 20px 60px rgba(31, 157, 64, 0.35),
-    0 8px 25px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(180deg, #f0faf2 0%, #e8f7ec 100%);
 }
 
-.page-header::before {
+.coi-header {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    linear-gradient(135deg, #2cb850 0%, #1a8537 50%, #105523 100%);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(31, 157, 64, 0.3);
+}
+
+.coi-header::before {
   content: '';
   position: absolute;
   top: -50%;
   right: -20%;
   width: 60%;
   height: 200%;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
   transform: rotate(25deg);
   pointer-events: none;
 }
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.header-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-}
-.header-text h1 { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.2; }
-.header-text p { margin: 0.5rem 0 0; opacity: 0.9; font-size: 0.95rem; line-height: 1.4; max-width: 400px; }
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
-  font-weight: 600;
-  color: #1a8537;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.refresh-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
-.card {
-  border: 1px solid rgba(114, 135, 161, 0.25);
-  border-radius: 14px;
-  background: linear-gradient(175deg, #ffffff 0%, #f7fbff 100%);
-  padding: 1.25rem;
-  overflow: auto;
-  box-shadow: 0 10px 24px rgba(17, 37, 63, 0.07);
-}
-.card h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.1rem;
-  color: #1e293b;
-}
-.section-desc {
-  margin: 0 0 1rem;
-  font-size: 0.85rem;
-  color: #64748b;
-}
-.summary-strip { display: grid; gap: 0.58rem; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.summary-strip article {
-  border-radius: 18px;
-  padding: 0.62rem 0.7rem;
-  background: linear-gradient(180deg, #dcfce7, #bbf7d0);
-  box-shadow: 0 12px 28px rgba(31, 157, 64, 0.12);
-}
-.summary-strip span { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #16a34a; }
-.summary-strip strong { display: block; margin-top: 0.2rem; font-size: 1.2rem; color: #15803d; }
 
-/* Add COI Section */
+.summary-box {
+  background: linear-gradient(180deg, #dcfce7, #bbf7d0);
+}
+
 .add-section {
   background: linear-gradient(175deg, #f0fdf4 0%, #dcfce7 100%);
 }
-.coi-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.form-group label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #475569;
-}
-.form-group .required {
-  color: #dc2626;
-}
-.form-group input,
-.form-group select {
-  border: 1px solid #86efac;
-  border-radius: 10px;
-  padding: 0.6rem 0.85rem;
-  font-size: 0.9rem;
-  background: white;
-}
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-}
-.btn-group {
-  display: flex;
-  align-items: flex-end;
-}
-.btn-add {
-  background: #1f9d40;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 0.6rem 1.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  width: 100%;
-}
-.btn-add:hover:not(:disabled) { background: #16a34a; }
-.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.card-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-.card-header-row h2 {
-  margin: 0 0 0.25rem;
-}
-.card-header-row .section-desc {
-  margin: 0;
-}
-
-.btn-remove-selected {
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s;
-}
-.btn-remove-selected:hover:not(:disabled) { background: #b91c1c; }
-.btn-remove-selected:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .checkbox-col {
-  width: 40px;
-  text-align: center;
-}
-.checkbox-col input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #1f9d40;
-}
-
-.progress-col {
-  width: 90px;
-  text-align: center;
-  white-space: nowrap;
-}
-.progress-col input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #22c55e;
-}
-
-.row-selected {
-  background: #dcfce7 !important;
-}
-
-.empty-table {
-  color: #94a3b8;
-  font-style: italic;
-  font-size: 0.9rem;
-}
-
-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-th, td { border-bottom: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; font-size: 0.875rem; }
-thead th {
-  background: #f8fafc;
-  color: #475569;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-}
-tbody tr:hover { background: #f0fdf4; }
-.error { color: #b91c1c; font-weight: 700; }
-@media (max-width: 980px) {
-  .summary-strip { grid-template-columns: repeat(3, 1fr); }
-  .form-row { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
-  .summary-strip { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
+  width: 50px;
 }
 </style>

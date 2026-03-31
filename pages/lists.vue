@@ -30,6 +30,16 @@ export default {
     },
     listsLoading() {
       return this.$store.state.lists.loading;
+    },
+    usageGuides() {
+      return [
+        { key: 'status', title: this.$t('lists.prospectStatus'), desc: this.$t('lists.prospectStatusDesc') },
+        { key: 'source', title: this.$t('lists.prospectSource'), desc: this.$t('lists.prospectSourceDesc') },
+        { key: 'approach', title: this.$t('lists.approachStyle'), desc: this.$t('lists.approachStyleDesc') },
+        { key: 'sales', title: this.$t('lists.salesStyle'), desc: this.$t('lists.salesStyleDesc') },
+        { key: 'tn', title: this.$t('lists.totalNeedsStage'), desc: this.$t('lists.totalNeedsStageDesc') },
+        { key: 'industry', title: this.$t('lists.industry'), desc: this.$t('lists.industryDesc') }
+      ];
     }
   },
 
@@ -202,482 +212,218 @@ export default {
 </script>
 
 <template lang="pug">
-  .lists-page
-    header.page-header
-      .header-content
-        .header-text
-          span.header-badge {{ $t('lists.badge') }}
-          h1 {{ $t('lists.title') }}
-          p {{ $t('lists.subtitle') }}
+  section.section.lists-page
+    //- Page header
+    header.lists-header.mb-5
+      .level.is-mobile
+        .level-left
+          .level-item
+            div
+              b-tag(type="is-link is-light" rounded) {{ $t('lists.badge') }}
+              h1.title.has-text-white.mt-2 {{ $t('lists.title') }}
+              p.subtitle.has-text-white-ter {{ $t('lists.subtitle') }}
 
-    .loading-banner(v-if="listsLoading && Object.keys(lists).length === 0")
+    //- Loading / save banners
+    b-notification(v-if="listsLoading && Object.keys(lists).length === 0" type="is-info is-light" :closable="false")
       | {{ $t('lists.loading') }}
-
-    .save-banner(v-if="saveMessage" :class="{ error: saveMessage.includes('Failed') }")
+    b-notification(
+      v-if="saveMessage"
+      :type="saveMessage.includes('Failed') ? 'is-danger is-light' : 'is-success is-light'"
+      :closable="false"
+    )
       | {{ saveMessage === 'Saved' ? $t('lists.saved') : saveMessage }}
 
-    .info-banner
-      svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-        circle(cx="12" cy="12" r="10")
-        path(d="M12 16v-4")
-        path(d="M12 8h.01")
-      p {{ $t('lists.infoBanner') }}
+    //- Info banner
+    b-message(type="is-info is-light" :closable="false")
+      | {{ $t('lists.infoBanner') }}
 
-    section.languages-section
-      .section-header
-        div
-          h2 {{ $t('lists.languagesTitle') }}
-          p {{ $t('lists.languagesDesc') }}
-        button.btn-add-language(@click="showAddLanguage = !showAddLanguage")
-          | {{ showAddLanguage ? '−' : '+' }} {{ $t('lists.addLanguage') }}
+    //- Languages section
+    .box.mb-5
+      .level.mb-4
+        .level-left
+          .level-item
+            div
+              p.title.is-5.mb-1 {{ $t('lists.languagesTitle') }}
+              p.is-size-7.has-text-grey {{ $t('lists.languagesDesc') }}
+        .level-right
+          .level-item
+            b-button(
+              @click="showAddLanguage = !showAddLanguage"
+              type="is-link"
+              size="is-small"
+              rounded
+            ) {{ showAddLanguage ? '−' : '+' }} {{ $t('lists.addLanguage') }}
 
-      .add-language-form(v-if="showAddLanguage")
-        .form-row
-          .form-group
-            label {{ $t('lists.languageCode') }}
-            input(v-model="newLanguage.code" :placeholder="$t('lists.languageCodePlaceholder')" maxlength="10")
-          .form-group
-            label {{ $t('lists.languageName') }}
-            input(v-model="newLanguage.name" :placeholder="$t('lists.languageNamePlaceholder')")
-          .form-group
-            label {{ $t('lists.nativeName') }}
-            input(v-model="newLanguage.nativeName" :placeholder="$t('lists.nativeNamePlaceholder')")
-        .form-actions
-          button.btn-save-language(
-            :disabled="!newLanguage.code || !newLanguage.name || !newLanguage.nativeName || languageSaving"
-            @click="addNewLanguage"
-          )
-            span.btn-spinner(v-if="languageSaving")
-              svg.spin(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
-                path(d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83")
-              | Translating...
-            span(v-else) {{ $t('lists.addLanguage') }}
-        p.form-hint(v-if="!languageSaving")
-          | AI will translate all app text into the new language. This takes about 30 seconds.
-        p.form-hint.translating-hint(v-else)
-          | Translating with AI — please wait, this takes about 30 seconds...
+      //- Add language form
+      .box.has-background-light.mb-4(v-if="showAddLanguage")
+        .columns.is-multiline
+          .column.is-4
+            b-field(:label="$t('lists.languageCode')")
+              b-input(v-model="newLanguage.code" :placeholder="$t('lists.languageCodePlaceholder')" maxlength="10" expanded)
+          .column.is-4
+            b-field(:label="$t('lists.languageName')")
+              b-input(v-model="newLanguage.name" :placeholder="$t('lists.languageNamePlaceholder')" expanded)
+          .column.is-4
+            b-field(:label="$t('lists.nativeName')")
+              b-input(v-model="newLanguage.nativeName" :placeholder="$t('lists.nativeNamePlaceholder')" expanded)
+        .level
+          .level-left
+            .level-item
+              b-button(
+                type="is-success"
+                :loading="languageSaving"
+                :disabled="!newLanguage.code || !newLanguage.name || !newLanguage.nativeName"
+                @click="addNewLanguage"
+              ) {{ languageSaving ? 'Translating...' : $t('lists.addLanguage') }}
+          .level-right
+            .level-item
+              p.is-size-7.has-text-grey.is-italic(v-if="!languageSaving")
+                | AI will translate all app text into the new language. This takes about 30 seconds.
+              p.is-size-7.has-text-link(v-else)
+                | Translating with AI — please wait, this takes about 30 seconds...
 
-      .languages-grid
-        .language-card(
+      //- Language cards
+      .tags
+        .tag.is-medium.language-tag(
           v-for="lang in languages"
           :key="lang.code"
-          :class="{ 'built-in': lang.isBuiltIn }"
+          :class="lang.isBuiltIn ? 'is-success is-light' : 'is-info is-light'"
         )
-          .language-info
-            span.language-code {{ lang.code }}
-            span.language-name {{ lang.nativeName }}
-            span.language-tag {{ lang.isBuiltIn ? $t('lists.builtIn') : $t('lists.custom') }}
-          button.btn-delete-lang(
+          span.has-text-weight-bold.mr-1 {{ lang.code }}
+          | {{ lang.nativeName }}
+          b-tag.ml-2(size="is-small" :type="lang.isBuiltIn ? 'is-success' : 'is-info'")
+            | {{ lang.isBuiltIn ? $t('lists.builtIn') : $t('lists.custom') }}
+          button.delete.is-small.ml-2(
             v-if="!lang.isBuiltIn"
             @click="deleteLanguage(lang.code)"
             :title="$t('lists.deleteLanguage')"
-          ) ×
+          )
 
-    .lists-grid
-      .list-card(
-        v-for="(list, key) in lists"
-        :key="key"
-        :class="{ expanded: expandedList === key }"
-      )
-        .list-header(@click="toggleExpand(key)")
-          .list-info
-            h3 {{ list.name }}
-            p {{ list.description }}
-          .list-meta
-            span.item-count {{ list.items.length }} {{ $t('lists.items') }}
-            span.expand-icon {{ expandedList === key ? '−' : '+' }}
+    //- Lists grid
+    .columns.is-multiline.mb-5
+      .column.is-6-desktop.is-12-tablet(v-for="(list, key) in lists" :key="key")
+        .box.list-card(:class="{ 'is-expanded': expandedList === key }")
+          .list-header(@click="toggleExpand(key)")
+            .level.is-mobile
+              .level-left
+                .level-item
+                  div
+                    p.has-text-weight-bold {{ list.name }}
+                    p.is-size-7.has-text-grey {{ list.description }}
+              .level-right
+                .level-item
+                  b-tag(type="is-light" size="is-small") {{ list.items.length }} {{ $t('lists.items') }}
+                .level-item
+                  span.expand-toggle {{ expandedList === key ? '−' : '+' }}
 
-        .list-content(v-if="expandedList === key")
-          ul.items-list
-            li.list-item(
-              v-for="(item, idx) in list.items"
-              :key="item"
-              :style="list.colors && list.colors[item] ? { backgroundColor: list.colors[item] } : {}"
-            )
-              span.item-text {{ item }}
-              .item-actions
-                button.btn-move(
-                  :disabled="idx === 0"
-                  @click.stop="moveItem(key, idx, -1)"
-                  :title="$t('lists.moveUp')"
-                ) ↑
-                button.btn-move(
-                  :disabled="idx === list.items.length - 1"
-                  @click.stop="moveItem(key, idx, 1)"
-                  :title="$t('lists.moveDown')"
-                ) ↓
-                button.btn-remove(
-                  @click.stop="removeItem(key, item)"
-                  :title="$t('lists.remove')"
-                ) ×
+          .list-content(v-if="expandedList === key")
+            hr.my-2
+            .list-items
+              .level.list-item.is-mobile(
+                v-for="(item, idx) in list.items"
+                :key="item"
+                :style="list.colors && list.colors[item] ? { backgroundColor: list.colors[item] } : {}"
+              )
+                .level-left
+                  .level-item
+                    span.is-size-7 {{ item }}
+                .level-right
+                  .level-item
+                    b-button(size="is-small" :disabled="idx === 0" @click.stop="moveItem(key, idx, -1)") ↑
+                  .level-item
+                    b-button(size="is-small" :disabled="idx === list.items.length - 1" @click.stop="moveItem(key, idx, 1)") ↓
+                  .level-item
+                    b-button(size="is-small" type="is-danger is-light" @click.stop="removeItem(key, item)") ×
+            .level.mt-3
+              .level-left.is-flex-grow-1
+                .level-item.is-flex-grow-1
+                  b-input(
+                    v-model="newItemText"
+                    :placeholder="$t('lists.addNewItem')"
+                    @keyup.native.enter="addItem(key)"
+                    size="is-small"
+                    expanded
+                  )
+              .level-right
+                .level-item
+                  b-button(
+                    type="is-link"
+                    size="is-small"
+                    :disabled="!newItemText.trim()"
+                    @click="addItem(key)"
+                  ) {{ $t('common.add') }}
 
-          .add-item-form
-            input(
-              v-model="newItemText"
-              :placeholder="$t('lists.addNewItem')"
-              @keyup.enter="addItem(key)"
-            )
-            button.btn-add(
-              :disabled="!newItemText.trim()"
-              @click="addItem(key)"
-            ) {{ $t('common.add') }}
-
-    section.usage-guide
-      h2 {{ $t('lists.usageGuideTitle') }}
-      .usage-grid
-        .usage-item
-          h4 {{ $t('lists.prospectStatus') }}
-          p {{ $t('lists.prospectStatusDesc') }}
-        .usage-item
-          h4 {{ $t('lists.prospectSource') }}
-          p {{ $t('lists.prospectSourceDesc') }}
-        .usage-item
-          h4 {{ $t('lists.approachStyle') }}
-          p {{ $t('lists.approachStyleDesc') }}
-        .usage-item
-          h4 {{ $t('lists.salesStyle') }}
-          p {{ $t('lists.salesStyleDesc') }}
-        .usage-item
-          h4 {{ $t('lists.totalNeedsStage') }}
-          p {{ $t('lists.totalNeedsStageDesc') }}
-        .usage-item
-          h4 {{ $t('lists.industry') }}
-          p {{ $t('lists.industryDesc') }}
+    //- Usage guide
+    .box
+      p.title.is-5.mb-4 {{ $t('lists.usageGuideTitle') }}
+      .columns.is-multiline
+        .column.is-4(v-for="guide in usageGuides" :key="guide.key")
+          .box.has-background-light
+            p.has-text-weight-bold.has-text-link.mb-1 {{ guide.title }}
+            p.is-size-7.has-text-grey {{ guide.desc }}
 </template>
 
 <style scoped>
 .lists-page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, rgba(8, 145, 178, 0.12) 0%, transparent 25%),
-    radial-gradient(circle at left top, rgba(34, 211, 238, 0.1) 0%, transparent 30%),
-    radial-gradient(circle at bottom right, rgba(165, 243, 252, 0.2) 0%, transparent 35%),
-    linear-gradient(180deg, #ecfeff 0%, #cffafe 100%);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  background: linear-gradient(180deg, #ecfeff 0%, #cffafe 100%);
 }
 
-/* Header */
-.page-header {
+.lists-header {
   background: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%);
   border-radius: 20px;
-  padding: 2rem;
-  color: white;
-  box-shadow: 0 10px 40px rgba(8, 145, 178, 0.3);
-}
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.header-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-}
-.header-text h1 { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.2; }
-.header-text p { margin: 0.5rem 0 0; opacity: 0.9; font-size: 0.95rem; line-height: 1.4; max-width: 400px; }
-
-/* Loading/Save Banners */
-.loading-banner, .save-banner {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 12px;
-  padding: 0.75rem 1.25rem;
-  color: #166534;
-  text-align: center;
-  font-weight: 500;
-}
-.save-banner.error {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #dc2626;
-}
-
-/* Info Banner */
-.info-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  color: #1e40af;
-}
-.info-banner svg { flex-shrink: 0; margin-top: 0.1rem; }
-.info-banner p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
-
-/* Languages Section */
-.languages-section {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.section-header h2 { margin: 0; font-size: 1.1rem; color: #1e293b; }
-.section-header p { margin: 0.25rem 0 0; font-size: 0.85rem; color: #64748b; }
-.btn-add-language {
-  background: linear-gradient(135deg, #0891b2, #0e7490);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-add-language:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-}
-
-/* Add Language Form */
-.add-language-form {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-.form-group label { font-size: 0.8rem; font-weight: 600; color: #475569; }
-.form-group input {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.875rem;
-}
-.form-group input:focus {
-  outline: none;
-  border-color: #0891b2;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
-}
-.form-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.btn-save-language:disabled { opacity: 0.7; cursor: not-allowed; }
-.btn-save-language {
-  background: #10b981;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1.25rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.btn-save-language:hover:not(:disabled) { background: #059669; }
-.form-hint { margin: 0.75rem 0 0; font-size: 0.8rem; color: #94a3b8; font-style: italic; }
-.translating-hint { color: #0891b2; font-style: normal; font-weight: 500; }
-.btn-spinner { display: flex; align-items: center; gap: 0.4rem; }
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-/* Languages Grid */
-.languages-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.language-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  transition: all 0.15s;
-}
-.language-card:hover { border-color: #cbd5e1; background: #f1f5f9; }
-.language-card.built-in { border-color: #bbf7d0; background: #f0fdf4; }
-.language-info { display: flex; align-items: center; gap: 0.5rem; }
-.language-code {
-  font-family: monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #0891b2;
-  background: #e0f7fa;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-}
-.language-name { font-size: 0.875rem; font-weight: 500; color: #334155; }
-.language-tag {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  background: #f1f5f9;
-  color: #64748b;
-}
-.language-card.built-in .language-tag { background: #dcfce7; color: #166534; }
-.btn-delete-lang {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 6px;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.language-card:hover .btn-delete-lang { opacity: 1; }
-.btn-delete-lang:hover { background: #fecaca; }
-
-/* Lists Grid */
-.lists-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1rem;
-}
-.list-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 2.5rem 2rem;
+  position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(8, 145, 178, 0.3);
+}
+
+.lists-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+.list-card {
+  cursor: pointer;
   transition: box-shadow 0.2s;
 }
-.list-card:hover { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
-.list-card.expanded { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); }
+
+.list-card:hover,
+.list-card.is-expanded {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
 .list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
+  user-select: none;
 }
-.list-header:hover { background: #f8fafc; }
-.list-info h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
-.list-info p { margin: 0.25rem 0 0; font-size: 0.8rem; color: #64748b; }
-.list-meta { display: flex; align-items: center; gap: 1rem; }
-.item-count {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  background: #f1f5f9;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-}
-.expand-icon {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f1f5f9;
-  border-radius: 8px;
+
+.expand-toggle {
   font-size: 1.25rem;
-  font-weight: 300;
   color: #64748b;
+  line-height: 1;
 }
 
-/* List Content */
-.list-content { border-top: 1px solid #f1f5f9; padding: 1rem 1.5rem 1.5rem; }
-.items-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0.75rem;
   background: #f8fafc;
-  border-radius: 8px;
-  transition: transform 0.15s;
-}
-.list-item:hover { transform: translateX(4px); }
-.item-text { font-size: 0.875rem; color: #334155; font-weight: 500; }
-.item-actions { display: flex; gap: 0.25rem; opacity: 0; transition: opacity 0.15s; }
-.list-item:hover .item-actions { opacity: 1; }
-.btn-move, .btn-remove {
-  width: 26px;
-  height: 26px;
-  border: none;
   border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
+  padding: 0.4rem 0.6rem;
 }
-.btn-move { background: #e2e8f0; color: #475569; }
-.btn-move:hover:not(:disabled) { background: #cbd5e1; }
-.btn-move:disabled { opacity: 0.3; cursor: not-allowed; }
-.btn-remove { background: #fee2e2; color: #dc2626; font-size: 1.1rem; }
-.btn-remove:hover { background: #fecaca; }
 
-/* Add Item Form */
-.add-item-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
-}
-.add-item-form input {
-  flex: 1;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
-.add-item-form input:focus {
-  outline: none;
-  border-color: #0891b2;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
-}
-.btn-add {
-  background: #0891b2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.btn-add:hover:not(:disabled) { background: #0e7490; }
-.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Usage Guide */
-.usage-guide {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-.usage-guide h2 { margin: 0 0 1rem; font-size: 1.1rem; color: #1e293b; }
-.usage-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-}
-.usage-item { padding: 1rem; background: #f8fafc; border-radius: 10px; }
-.usage-item h4 { margin: 0 0 0.5rem; font-size: 0.875rem; color: #0891b2; font-weight: 700; }
-.usage-item p { margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.5; }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .lists-grid, .usage-grid { grid-template-columns: 1fr; }
+.language-tag {
+  height: auto;
+  padding: 0.4rem 0.75rem;
 }
 </style>

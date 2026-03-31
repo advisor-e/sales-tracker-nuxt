@@ -27,40 +27,14 @@ export default {
 <template lang="pug">
   .language-switcher-wrap
     client-only
-      select.language-switcher(
-        v-model="currentLocale"
-        :key="currentLocale"
-        :aria-label="$t('language.select')"
-      )
+      b-select(v-model="currentLocale" :key="currentLocale" size="is-small" :aria-label="$t('language.select')" rounded)
         option(v-for="loc in locales" :key="loc.code" :value="loc.code") {{ loc.name }}
-      select.language-switcher(slot="placeholder" disabled)
+      select(slot="placeholder" disabled)
         option ...
 </template>
 
 <style scoped>
 .language-switcher-wrap {
   display: inline-block;
-}
-
-.language-switcher {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid rgba(15, 122, 138, 0.3);
-  border-radius: 999px;
-  background: linear-gradient(120deg, #f0fdfa, #e0f7fa);
-  color: #0f7a8a;
-  font-weight: 600;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.language-switcher:hover {
-  border-color: rgba(15, 122, 138, 0.5);
-  background: linear-gradient(120deg, #e0f7fa, #b2ebf2);
-}
-
-.language-switcher:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(15, 122, 138, 0.2);
 }
 </style>
