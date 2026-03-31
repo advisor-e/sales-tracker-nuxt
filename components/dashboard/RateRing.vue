@@ -17,26 +17,22 @@ export default {
 };
 </script>
 
-<template>
-  <div class="rate-card">
-    <div class="rate-ring">
-      <svg viewBox="0 0 100 100">
-        <circle class="ring-bg" cx="50" cy="50" r="42"/>
-        <circle
-          class="ring-progress"
+<template lang="pug">
+  .rate-card
+    .rate-ring
+      svg(viewBox="0 0 100 100")
+        circle.ring-bg(cx="50" cy="50" r="42")
+        circle.ring-progress(
           :class="color || 'cyan'"
           cx="50"
           cy="50"
           r="42"
           :stroke-dasharray="circumference"
           :stroke-dashoffset="circumference - (circumference * rate / 100)"
-        />
-      </svg>
-      <div class="rate-value">{{ rate }}%</div>
-    </div>
-    <span class="rate-label">{{ label }}</span>
-    <span class="rate-count">{{ count }}</span>
-  </div>
+        )
+      .rate-value {{ rate }}%
+    span.rate-label {{ label }}
+    span.rate-count {{ count }}
 </template>
 
 <style scoped>

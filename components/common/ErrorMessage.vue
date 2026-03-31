@@ -8,8 +8,8 @@ export default {
 };
 </script>
 
-<template>
-  <p class="error-message">{{ message }}</p>
+<template lang="pug">
+  p.error-message {{ message }}
 </template>
 
 <style scoped>

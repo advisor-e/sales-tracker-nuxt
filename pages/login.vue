@@ -58,26 +58,21 @@ export default {
 };
 </script>
 
-<template>
-  <section class="login-wrap">
-    <article class="login-card">
-      <h1>{{ $t('login.title') }}</h1>
-      <p>{{ $t('login.subtitle') }}</p>
-      <form @submit.prevent="submit" class="login-form">
-        <label>
-          {{ $t('auth.email') }}
-          <input id="email" name="email" v-model="email" type="email" :placeholder="$t('login.emailPlaceholder')" autocomplete="username" />
-        </label>
-        <label>
-          {{ $t('auth.password') }}
-          <input id="password" name="password" v-model="password" type="password" :placeholder="$t('login.passwordPlaceholder')" autocomplete="current-password" />
-        </label>
-        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? $t('auth.signingIn') : $t('auth.signIn') }}</button>
-      </form>
-      <p v-if="errorText" class="error">{{ errorText }}</p>
-      <p class="hint">{{ $t('login.hint') }}</p>
-    </article>
-  </section>
+<template lang="pug">
+  section.login-wrap
+    article.login-card
+      h1 {{ $t('login.title') }}
+      p {{ $t('login.subtitle') }}
+      form.login-form(@submit.prevent="submit")
+        label
+          | {{ $t('auth.email') }}
+          input#email(name="email" v-model="email" type="email" :placeholder="$t('login.emailPlaceholder')" autocomplete="username")
+        label
+          | {{ $t('auth.password') }}
+          input#password(name="password" v-model="password" type="password" :placeholder="$t('login.passwordPlaceholder')" autocomplete="current-password")
+        button(type="submit" :disabled="busy || !email.trim() || !password.trim()") {{ busy ? $t('auth.signingIn') : $t('auth.signIn') }}
+      p.error(v-if="errorText") {{ errorText }}
+      p.hint {{ $t('login.hint') }}
 </template>
 
 <style scoped>

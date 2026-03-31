@@ -353,364 +353,246 @@ export default {
 };
 </script>
 
-<template>
-  <div class="dashboard">
-    <!-- Header -->
-    <header class="dashboard-header">
-      <div class="header-content">
-        <div class="header-text">
-          <span class="header-badge">{{ $t('dashboard.badge') }}</span>
-          <h1>{{ $t('dashboard.title') }}</h1>
-          <p>{{ $t('dashboard.subtitle') }}</p>
-        </div>
-        <button class="refresh-btn" @click="loadMetrics" :disabled="loading">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          {{ loading ? $t('common.loading') : $t('common.refresh') }}
-        </button>
-      </div>
-    </header>
+<template lang="pug">
+  .dashboard
+    header.dashboard-header
+      .header-content
+        .header-text
+          span.header-badge {{ $t('dashboard.badge') }}
+          h1 {{ $t('dashboard.title') }}
+          p {{ $t('dashboard.subtitle') }}
+        button.refresh-btn(@click="loadMetrics" :disabled="loading")
+          svg(xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8")
+            path(d="M21 3v5h-5")
+          | {{ loading ? $t('common.loading') : $t('common.refresh') }}
 
-    <p v-if="errorText" class="error-message">{{ errorText }}</p>
+    p.error-message(v-if="errorText") {{ errorText }}
 
-    <div v-if="loading && !metrics" class="loading-state">
-      <div class="spinner"></div>
-      <p>{{ $t('common.loadingDashboard') }}</p>
-    </div>
+    .loading-state(v-if="loading && !metrics")
+      .spinner
+      p {{ $t('common.loadingDashboard') }}
 
-    <template v-if="metrics">
-      <!-- Combined Performance Stats -->
-      <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.totalProspects') }}</span>
-            <span class="stat-badge blue">{{ $t('dashboard.pipeline') }}</span>
-          </div>
-          <strong class="stat-value">{{ metrics.totalProspects }}</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ metrics.activeProspects }} {{ $t('common.active') }}</span>
-          </div>
-        </div>
+    template(v-if="metrics")
+      section.stats-grid
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.totalProspects') }}
+            span.stat-badge.blue {{ $t('dashboard.pipeline') }}
+          strong.stat-value {{ metrics.totalProspects }}
+          .stat-footer
+            span.stat-sub {{ metrics.activeProspects }} {{ $t('common.active') }}
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.approachMeeting') }}
+            span.stat-badge.cyan {{ $t('dashboard.combined') }}
+          strong.stat-value {{ combinedMeetingRate }}%
+          .stat-footer
+            span.stat-sub {{ combinedMeetings }}/{{ combinedApproaches }}
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.meetingProposal') }}
+            span.stat-badge.blue {{ $t('dashboard.combined') }}
+          strong.stat-value {{ combinedProposalRate }}%
+          .stat-footer
+            span.stat-sub {{ combinedProposals }}/{{ combinedMeetings }}
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.proposalSecured') }}
+            span.stat-badge.teal {{ $t('dashboard.combined') }}
+          strong.stat-value {{ combinedSecuredRate }}%
+          .stat-footer
+            span.stat-sub {{ combinedSecured }}/{{ combinedProposals }}
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.overallWinRate') }}
+            span.stat-badge.green {{ $t('dashboard.combined') }}
+          strong.stat-value {{ combinedOverallRate }}%
+          .stat-footer
+            span.stat-sub {{ combinedSecured }}/{{ combinedApproaches }}
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.pipelineValue') }}
+            span.stat-badge.cyan {{ $t('dashboard.proposals') }}
+          strong.stat-value {{ money.format(metrics.totalProposalValue) }}
+          .stat-footer
+            span.stat-sub {{ $t('dashboard.outstandingProposals') }}
+        .stat-card
+          .stat-header
+            span.stat-label {{ $t('dashboard.workSecured') }}
+            span.stat-badge.green {{ $t('dashboard.revenue') }}
+          strong.stat-value {{ money.format(metrics.totalSecuredValue) }}
+          .stat-footer
+            span.stat-sub {{ $t('dashboard.totalClosedValue') }}
 
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.approachMeeting') }}</span>
-            <span class="stat-badge cyan">{{ $t('dashboard.combined') }}</span>
-          </div>
-          <strong class="stat-value">{{ combinedMeetingRate }}%</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ combinedMeetings }}/{{ combinedApproaches }}</span>
-          </div>
-        </div>
+      section.rates-section.campaign
+        h2.section-title
+          span.title-icon.cyan
+            svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+              path(d="M22 12h-4l-3 9L9 3l-3 9H2")
+          | {{ $t('dashboard.campaignResults') }}
+        .funnel-grid
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.cyan(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * campaignMeetingRate / 100)")
+              .rate-value {{ campaignMeetingRate }}%
+            span.rate-label {{ $t('dashboard.approachMeeting') }}
+            span.rate-count {{ metrics.campaignFunnel.meetings }}/{{ metrics.campaignFunnel.approaches }}
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.blue(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * campaignProposalRate / 100)")
+              .rate-value {{ campaignProposalRate }}%
+            span.rate-label {{ $t('dashboard.meetingProposal') }}
+            span.rate-count {{ metrics.campaignFunnel.proposals }}/{{ metrics.campaignFunnel.meetings }}
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.teal(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * campaignSecuredRate / 100)")
+              .rate-value {{ campaignSecuredRate }}%
+            span.rate-label {{ $t('dashboard.proposalSecured') }}
+            span.rate-count {{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.proposals }}
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.green(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * campaignOverallRate / 100)")
+              .rate-value {{ campaignOverallRate }}%
+            span.rate-label {{ $t('dashboard.overallWinRate') }}
+            span.rate-count {{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.approaches }}
+          .stat-card-inline.cyan
+            .stat-icon
+              svg(xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                line(x1="12" y1="1" x2="12" y2="23")
+                path(d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6")
+            span.stat-label {{ $t('dashboard.avgFee') }}
+            strong.stat-value {{ money.format(metrics.campaignFunnel.avgFee) }}
+          .stat-card-inline.cyan
+            .stat-icon
+              svg(xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                circle(cx="12" cy="12" r="10")
+                polyline(points="12 6 12 12 16 14")
+            span.stat-label {{ $t('dashboard.avgDays') }}
+            strong.stat-value {{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}
 
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.meetingProposal') }}</span>
-            <span class="stat-badge blue">{{ $t('dashboard.combined') }}</span>
-          </div>
-          <strong class="stat-value">{{ combinedProposalRate }}%</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ combinedProposals }}/{{ combinedMeetings }}</span>
-          </div>
-        </div>
+      section.rates-section.total-needs
+        h2.section-title
+          span.title-icon.orange
+            svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+              circle(cx="12" cy="12" r="10")
+              path(d="M12 16v-4")
+              path(d="M12 8h.01")
+          | {{ $t('dashboard.totalNeedsResults') }}
+        .funnel-grid
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.orange(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * totalNeedsMeetingRate / 100)")
+              .rate-value {{ totalNeedsMeetingRate }}%
+            span.rate-label {{ $t('dashboard.approachMeeting') }}
+            span.rate-count {{ metrics.totalNeedsFunnel.meetings }}/{{ metrics.totalNeedsFunnel.approaches }}
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.amber(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * totalNeedsProposalRate / 100)")
+              .rate-value {{ totalNeedsProposalRate }}%
+            span.rate-label {{ $t('dashboard.meetingProposal') }}
+            span.rate-count {{ metrics.totalNeedsFunnel.proposals }}/{{ metrics.totalNeedsFunnel.meetings }}
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.lime(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * totalNeedsSecuredRate / 100)")
+              .rate-value {{ totalNeedsSecuredRate }}%
+            span.rate-label {{ $t('dashboard.proposalSecured') }}
+            span.rate-count {{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.proposals }}
+          .rate-card
+            .rate-ring
+              svg(viewBox="0 0 100 100")
+                circle.ring-bg(cx="50" cy="50" r="42")
+                circle.ring-progress.emerald(cx="50" cy="50" r="42" :stroke-dasharray="264" :stroke-dashoffset="264 - (264 * totalNeedsOverallRate / 100)")
+              .rate-value {{ totalNeedsOverallRate }}%
+            span.rate-label {{ $t('dashboard.overallWinRate') }}
+            span.rate-count {{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.approaches }}
+          .stat-card-inline.orange
+            .stat-icon
+              svg(xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                line(x1="12" y1="1" x2="12" y2="23")
+                path(d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6")
+            span.stat-label {{ $t('dashboard.avgFee') }}
+            strong.stat-value {{ money.format(metrics.totalNeedsFunnel.avgFee) }}
+          .stat-card-inline.orange
+            .stat-icon
+              svg(xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                circle(cx="12" cy="12" r="10")
+                polyline(points="12 6 12 12 16 14")
+            span.stat-label {{ $t('dashboard.avgDays') }}
+            strong.stat-value {{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}
 
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.proposalSecured') }}</span>
-            <span class="stat-badge teal">{{ $t('dashboard.combined') }}</span>
-          </div>
-          <strong class="stat-value">{{ combinedSecuredRate }}%</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ combinedSecured }}/{{ combinedProposals }}</span>
-          </div>
-        </div>
+      section.rates-section.coi-performance
+        h2.section-title
+          span.title-icon.teal
+            svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+              path(d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2")
+              circle(cx="9" cy="7" r="4")
+              path(d="M22 21v-2a4 4 0 0 0-3-3.87")
+              path(d="M16 3.13a4 4 0 0 1 0 7.75")
+          | {{ $t('dashboard.coiPerformance') }}
+        .coi-panel-grid
+          .coi-chart-box
+            h4 {{ $t('dashboard.statusProgression') }}
+            .coi-chart-inner
+              Bar(:chart-data="coiPerformanceBarData" :chart-options="verticalBarOptions")
+          .coi-stats-table
+            .coi-stat-row
+              span.coi-stat-label {{ $t('dashboard.totalCOIs') }}
+              strong.coi-stat-value {{ metrics.coiPerformance.total }}
+            .coi-stat-row
+              span.coi-stat-label {{ $t('dashboard.referrals') }}
+              strong.coi-stat-value {{ metrics.coiPerformance.totalReferrals }}
+            .coi-stat-row
+              span.coi-stat-label {{ $t('dashboard.converted') }}
+              strong.coi-stat-value {{ metrics.coiPerformance.totalConverted }}
+            .coi-stat-row
+              span.coi-stat-label {{ $t('dashboard.proposalFeeValue') }}
+              strong.coi-stat-value {{ money.format(metrics.coiPerformance.totalProposalFeeValue) }}
+            .coi-stat-row
+              span.coi-stat-label {{ $t('dashboard.securedFeeValue') }}
+              strong.coi-stat-value {{ money.format(metrics.coiPerformance.totalSecuredFeeValue) }}
+          .coi-chart-box
+            h4 {{ $t('dashboard.byIndustry') }}
+            .coi-chart-inner
+              Bar(:chart-data="coiIndustryBarData" :chart-options="verticalBarOptions")
 
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.overallWinRate') }}</span>
-            <span class="stat-badge green">{{ $t('dashboard.combined') }}</span>
-          </div>
-          <strong class="stat-value">{{ combinedOverallRate }}%</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ combinedSecured }}/{{ combinedApproaches }}</span>
-          </div>
-        </div>
+      section.charts-row
+        .chart-card
+          h3 {{ $t('dashboard.prospectStatus') }}
+          p.chart-subtitle {{ $t('dashboard.statusDistribution') }}
+          .chart-container.pie
+            Pie(:chart-data="statusPieData" :chart-options="pieOptions")
+        .chart-card
+          h3 {{ $t('dashboard.leadSources') }}
+          p.chart-subtitle {{ $t('dashboard.whereProspectsCome') }}
+          .chart-container.doughnut
+            Doughnut(:chart-data="sourceDoughnutData" :chart-options="doughnutOptions")
+        .chart-card.wide
+          h3 {{ $t('dashboard.monthlyTrend') }}
+          p.chart-subtitle {{ $t('dashboard.revenueOverTime') }}
+          .chart-container.line
+            LineChart(:chart-data="monthlyTrendData" :chart-options="lineOptions")
 
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.pipelineValue') }}</span>
-            <span class="stat-badge cyan">{{ $t('dashboard.proposals') }}</span>
-          </div>
-          <strong class="stat-value">{{ money.format(metrics.totalProposalValue) }}</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ $t('dashboard.outstandingProposals') }}</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-label">{{ $t('dashboard.workSecured') }}</span>
-            <span class="stat-badge green">{{ $t('dashboard.revenue') }}</span>
-          </div>
-          <strong class="stat-value">{{ money.format(metrics.totalSecuredValue) }}</strong>
-          <div class="stat-footer">
-            <span class="stat-sub">{{ $t('dashboard.totalClosedValue') }}</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Campaign Results Funnel -->
-      <section class="rates-section campaign">
-        <h2 class="section-title">
-          <span class="title-icon cyan">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          </span>
-          {{ $t('dashboard.campaignResults') }}
-        </h2>
-        <div class="funnel-grid">
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress cyan" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * campaignMeetingRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ campaignMeetingRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.approachMeeting') }}</span>
-            <span class="rate-count">{{ metrics.campaignFunnel.meetings }}/{{ metrics.campaignFunnel.approaches }}</span>
-          </div>
-
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress blue" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * campaignProposalRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ campaignProposalRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.meetingProposal') }}</span>
-            <span class="rate-count">{{ metrics.campaignFunnel.proposals }}/{{ metrics.campaignFunnel.meetings }}</span>
-          </div>
-
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress teal" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * campaignSecuredRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ campaignSecuredRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.proposalSecured') }}</span>
-            <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.proposals }}</span>
-          </div>
-
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress green" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * campaignOverallRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ campaignOverallRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.overallWinRate') }}</span>
-            <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.approaches }}</span>
-          </div>
-
-          <div class="stat-card-inline cyan">
-            <div class="stat-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-            <span class="stat-label">{{ $t('dashboard.avgFee') }}</span>
-            <strong class="stat-value">{{ money.format(metrics.campaignFunnel.avgFee) }}</strong>
-          </div>
-
-          <div class="stat-card-inline cyan">
-            <div class="stat-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <span class="stat-label">{{ $t('dashboard.avgDays') }}</span>
-            <strong class="stat-value">{{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}</strong>
-          </div>
-        </div>
-      </section>
-
-      <!-- Total Needs Results Funnel -->
-      <section class="rates-section total-needs">
-        <h2 class="section-title">
-          <span class="title-icon orange">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          </span>
-          {{ $t('dashboard.totalNeedsResults') }}
-        </h2>
-        <div class="funnel-grid">
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress orange" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * totalNeedsMeetingRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ totalNeedsMeetingRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.approachMeeting') }}</span>
-            <span class="rate-count">{{ metrics.totalNeedsFunnel.meetings }}/{{ metrics.totalNeedsFunnel.approaches }}</span>
-          </div>
-
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress amber" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * totalNeedsProposalRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ totalNeedsProposalRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.meetingProposal') }}</span>
-            <span class="rate-count">{{ metrics.totalNeedsFunnel.proposals }}/{{ metrics.totalNeedsFunnel.meetings }}</span>
-          </div>
-
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress lime" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * totalNeedsSecuredRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ totalNeedsSecuredRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.proposalSecured') }}</span>
-            <span class="rate-count">{{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.proposals }}</span>
-          </div>
-
-          <div class="rate-card">
-            <div class="rate-ring">
-              <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="42"/>
-                <circle class="ring-progress emerald" cx="50" cy="50" r="42"
-                  :stroke-dasharray="264"
-                  :stroke-dashoffset="264 - (264 * totalNeedsOverallRate / 100)"/>
-              </svg>
-              <div class="rate-value">{{ totalNeedsOverallRate }}%</div>
-            </div>
-            <span class="rate-label">{{ $t('dashboard.overallWinRate') }}</span>
-            <span class="rate-count">{{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.approaches }}</span>
-          </div>
-
-          <div class="stat-card-inline orange">
-            <div class="stat-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-            <span class="stat-label">{{ $t('dashboard.avgFee') }}</span>
-            <strong class="stat-value">{{ money.format(metrics.totalNeedsFunnel.avgFee) }}</strong>
-          </div>
-
-          <div class="stat-card-inline orange">
-            <div class="stat-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <span class="stat-label">{{ $t('dashboard.avgDays') }}</span>
-            <strong class="stat-value">{{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}</strong>
-          </div>
-        </div>
-      </section>
-
-      <!-- COI Performance -->
-      <section class="rates-section coi-performance">
-        <h2 class="section-title">
-          <span class="title-icon teal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
-          {{ $t('dashboard.coiPerformance') }}
-        </h2>
-        <div class="coi-panel-grid">
-          <div class="coi-chart-box">
-            <h4>{{ $t('dashboard.statusProgression') }}</h4>
-            <div class="coi-chart-inner">
-              <Bar :chart-data="coiPerformanceBarData" :chart-options="verticalBarOptions" />
-            </div>
-          </div>
-
-          <div class="coi-stats-table">
-            <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ $t('dashboard.totalCOIs') }}</span>
-              <strong class="coi-stat-value">{{ metrics.coiPerformance.total }}</strong>
-            </div>
-            <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ $t('dashboard.referrals') }}</span>
-              <strong class="coi-stat-value">{{ metrics.coiPerformance.totalReferrals }}</strong>
-            </div>
-            <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ $t('dashboard.converted') }}</span>
-              <strong class="coi-stat-value">{{ metrics.coiPerformance.totalConverted }}</strong>
-            </div>
-            <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ $t('dashboard.proposalFeeValue') }}</span>
-              <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalProposalFeeValue) }}</strong>
-            </div>
-            <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ $t('dashboard.securedFeeValue') }}</span>
-              <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalSecuredFeeValue) }}</strong>
-            </div>
-          </div>
-
-          <div class="coi-chart-box">
-            <h4>{{ $t('dashboard.byIndustry') }}</h4>
-            <div class="coi-chart-inner">
-              <Bar :chart-data="coiIndustryBarData" :chart-options="verticalBarOptions" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Charts Row 1 -->
-      <section class="charts-row">
-        <div class="chart-card">
-          <h3>{{ $t('dashboard.prospectStatus') }}</h3>
-          <p class="chart-subtitle">{{ $t('dashboard.statusDistribution') }}</p>
-          <div class="chart-container pie">
-            <Pie :chart-data="statusPieData" :chart-options="pieOptions" />
-          </div>
-        </div>
-
-        <div class="chart-card">
-          <h3>{{ $t('dashboard.leadSources') }}</h3>
-          <p class="chart-subtitle">{{ $t('dashboard.whereProspectsCome') }}</p>
-          <div class="chart-container doughnut">
-            <Doughnut :chart-data="sourceDoughnutData" :chart-options="doughnutOptions" />
-          </div>
-        </div>
-
-        <div class="chart-card wide">
-          <h3>{{ $t('dashboard.monthlyTrend') }}</h3>
-          <p class="chart-subtitle">{{ $t('dashboard.revenueOverTime') }}</p>
-          <div class="chart-container line">
-            <LineChart :chart-data="monthlyTrendData" :chart-options="lineOptions" />
-          </div>
-        </div>
-      </section>
-
-      <!-- Charts Row 2 -->
-      <section class="charts-row single">
-        <div class="chart-card wide">
-          <h3>{{ $t('dashboard.workSecuredByTeam') }}</h3>
-          <p class="chart-subtitle">{{ $t('dashboard.individualPerformance') }}</p>
-          <div class="chart-container bar-h">
-            <Bar :chart-data="staffBarData" :chart-options="horizontalBarOptions" />
-          </div>
-        </div>
-      </section>
-    </template>
-  </div>
+      section.charts-row.single
+        .chart-card.wide
+          h3 {{ $t('dashboard.workSecuredByTeam') }}
+          p.chart-subtitle {{ $t('dashboard.individualPerformance') }}
+          .chart-container.bar-h
+            Bar(:chart-data="staffBarData" :chart-options="horizontalBarOptions")
 </template>
 
 <style scoped>

@@ -12,18 +12,15 @@ export default {
 };
 </script>
 
-<template>
-  <div class="stat-card">
-    <div class="stat-header">
-      <span class="stat-label">{{ label }}</span>
-      <span v-if="badge" class="stat-badge" :class="badgeColor">{{ badge }}</span>
-    </div>
-    <strong class="stat-value">{{ value }}</strong>
-    <div v-if="footer" class="stat-footer">
-      <span class="stat-sub">{{ footer }}</span>
-    </div>
-    <slot name="footer" />
-  </div>
+<template lang="pug">
+  .stat-card
+    .stat-header
+      span.stat-label {{ label }}
+      span.stat-badge(v-if="badge" :class="badgeColor") {{ badge }}
+    strong.stat-value {{ value }}
+    .stat-footer(v-if="footer")
+      span.stat-sub {{ footer }}
+    slot(name="footer")
 </template>
 
 <style scoped>

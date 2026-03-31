@@ -74,74 +74,71 @@ export default {
 };
 </script>
 
-<template>
-  <section class="page-wrap">
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-text">
-          <span class="header-badge">{{ $t('team.badge') }}</span>
-          <h1>{{ $t('team.title') }}</h1>
-          <p>{{ $t('team.subtitle') }}</p>
-        </div>
-        <button class="refresh-btn" @click="loadRows">{{ $t('common.refresh') }}</button>
-      </div>
-    </header>
+<template lang="pug">
+  section.page-wrap
+    header.page-header
+      .header-content
+        .header-text
+          span.header-badge {{ $t('team.badge') }}
+          h1 {{ $t('team.title') }}
+          p {{ $t('team.subtitle') }}
+        button.refresh-btn(@click="loadRows") {{ $t('common.refresh') }}
 
-    <section class="summary-strip">
-      <article><span>{{ $t('team.teamMembers') }}</span><strong>{{ rows.length }}</strong></article>
-      <article><span>{{ $t('team.totalProspects') }}</span><strong>{{ totalProspects }}</strong></article>
-      <article><span>{{ $t('team.proposalsSent') }}</span><strong>{{ totalProposals }}</strong></article>
-      <article><span>{{ $t('team.securedValue') }}</span><strong>${{ totalSecuredValue.toLocaleString() }}</strong></article>
-    </section>
+    section.summary-strip
+      article
+        span {{ $t('team.teamMembers') }}
+        strong {{ rows.length }}
+      article
+        span {{ $t('team.totalProspects') }}
+        strong {{ totalProspects }}
+      article
+        span {{ $t('team.proposalsSent') }}
+        strong {{ totalProposals }}
+      article
+        span {{ $t('team.securedValue') }}
+        strong ${{ totalSecuredValue.toLocaleString() }}
 
-    <p v-if="errorText" class="error">{{ errorText }}</p>
-    <p v-if="loading">{{ $t('team.loadingSummary') }}</p>
+    p.error(v-if="errorText") {{ errorText }}
+    p(v-if="loading") {{ $t('team.loadingSummary') }}
 
-    <section class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>{{ $t('team.teamMember') }}</th>
-            <th>{{ $t('team.prospects') }}</th>
-            <th>{{ $t('team.approaches') }}</th>
-            <th>{{ $t('team.meetings') }}</th>
-            <th>{{ $t('team.proposals') }}</th>
-            <th>{{ $t('team.proposalValue') }}</th>
-            <th>{{ $t('team.secured') }}</th>
-            <th>{{ $t('team.securedValue') }}</th>
-            <th>{{ $t('team.approachConv') }}</th>
-            <th>{{ $t('team.avgProposal') }}</th>
-            <th>{{ $t('team.securedConv') }}</th>
-            <th>{{ $t('team.active') }}</th>
-            <th>{{ $t('team.awaitResearch') }}</th>
-            <th>{{ $t('team.completed') }}</th>
-            <th>{{ $t('team.dead') }}</th>
-            <th>{{ $t('team.onHold') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in rows" :key="row.leadStaff">
-            <td>{{ row.leadStaff }}</td>
-            <td>{{ row.prospects }}</td>
-            <td>{{ row.approachesMade }}</td>
-            <td>{{ row.secureMeetings }}</td>
-            <td>{{ row.proposalsSent }}</td>
-            <td>${{ row.totalProposalValue.toLocaleString() }}</td>
-            <td>{{ row.engagementsSecured }}</td>
-            <td>${{ row.totalSecuredValue.toLocaleString() }}</td>
-            <td>{{ (row.avgApproachConversion * 100).toFixed(1) }}%</td>
-            <td>${{ row.avgProposalValue.toLocaleString(undefined, { maximumFractionDigits: 0 }) }}</td>
-            <td>{{ (row.avgSecuredConversion * 100).toFixed(1) }}%</td>
-            <td>{{ row.active }}</td>
-            <td>{{ row.awaitResearch }}</td>
-            <td>{{ row.completed }}</td>
-            <td>{{ row.dead }}</td>
-            <td>{{ row.onHold }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-  </section>
+    section.card
+      table
+        thead
+          tr
+            th {{ $t('team.teamMember') }}
+            th {{ $t('team.prospects') }}
+            th {{ $t('team.approaches') }}
+            th {{ $t('team.meetings') }}
+            th {{ $t('team.proposals') }}
+            th {{ $t('team.proposalValue') }}
+            th {{ $t('team.secured') }}
+            th {{ $t('team.securedValue') }}
+            th {{ $t('team.approachConv') }}
+            th {{ $t('team.avgProposal') }}
+            th {{ $t('team.securedConv') }}
+            th {{ $t('team.active') }}
+            th {{ $t('team.awaitResearch') }}
+            th {{ $t('team.completed') }}
+            th {{ $t('team.dead') }}
+            th {{ $t('team.onHold') }}
+        tbody
+          tr(v-for="row in rows" :key="row.leadStaff")
+            td {{ row.leadStaff }}
+            td {{ row.prospects }}
+            td {{ row.approachesMade }}
+            td {{ row.secureMeetings }}
+            td {{ row.proposalsSent }}
+            td ${{ row.totalProposalValue.toLocaleString() }}
+            td {{ row.engagementsSecured }}
+            td ${{ row.totalSecuredValue.toLocaleString() }}
+            td {{ (row.avgApproachConversion * 100).toFixed(1) }}%
+            td ${{ row.avgProposalValue.toLocaleString(undefined, { maximumFractionDigits: 0 }) }}
+            td {{ (row.avgSecuredConversion * 100).toFixed(1) }}%
+            td {{ row.active }}
+            td {{ row.awaitResearch }}
+            td {{ row.completed }}
+            td {{ row.dead }}
+            td {{ row.onHold }}
 </template>
 
 <style scoped>

@@ -8,11 +8,10 @@ export default {
 };
 </script>
 
-<template>
-  <div class="loading-state">
-    <div class="spinner"></div>
-    <p v-if="message">{{ message }}</p>
-  </div>
+<template lang="pug">
+  .loading-state
+    .spinner
+    p(v-if="message") {{ message }}
 </template>
 
 <style scoped>

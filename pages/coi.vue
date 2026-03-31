@@ -201,219 +201,165 @@ export default {
 };
 </script>
 
-<template>
-  <section class="page-wrap">
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-text">
-          <span class="header-badge">{{ $t('coi.badge') }}</span>
-          <h1>{{ $t('coi.title') }}</h1>
-          <p>{{ $t('coi.subtitle') }}</p>
-        </div>
-        <button class="refresh-btn" @click="loadSummary(); loadCoiEntries();">{{ $t('coi.refresh') }}</button>
-      </div>
-    </header>
+<template lang="pug">
+  section.page-wrap
+    header.page-header
+      .header-content
+        .header-text
+          span.header-badge {{ $t('coi.badge') }}
+          h1 {{ $t('coi.title') }}
+          p {{ $t('coi.subtitle') }}
+        button.refresh-btn(@click="loadSummary(); loadCoiEntries();") {{ $t('coi.refresh') }}
 
-    <section class="summary-strip">
-      <article><span>{{ $t('coi.coiRelationships') }}</span><strong>{{ totals.relationships }}</strong></article>
-      <article><span>{{ $t('coi.totalReferrals') }}</span><strong>{{ totals.totalReferrals }}</strong></article>
-      <article><span>{{ $t('coi.converted') }}</span><strong>{{ totals.totalConverted }}</strong></article>
-      <article><span>{{ $t('coi.conversionRate') }}</span><strong>{{ (totals.conversionRate * 100).toFixed(1) }}%</strong></article>
-      <article><span>{{ $t('coi.proposedFeeValue') }}</span><strong>${{ totals.totalProposedValue.toLocaleString() }}</strong></article>
-      <article><span>{{ $t('coi.securedFeeValue') }}</span><strong>${{ totals.totalSecuredValue.toLocaleString() }}</strong></article>
-    </section>
+    section.summary-strip
+      article
+        span {{ $t('coi.coiRelationships') }}
+        strong {{ totals.relationships }}
+      article
+        span {{ $t('coi.totalReferrals') }}
+        strong {{ totals.totalReferrals }}
+      article
+        span {{ $t('coi.converted') }}
+        strong {{ totals.totalConverted }}
+      article
+        span {{ $t('coi.conversionRate') }}
+        strong {{ (totals.conversionRate * 100).toFixed(1) }}%
+      article
+        span {{ $t('coi.proposedFeeValue') }}
+        strong ${{ totals.totalProposedValue.toLocaleString() }}
+      article
+        span {{ $t('coi.securedFeeValue') }}
+        strong ${{ totals.totalSecuredValue.toLocaleString() }}
 
-    <!-- Add COI Section -->
-    <section class="card add-section">
-      <h2>{{ $t('coi.addCoi') }}</h2>
-      <p class="section-desc">{{ $t('coi.addCoiDesc') }}</p>
+    section.card.add-section
+      h2 {{ $t('coi.addCoi') }}
+      p.section-desc {{ $t('coi.addCoiDesc') }}
+      form.coi-form(@submit.prevent="addCoi")
+        .form-row
+          .form-group
+            label
+              | {{ $t('coi.coiName') }}
+              span.required *
+            input(v-model="newCoi.coiName" :placeholder="$t('coi.placeholderName')" required)
+          .form-group
+            label {{ $t('coi.email') }}
+            input(v-model="newCoi.email" type="email" :placeholder="$t('coi.placeholderEmail')")
+          .form-group
+            label {{ $t('coi.cellPhone') }}
+            input(v-model="newCoi.cell" :placeholder="$t('coi.placeholderPhone')")
+        .form-row
+          .form-group
+            label {{ $t('coi.entityCompany') }}
+            input(v-model="newCoi.entity" :placeholder="$t('coi.placeholderCompany')")
+          .form-group
+            label {{ $t('coi.position') }}
+            input(v-model="newCoi.position" :placeholder="$t('coi.placeholderPosition')")
+          .form-group
+            label {{ $t('coi.industry') }}
+            select(v-model="newCoi.industry")
+              option(value="") {{ $t('coi.selectIndustry') }}
+              option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
+        .form-row
+          .form-group
+            label {{ $t('coi.leadPartner') }}
+            select(v-model="newCoi.leadRelationshipPartner")
+              option(value="") {{ $t('coi.selectPartner') }}
+              option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
+          .form-group
+            label {{ $t('coi.relationshipSupport') }}
+            select(v-model="newCoi.relationshipSupport")
+              option(value="") {{ $t('coi.selectStaff') }}
+              option(v-for="opt in staffOptions" :key="opt" :value="opt") {{ opt }}
+          .form-group.btn-group
+            button.btn-add(type="submit" :disabled="!newCoi.coiName.trim() || savingCoi")
+              | {{ savingCoi ? $t('coi.saving') : $t('coi.addCoiBtn') }}
 
-      <form class="coi-form" @submit.prevent="addCoi">
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ $t('coi.coiName') }} <span class="required">*</span></label>
-            <input v-model="newCoi.coiName" :placeholder="$t('coi.placeholderName')" required />
-          </div>
-          <div class="form-group">
-            <label>{{ $t('coi.email') }}</label>
-            <input v-model="newCoi.email" type="email" :placeholder="$t('coi.placeholderEmail')" />
-          </div>
-          <div class="form-group">
-            <label>{{ $t('coi.cellPhone') }}</label>
-            <input v-model="newCoi.cell" :placeholder="$t('coi.placeholderPhone')" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ $t('coi.entityCompany') }}</label>
-            <input v-model="newCoi.entity" :placeholder="$t('coi.placeholderCompany')" />
-          </div>
-          <div class="form-group">
-            <label>{{ $t('coi.position') }}</label>
-            <input v-model="newCoi.position" :placeholder="$t('coi.placeholderPosition')" />
-          </div>
-          <div class="form-group">
-            <label>{{ $t('coi.industry') }}</label>
-            <select v-model="newCoi.industry">
-              <option value="">{{ $t('coi.selectIndustry') }}</option>
-              <option v-for="opt in industryOptions" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ $t('coi.leadPartner') }}</label>
-            <select v-model="newCoi.leadRelationshipPartner">
-              <option value="">{{ $t('coi.selectPartner') }}</option>
-              <option v-for="opt in partnerOptions" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>{{ $t('coi.relationshipSupport') }}</label>
-            <select v-model="newCoi.relationshipSupport">
-              <option value="">{{ $t('coi.selectStaff') }}</option>
-              <option v-for="opt in staffOptions" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-          <div class="form-group btn-group">
-            <button type="submit" class="btn-add" :disabled="!newCoi.coiName.trim() || savingCoi">
-              {{ savingCoi ? $t('coi.saving') : $t('coi.addCoiBtn') }}
-            </button>
-          </div>
-        </div>
-      </form>
-    </section>
-
-    <!-- COI Entries Table -->
-    <section class="card">
-      <div class="card-header-row">
-        <div>
-          <h2>{{ $t('coi.directory') }}</h2>
-          <p class="section-desc">{{ $t('coi.directoryDesc') }}</p>
-        </div>
-        <button
+    section.card
+      .card-header-row
+        div
+          h2 {{ $t('coi.directory') }}
+          p.section-desc {{ $t('coi.directoryDesc') }}
+        button.btn-remove-selected(
           v-if="selectedIds.length > 0"
-          class="btn-remove-selected"
           :disabled="deletingSelected"
           @click="removeSelectedCois"
-        >
-          {{ deletingSelected ? $t('coi.removing') : $t('coi.removeSelected', { count: selectedIds.length }) }}
-        </button>
-      </div>
+        ) {{ deletingSelected ? $t('coi.removing') : $t('coi.removeSelected', { count: selectedIds.length }) }}
 
-      <p v-if="loadingEntries">{{ $t('coi.loadingEntries') }}</p>
-      <table v-else-if="coiEntries.length > 0">
-        <thead>
-          <tr>
-            <th class="checkbox-col">
-              <input
+      p(v-if="loadingEntries") {{ $t('coi.loadingEntries') }}
+      table(v-else-if="coiEntries.length > 0")
+        thead
+          tr
+            th.checkbox-col
+              input(
                 type="checkbox"
                 :checked="allSelected"
                 @change="toggleSelectAll"
                 :title="$t('coi.selectAll')"
-              />
-            </th>
-            <th>{{ $t('coi.name') }}</th>
-            <th>{{ $t('coi.entity') }}</th>
-            <th>{{ $t('coi.industry') }}</th>
-            <th>{{ $t('coi.email') }}</th>
-            <th>{{ $t('coi.cell') }}</th>
-            <th>{{ $t('coi.leadPartner') }}</th>
-            <th class="progress-col">{{ $t('coi.couldWe') }}</th>
-            <th class="progress-col">{{ $t('coi.howWouldWe') }}</th>
-            <th class="progress-col">{{ $t('coi.willWe') }}</th>
-            <th class="progress-col">{{ $t('coi.testReview') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
+              )
+            th {{ $t('coi.name') }}
+            th {{ $t('coi.entity') }}
+            th {{ $t('coi.industry') }}
+            th {{ $t('coi.email') }}
+            th {{ $t('coi.cell') }}
+            th {{ $t('coi.leadPartner') }}
+            th.progress-col {{ $t('coi.couldWe') }}
+            th.progress-col {{ $t('coi.howWouldWe') }}
+            th.progress-col {{ $t('coi.willWe') }}
+            th.progress-col {{ $t('coi.testReview') }}
+        tbody
+          tr(
             v-for="entry in coiEntries"
             :key="entry.id"
             :class="{ 'row-selected': selectedIds.includes(entry.id) }"
-          >
-            <td class="checkbox-col">
-              <input
+          )
+            td.checkbox-col
+              input(
                 type="checkbox"
                 :checked="selectedIds.includes(entry.id)"
                 @change="toggleSelection(entry.id)"
-              />
-            </td>
-            <td>{{ entry.coiName }}</td>
-            <td>{{ entry.entity || "-" }}</td>
-            <td>{{ entry.industry || "-" }}</td>
-            <td>{{ entry.email || "-" }}</td>
-            <td>{{ entry.cell || "-" }}</td>
-            <td>{{ entry.leadRelationshipPartner || "-" }}</td>
-            <td class="progress-col">
-              <input
-                type="checkbox"
-                :checked="!!entry.couldWe"
-                @change="toggleProgress(entry, 'couldWe')"
-              />
-            </td>
-            <td class="progress-col">
-              <input
-                type="checkbox"
-                :checked="!!entry.howWouldWe"
-                @change="toggleProgress(entry, 'howWouldWe')"
-              />
-            </td>
-            <td class="progress-col">
-              <input
-                type="checkbox"
-                :checked="!!entry.willWe"
-                @change="toggleProgress(entry, 'willWe')"
-              />
-            </td>
-            <td class="progress-col">
-              <input
-                type="checkbox"
-                :checked="!!entry.testReview"
-                @change="toggleProgress(entry, 'testReview')"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else class="empty-table">{{ $t('coi.noEntries') }}</p>
-    </section>
+              )
+            td {{ entry.coiName }}
+            td {{ entry.entity || "-" }}
+            td {{ entry.industry || "-" }}
+            td {{ entry.email || "-" }}
+            td {{ entry.cell || "-" }}
+            td {{ entry.leadRelationshipPartner || "-" }}
+            td.progress-col
+              input(type="checkbox" :checked="!!entry.couldWe" @change="toggleProgress(entry, 'couldWe')")
+            td.progress-col
+              input(type="checkbox" :checked="!!entry.howWouldWe" @change="toggleProgress(entry, 'howWouldWe')")
+            td.progress-col
+              input(type="checkbox" :checked="!!entry.willWe" @change="toggleProgress(entry, 'willWe')")
+            td.progress-col
+              input(type="checkbox" :checked="!!entry.testReview" @change="toggleProgress(entry, 'testReview')")
+      p.empty-table(v-else) {{ $t('coi.noEntries') }}
 
-    <p v-if="errorText" class="error">{{ errorText }}</p>
-    <p v-if="loading">{{ $t('coi.loadingSummary') }}</p>
+    p.error(v-if="errorText") {{ errorText }}
+    p(v-if="loading") {{ $t('coi.loadingSummary') }}
 
-    <!-- Performance Table -->
-    <section class="card">
-      <h2>{{ $t('coi.performanceTitle') }}</h2>
-      <p class="section-desc">{{ $t('coi.performanceDesc') }}</p>
-      <table v-if="summaryItems.length > 0">
-        <thead>
-          <tr>
-            <th>{{ $t('coi.coiName') }}</th>
-            <th>{{ $t('coi.referrals') }}</th>
-            <th>{{ $t('coi.active') }}</th>
-            <th>{{ $t('coi.converted') }}</th>
-            <th>{{ $t('coi.conversionRate') }}</th>
-            <th>{{ $t('coi.proposedFeeValue') }}</th>
-            <th>{{ $t('coi.securedFeeValue') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in summaryItems" :key="item.coiName">
-            <td>{{ item.coiName }}</td>
-            <td>{{ item.totalReferrals }}</td>
-            <td>{{ item.active }}</td>
-            <td>{{ item.converted }}</td>
-            <td>{{ item.totalReferrals > 0 ? ((item.converted / item.totalReferrals) * 100).toFixed(1) : '0.0' }}%</td>
-            <td>${{ item.proposedValue.toLocaleString() }}</td>
-            <td>${{ item.securedValue.toLocaleString() }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else class="empty-table">{{ $t('coi.noReferralData') }}</p>
-    </section>
-  </section>
+    section.card
+      h2 {{ $t('coi.performanceTitle') }}
+      p.section-desc {{ $t('coi.performanceDesc') }}
+      table(v-if="summaryItems.length > 0")
+        thead
+          tr
+            th {{ $t('coi.coiName') }}
+            th {{ $t('coi.referrals') }}
+            th {{ $t('coi.active') }}
+            th {{ $t('coi.converted') }}
+            th {{ $t('coi.conversionRate') }}
+            th {{ $t('coi.proposedFeeValue') }}
+            th {{ $t('coi.securedFeeValue') }}
+        tbody
+          tr(v-for="item in summaryItems" :key="item.coiName")
+            td {{ item.coiName }}
+            td {{ item.totalReferrals }}
+            td {{ item.active }}
+            td {{ item.converted }}
+            td {{ item.totalReferrals > 0 ? ((item.converted / item.totalReferrals) * 100).toFixed(1) : '0.0' }}%
+            td ${{ item.proposedValue.toLocaleString() }}
+            td ${{ item.securedValue.toLocaleString() }}
+      p.empty-table(v-else) {{ $t('coi.noReferralData') }}
 </template>
 
 <style scoped>

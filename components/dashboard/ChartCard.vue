@@ -11,14 +11,12 @@ export default {
 };
 </script>
 
-<template>
-  <div class="chart-card" :class="{ wide }">
-    <h3>{{ title }}</h3>
-    <p v-if="subtitle" class="chart-subtitle">{{ subtitle }}</p>
-    <div class="chart-container" :class="chartType || 'default'">
-      <slot />
-    </div>
-  </div>
+<template lang="pug">
+  .chart-card(:class="{ wide }")
+    h3 {{ title }}
+    p.chart-subtitle(v-if="subtitle") {{ subtitle }}
+    .chart-container(:class="chartType || 'default'")
+      slot
 </template>
 
 <style scoped>

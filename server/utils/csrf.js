@@ -13,13 +13,9 @@ function ensureCSRFToken(req, res) {
 
   if (!token) {
     token = generateCSRFToken()
-    res.cookie(CSRF_COOKIE, token, {
-      httpOnly: false, // Must be readable by client JS
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 // 24 hours (seconds)
-    })
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+    const cookieStr = `${CSRF_COOKIE}=${token}; Path=/; SameSite=Strict; Max-Age=86400${secure}`
+    res.setHeader('Set-Cookie', cookieStr)
   }
 
   return token
@@ -40,7 +36,9 @@ function validateCSRF(req, res) {
   const headerToken = req.headers[CSRF_HEADER]
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    res.status(403).json({ error: 'Invalid or missing CSRF token' })
+    res.statusCode = 403
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ error: 'Invalid or missing CSRF token' }))
     throw new Error('RESPONSE_SENT')
   }
 }

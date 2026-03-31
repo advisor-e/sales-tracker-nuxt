@@ -201,223 +201,148 @@ export default {
 };
 </script>
 
-<template>
-  <div class="lists-page">
-    <!-- Header -->
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-text">
-          <span class="header-badge">{{ $t('lists.badge') }}</span>
-          <h1>{{ $t('lists.title') }}</h1>
-          <p>{{ $t('lists.subtitle') }}</p>
-        </div>
-      </div>
-    </header>
+<template lang="pug">
+  .lists-page
+    header.page-header
+      .header-content
+        .header-text
+          span.header-badge {{ $t('lists.badge') }}
+          h1 {{ $t('lists.title') }}
+          p {{ $t('lists.subtitle') }}
 
-    <!-- Loading State -->
-    <div v-if="listsLoading && Object.keys(lists).length === 0" class="loading-banner">
-      {{ $t('lists.loading') }}
-    </div>
+    .loading-banner(v-if="listsLoading && Object.keys(lists).length === 0")
+      | {{ $t('lists.loading') }}
 
-    <!-- Save Status -->
-    <div v-if="saveMessage" class="save-banner" :class="{ error: saveMessage.includes('Failed') }">
-      {{ saveMessage === 'Saved' ? $t('lists.saved') : saveMessage }}
-    </div>
+    .save-banner(v-if="saveMessage" :class="{ error: saveMessage.includes('Failed') }")
+      | {{ saveMessage === 'Saved' ? $t('lists.saved') : saveMessage }}
 
-    <!-- Info Banner -->
-    <div class="info-banner">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 16v-4"/>
-        <path d="M12 8h.01"/>
-      </svg>
-      <p>{{ $t('lists.infoBanner') }}</p>
-    </div>
+    .info-banner
+      svg(xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+        circle(cx="12" cy="12" r="10")
+        path(d="M12 16v-4")
+        path(d="M12 8h.01")
+      p {{ $t('lists.infoBanner') }}
 
-    <!-- Languages Section -->
-    <section class="languages-section">
-      <div class="section-header">
-        <div>
-          <h2>{{ $t('lists.languagesTitle') }}</h2>
-          <p>{{ $t('lists.languagesDesc') }}</p>
-        </div>
-        <button
-          class="btn-add-language"
-          @click="showAddLanguage = !showAddLanguage"
-        >
-          {{ showAddLanguage ? '−' : '+' }} {{ $t('lists.addLanguage') }}
-        </button>
-      </div>
+    section.languages-section
+      .section-header
+        div
+          h2 {{ $t('lists.languagesTitle') }}
+          p {{ $t('lists.languagesDesc') }}
+        button.btn-add-language(@click="showAddLanguage = !showAddLanguage")
+          | {{ showAddLanguage ? '−' : '+' }} {{ $t('lists.addLanguage') }}
 
-      <!-- Add Language Form -->
-      <div v-if="showAddLanguage" class="add-language-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ $t('lists.languageCode') }}</label>
-            <input
-              v-model="newLanguage.code"
-              :placeholder="$t('lists.languageCodePlaceholder')"
-              maxlength="10"
-            />
-          </div>
-          <div class="form-group">
-            <label>{{ $t('lists.languageName') }}</label>
-            <input
-              v-model="newLanguage.name"
-              :placeholder="$t('lists.languageNamePlaceholder')"
-            />
-          </div>
-          <div class="form-group">
-            <label>{{ $t('lists.nativeName') }}</label>
-            <input
-              v-model="newLanguage.nativeName"
-              :placeholder="$t('lists.nativeNamePlaceholder')"
-            />
-          </div>
-        </div>
-        <div class="form-actions">
-          <button
-            class="btn-save-language"
+      .add-language-form(v-if="showAddLanguage")
+        .form-row
+          .form-group
+            label {{ $t('lists.languageCode') }}
+            input(v-model="newLanguage.code" :placeholder="$t('lists.languageCodePlaceholder')" maxlength="10")
+          .form-group
+            label {{ $t('lists.languageName') }}
+            input(v-model="newLanguage.name" :placeholder="$t('lists.languageNamePlaceholder')")
+          .form-group
+            label {{ $t('lists.nativeName') }}
+            input(v-model="newLanguage.nativeName" :placeholder="$t('lists.nativeNamePlaceholder')")
+        .form-actions
+          button.btn-save-language(
             :disabled="!newLanguage.code || !newLanguage.name || !newLanguage.nativeName || languageSaving"
             @click="addNewLanguage"
-          >
-            <span v-if="languageSaving" class="btn-spinner">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              Translating...
-            </span>
-            <span v-else>{{ $t('lists.addLanguage') }}</span>
-          </button>
-        </div>
-        <p class="form-hint" v-if="!languageSaving">
-          AI will translate all app text into the new language. This takes about 30 seconds.
-        </p>
-        <p class="form-hint translating-hint" v-else>
-          Translating with AI — please wait, this takes about 30 seconds...
-        </p>
-      </div>
+          )
+            span.btn-spinner(v-if="languageSaving")
+              svg.spin(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
+                path(d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83")
+              | Translating...
+            span(v-else) {{ $t('lists.addLanguage') }}
+        p.form-hint(v-if="!languageSaving")
+          | AI will translate all app text into the new language. This takes about 30 seconds.
+        p.form-hint.translating-hint(v-else)
+          | Translating with AI — please wait, this takes about 30 seconds...
 
-      <!-- Languages List -->
-      <div class="languages-grid">
-        <div
+      .languages-grid
+        .language-card(
           v-for="lang in languages"
           :key="lang.code"
-          class="language-card"
           :class="{ 'built-in': lang.isBuiltIn }"
-        >
-          <div class="language-info">
-            <span class="language-code">{{ lang.code }}</span>
-            <span class="language-name">{{ lang.nativeName }}</span>
-            <span class="language-tag">{{ lang.isBuiltIn ? $t('lists.builtIn') : $t('lists.custom') }}</span>
-          </div>
-          <button
+        )
+          .language-info
+            span.language-code {{ lang.code }}
+            span.language-name {{ lang.nativeName }}
+            span.language-tag {{ lang.isBuiltIn ? $t('lists.builtIn') : $t('lists.custom') }}
+          button.btn-delete-lang(
             v-if="!lang.isBuiltIn"
-            class="btn-delete-lang"
             @click="deleteLanguage(lang.code)"
             :title="$t('lists.deleteLanguage')"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-    </section>
+          ) ×
 
-    <!-- Lists Grid -->
-    <div class="lists-grid">
-      <div
+    .lists-grid
+      .list-card(
         v-for="(list, key) in lists"
         :key="key"
-        class="list-card"
         :class="{ expanded: expandedList === key }"
-      >
-        <div class="list-header" @click="toggleExpand(key)">
-          <div class="list-info">
-            <h3>{{ list.name }}</h3>
-            <p>{{ list.description }}</p>
-          </div>
-          <div class="list-meta">
-            <span class="item-count">{{ list.items.length }} {{ $t('lists.items') }}</span>
-            <span class="expand-icon">{{ expandedList === key ? '−' : '+' }}</span>
-          </div>
-        </div>
+      )
+        .list-header(@click="toggleExpand(key)")
+          .list-info
+            h3 {{ list.name }}
+            p {{ list.description }}
+          .list-meta
+            span.item-count {{ list.items.length }} {{ $t('lists.items') }}
+            span.expand-icon {{ expandedList === key ? '−' : '+' }}
 
-        <div v-if="expandedList === key" class="list-content">
-          <ul class="items-list">
-            <li
+        .list-content(v-if="expandedList === key")
+          ul.items-list
+            li.list-item(
               v-for="(item, idx) in list.items"
               :key="item"
-              class="list-item"
               :style="list.colors && list.colors[item] ? { backgroundColor: list.colors[item] } : {}"
-            >
-              <span class="item-text">{{ item }}</span>
-              <div class="item-actions">
-                <button
-                  class="btn-move"
+            )
+              span.item-text {{ item }}
+              .item-actions
+                button.btn-move(
                   :disabled="idx === 0"
                   @click.stop="moveItem(key, idx, -1)"
                   :title="$t('lists.moveUp')"
-                >↑</button>
-                <button
-                  class="btn-move"
+                ) ↑
+                button.btn-move(
                   :disabled="idx === list.items.length - 1"
                   @click.stop="moveItem(key, idx, 1)"
                   :title="$t('lists.moveDown')"
-                >↓</button>
-                <button
-                  class="btn-remove"
+                ) ↓
+                button.btn-remove(
                   @click.stop="removeItem(key, item)"
                   :title="$t('lists.remove')"
-                >×</button>
-              </div>
-            </li>
-          </ul>
+                ) ×
 
-          <div class="add-item-form">
-            <input
+          .add-item-form
+            input(
               v-model="newItemText"
               :placeholder="$t('lists.addNewItem')"
               @keyup.enter="addItem(key)"
-            />
-            <button
-              class="btn-add"
+            )
+            button.btn-add(
               :disabled="!newItemText.trim()"
               @click="addItem(key)"
-            >{{ $t('common.add') }}</button>
-          </div>
-        </div>
-      </div>
-    </div>
+            ) {{ $t('common.add') }}
 
-    <!-- Usage Guide -->
-    <section class="usage-guide">
-      <h2>{{ $t('lists.usageGuideTitle') }}</h2>
-      <div class="usage-grid">
-        <div class="usage-item">
-          <h4>{{ $t('lists.prospectStatus') }}</h4>
-          <p>{{ $t('lists.prospectStatusDesc') }}</p>
-        </div>
-        <div class="usage-item">
-          <h4>{{ $t('lists.prospectSource') }}</h4>
-          <p>{{ $t('lists.prospectSourceDesc') }}</p>
-        </div>
-        <div class="usage-item">
-          <h4>{{ $t('lists.approachStyle') }}</h4>
-          <p>{{ $t('lists.approachStyleDesc') }}</p>
-        </div>
-        <div class="usage-item">
-          <h4>{{ $t('lists.salesStyle') }}</h4>
-          <p>{{ $t('lists.salesStyleDesc') }}</p>
-        </div>
-        <div class="usage-item">
-          <h4>{{ $t('lists.totalNeedsStage') }}</h4>
-          <p>{{ $t('lists.totalNeedsStageDesc') }}</p>
-        </div>
-        <div class="usage-item">
-          <h4>{{ $t('lists.industry') }}</h4>
-          <p>{{ $t('lists.industryDesc') }}</p>
-        </div>
-      </div>
-    </section>
-  </div>
+    section.usage-guide
+      h2 {{ $t('lists.usageGuideTitle') }}
+      .usage-grid
+        .usage-item
+          h4 {{ $t('lists.prospectStatus') }}
+          p {{ $t('lists.prospectStatusDesc') }}
+        .usage-item
+          h4 {{ $t('lists.prospectSource') }}
+          p {{ $t('lists.prospectSourceDesc') }}
+        .usage-item
+          h4 {{ $t('lists.approachStyle') }}
+          p {{ $t('lists.approachStyleDesc') }}
+        .usage-item
+          h4 {{ $t('lists.salesStyle') }}
+          p {{ $t('lists.salesStyleDesc') }}
+        .usage-item
+          h4 {{ $t('lists.totalNeedsStage') }}
+          p {{ $t('lists.totalNeedsStageDesc') }}
+        .usage-item
+          h4 {{ $t('lists.industry') }}
+          p {{ $t('lists.industryDesc') }}
 </template>
 
 <style scoped>

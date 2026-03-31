@@ -442,170 +442,124 @@ export default {
 };
 </script>
 
-<template>
-  <div class="pipeline-page">
-    <!-- Header -->
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-text">
-          <span class="header-badge">{{ $t('pipeline.badge') }}</span>
-          <h1>{{ $t('pipeline.title') }}</h1>
-          <p>{{ $t('pipeline.subtitle') }}</p>
-        </div>
-        <div class="header-actions">
-          <button class="btn-primary" @click="showAddForm = !showAddForm">
-            {{ showAddForm ? $t('common.cancel') : $t('pipeline.addProspect') }}
-          </button>
-          <button class="btn-secondary" @click="loadItems">{{ $t('common.refresh') }}</button>
-        </div>
-      </div>
-    </header>
+<template lang="pug">
+  .pipeline-page
+    header.page-header
+      .header-content
+        .header-text
+          span.header-badge {{ $t('pipeline.badge') }}
+          h1 {{ $t('pipeline.title') }}
+          p {{ $t('pipeline.subtitle') }}
+        .header-actions
+          button.btn-primary(@click="showAddForm = !showAddForm")
+            | {{ showAddForm ? $t('common.cancel') : $t('pipeline.addProspect') }}
+          button.btn-secondary(@click="loadItems") {{ $t('common.refresh') }}
 
-    <!-- Summary Stats -->
-    <section class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-label">{{ $t('pipeline.totalProspects') }}</span>
-        <span class="stat-value">{{ totalProspects }}</span>
-      </div>
-      <div class="stat-item active">
-        <span class="stat-label">{{ $t('pipeline.active') }}</span>
-        <span class="stat-value">{{ activeProspects }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">{{ $t('pipeline.meetings') }}</span>
-        <span class="stat-value">{{ meetingsCount }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">{{ $t('pipeline.proposals') }}</span>
-        <span class="stat-value">{{ proposalsSent }}</span>
-      </div>
-      <div class="stat-item secured">
-        <span class="stat-label">{{ $t('pipeline.secured') }}</span>
-        <span class="stat-value">{{ securedCount }}</span>
-      </div>
-      <div class="stat-item money">
-        <span class="stat-label">{{ $t('pipeline.proposalValue') }}</span>
-        <span class="stat-value">{{ money.format(totalProposalValue) }}</span>
-      </div>
-      <div class="stat-item money secured">
-        <span class="stat-label">{{ $t('pipeline.securedValue') }}</span>
-        <span class="stat-value">{{ money.format(totalSecuredValue) }}</span>
-      </div>
-    </section>
+    section.stats-bar
+      .stat-item
+        span.stat-label {{ $t('pipeline.totalProspects') }}
+        span.stat-value {{ totalProspects }}
+      .stat-item.active
+        span.stat-label {{ $t('pipeline.active') }}
+        span.stat-value {{ activeProspects }}
+      .stat-item
+        span.stat-label {{ $t('pipeline.meetings') }}
+        span.stat-value {{ meetingsCount }}
+      .stat-item
+        span.stat-label {{ $t('pipeline.proposals') }}
+        span.stat-value {{ proposalsSent }}
+      .stat-item.secured
+        span.stat-label {{ $t('pipeline.secured') }}
+        span.stat-value {{ securedCount }}
+      .stat-item.money
+        span.stat-label {{ $t('pipeline.proposalValue') }}
+        span.stat-value {{ money.format(totalProposalValue) }}
+      .stat-item.money.secured
+        span.stat-label {{ $t('pipeline.securedValue') }}
+        span.stat-value {{ money.format(totalSecuredValue) }}
 
-    <!-- Add Form -->
-    <section v-if="showAddForm" class="add-form-panel">
-      <h2>{{ $t('pipeline.newProspect') }}</h2>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Prospect Name *</label>
-          <input v-model="draft.prospectName" placeholder="Name" />
-        </div>
-        <div class="form-group">
-          <label>Business Name</label>
-          <input v-model="draft.businessName" placeholder="Business" />
-        </div>
-        <div class="form-group">
-          <label>Partner</label>
-          <select v-model="draft.partner">
-            <option value="">Select...</option>
-            <option v-for="opt in partnerOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Lead Staff</label>
-          <select v-model="draft.leadStaff">
-            <option value="">Select...</option>
-            <option v-for="opt in leadStaffOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select v-model="draft.prospectStatus">
-            <option v-for="opt in statusOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Relationship Type</label>
-          <select v-model="draft.relationshipType">
-            <option v-for="opt in relationshipOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Source</label>
-          <select v-model="draft.prospectSource">
-            <option value="">Select...</option>
-            <option v-for="opt in sourceOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Industry</label>
-          <select v-model="draft.industry">
-            <option value="">Select...</option>
-            <option v-for="opt in industryOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input v-model="draft.email" type="email" placeholder="Email" />
-        </div>
-        <div class="form-group">
-          <label>Phone</label>
-          <input v-model="draft.contactPhone" placeholder="Phone" />
-        </div>
-        <div class="form-group">
-          <label>Approach Date</label>
-          <input v-model="draft.approachDate" type="date" />
-        </div>
-        <div class="form-group">
-          <label>Approach Style</label>
-          <select v-model="draft.approachStyle">
-            <option value="">Select...</option>
-            <option v-for="opt in approachOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Sales Style</label>
-          <select v-model="draft.salesStyle">
-            <option value="">Select...</option>
-            <option v-for="opt in salesStyleOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>COI Involved</label>
-          <select v-model="draft.coiInvolved" :disabled="draft.prospectSource !== 'Referral'">
-            <option value="">{{ draft.prospectSource === 'Referral' ? 'Select COI...' : 'N/A' }}</option>
-            <option v-for="opt in coiOptions" :key="opt" :value="opt">{{ opt }}</option>
-          </select>
-        </div>
-        <div class="form-group full-width">
-          <label>Comments</label>
-          <textarea v-model="draft.comments" rows="2" placeholder="Notes..." />
-        </div>
-      </div>
-      <div class="form-actions">
-        <button class="btn-primary" :disabled="!draft.prospectName.trim() || submitting" @click="createItem">{{ submitting ? $t('pipeline.saving') : $t('pipeline.saveProspect') }}</button>
-        <button class="btn-secondary" @click="showAddForm = false">{{ $t('common.cancel') }}</button>
-      </div>
-    </section>
+    section.add-form-panel(v-if="showAddForm")
+      h2 {{ $t('pipeline.newProspect') }}
+      .form-grid
+        .form-group
+          label Prospect Name *
+          input(v-model="draft.prospectName" placeholder="Name")
+        .form-group
+          label Business Name
+          input(v-model="draft.businessName" placeholder="Business")
+        .form-group
+          label Partner
+          select(v-model="draft.partner")
+            option(value="") Select...
+            option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Lead Staff
+          select(v-model="draft.leadStaff")
+            option(value="") Select...
+            option(v-for="opt in leadStaffOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Status
+          select(v-model="draft.prospectStatus")
+            option(v-for="opt in statusOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Relationship Type
+          select(v-model="draft.relationshipType")
+            option(v-for="opt in relationshipOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Source
+          select(v-model="draft.prospectSource")
+            option(value="") Select...
+            option(v-for="opt in sourceOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Industry
+          select(v-model="draft.industry")
+            option(value="") Select...
+            option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Email
+          input(v-model="draft.email" type="email" placeholder="Email")
+        .form-group
+          label Phone
+          input(v-model="draft.contactPhone" placeholder="Phone")
+        .form-group
+          label Approach Date
+          input(v-model="draft.approachDate" type="date")
+        .form-group
+          label Approach Style
+          select(v-model="draft.approachStyle")
+            option(value="") Select...
+            option(v-for="opt in approachOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label Sales Style
+          select(v-model="draft.salesStyle")
+            option(value="") Select...
+            option(v-for="opt in salesStyleOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group
+          label COI Involved
+          select(v-model="draft.coiInvolved" :disabled="draft.prospectSource !== 'Referral'")
+            option(value="") {{ draft.prospectSource === 'Referral' ? 'Select COI...' : 'N/A' }}
+            option(v-for="opt in coiOptions" :key="opt" :value="opt") {{ opt }}
+        .form-group.full-width
+          label Comments
+          textarea(v-model="draft.comments" rows="2" placeholder="Notes...")
+      .form-actions
+        button.btn-primary(:disabled="!draft.prospectName.trim() || submitting" @click="createItem")
+          | {{ submitting ? $t('pipeline.saving') : $t('pipeline.saveProspect') }}
+        button.btn-secondary(@click="showAddForm = false") {{ $t('common.cancel') }}
 
-    <!-- Filters -->
-    <section class="filters-bar">
-      <input v-model="search" :placeholder="$t('pipeline.searchProspects')" @keyup.enter="loadItems" />
-      <input v-model="ownerFilter" :placeholder="$t('pipeline.filterByOwner')" @keyup.enter="loadItems" />
-      <button class="btn-secondary" @click="loadItems">{{ $t('pipeline.apply') }}</button>
-    </section>
+    section.filters-bar
+      input(v-model="search" :placeholder="$t('pipeline.searchProspects')" @keyup.enter="loadItems")
+      input(v-model="ownerFilter" :placeholder="$t('pipeline.filterByOwner')" @keyup.enter="loadItems")
+      button.btn-secondary(@click="loadItems") {{ $t('pipeline.apply') }}
 
-    <!-- Error message -->
-    <p v-if="errorText" class="error-msg">{{ errorText }}</p>
-    <p v-if="loading" class="loading-msg">{{ $t('pipeline.loadingData') }}</p>
+    p.error-msg(v-if="errorText") {{ errorText }}
+    p.loading-msg(v-if="loading") {{ $t('pipeline.loadingData') }}
 
-    <!-- Data Table - Spreadsheet Style -->
-    <div class="table-container">
-      <table class="data-table" :class="{ resizing: resizing }">
-        <thead>
-          <tr>
-            <th
+    .table-container
+      table.data-table(:class="{ resizing: resizing }")
+        thead
+          tr
+            th(
               v-for="col in columnOrder"
               :key="col"
               :class="['resizable', { 'sticky-col': col === columnOrder[0], 'dragging': draggingColumn === col, 'drag-over': dragOverColumn === col }]"
@@ -616,89 +570,60 @@ export default {
               @dragleave="onDragLeave"
               @drop="onDrop(col, $event)"
               @dragend="onDragEnd"
-            >
-              <span class="drag-handle" title="Drag to reorder">⠿</span>
-              <span class="header-text" contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="$event.target.blur()">{{ headerLabels[col] }}</span>
-              <span class="resize-handle" @mousedown="startResize(col, $event)"></span>
-            </th>
-            <th class="actions-col" :style="{ width: columnWidths.actions + 'px' }"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in items" :key="item.id" :class="['status-' + item.prospectStatus.toLowerCase().replace(/\s+/g, '-')]">
-            <td v-for="col in columnOrder" :key="col" :class="getCellClass(col)">
-              <!-- Text inputs -->
-              <input v-if="col === 'prospect'" v-model="item.prospectName" class="cell-input" @blur="updateField(item, 'prospectName', item.prospectName)" />
-              <input v-else-if="col === 'business'" v-model="item.businessName" class="cell-input" @blur="updateField(item, 'businessName', item.businessName)" />
-              <input v-else-if="col === 'comments'" v-model="item.comments" class="cell-input wide" @blur="updateField(item, 'comments', item.comments)" />
-
-              <!-- Select dropdowns -->
-              <select v-else-if="col === 'partner'" v-model="item.partner" class="cell-select" @change="updateField(item, 'partner', item.partner)">
-                <option value="">-</option>
-                <option v-for="opt in partnerOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'leadStaff'" v-model="item.leadStaff" class="cell-select" @change="updateField(item, 'leadStaff', item.leadStaff)">
-                <option value="">-</option>
-                <option v-for="opt in leadStaffOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'status'" v-model="item.prospectStatus" class="cell-select" @change="updateField(item, 'prospectStatus', item.prospectStatus)">
-                <option v-for="opt in statusOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'relationship'" v-model="item.relationshipType" class="cell-select" @change="updateField(item, 'relationshipType', item.relationshipType)">
-                <option value="">-</option>
-                <option v-for="opt in relationshipOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'source'" v-model="item.prospectSource" class="cell-select" @change="updateField(item, 'prospectSource', item.prospectSource)">
-                <option value="">-</option>
-                <option v-for="opt in sourceOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'coi'" v-model="item.coiInvolved" class="cell-select" @change="updateField(item, 'coiInvolved', item.coiInvolved)">
-                <option value="">-</option>
-                <option v-for="opt in coiOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'industry'" v-model="item.industry" class="cell-select" @change="updateField(item, 'industry', item.industry)">
-                <option value="">-</option>
-                <option v-for="opt in industryOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'approachStyle'" v-model="item.approachStyle" class="cell-select" @change="updateField(item, 'approachStyle', item.approachStyle)">
-                <option value="">-</option>
-                <option v-for="opt in approachOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'salesStyle'" v-model="item.salesStyle" class="cell-select" @change="updateField(item, 'salesStyle', item.salesStyle)">
-                <option value="">-</option>
-                <option v-for="opt in salesStyleOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <select v-else-if="col === 'tnStage'" v-model="item.totalNeedsStage" class="cell-select" @change="updateField(item, 'totalNeedsStage', item.totalNeedsStage)">
-                <option value="">-</option>
-                <option v-for="opt in totalNeedsStageOptions" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-
-              <!-- Date inputs -->
-              <input v-else-if="col === 'approachDate'" :value="toInputDate(item.approachDate)" type="date" class="cell-input date" @change="updateField(item, 'approachDate', $event.target.value)" />
-              <input v-else-if="col === 'meetingDate'" :value="toInputDate(item.meetingDate)" type="date" class="cell-input date" @change="updateField(item, 'meetingDate', $event.target.value)" />
-              <input v-else-if="col === 'followUpDate'" :value="toInputDate(item.followUpMeetingDate)" type="date" class="cell-input date" @change="updateField(item, 'followUpMeetingDate', $event.target.value)" />
-              <input v-else-if="col === 'dateSecured'" :value="toInputDate(item.dateSecured)" type="date" class="cell-input date" @change="updateField(item, 'dateSecured', $event.target.value)" />
-
-              <!-- Checkboxes -->
-              <input v-else-if="col === 'meeting'" type="checkbox" :checked="item.secureMeeting" @change="updateField(item, 'secureMeeting', !item.secureMeeting)" />
-              <input v-else-if="col === 'quizDone'" type="checkbox" :checked="item.quizCompleted" @change="updateField(item, 'quizCompleted', !item.quizCompleted)" />
-              <input v-else-if="col === 'followUp'" type="checkbox" :checked="item.followUpMeeting" @change="updateField(item, 'followUpMeeting', !item.followUpMeeting)" />
-              <input v-else-if="col === 'proposal'" type="checkbox" :checked="item.proposalSent" @change="updateField(item, 'proposalSent', !item.proposalSent)" />
-              <input v-else-if="col === 'secured'" type="checkbox" :checked="item.jobSecured" @change="updateField(item, 'jobSecured', !item.jobSecured)" />
-
-              <!-- Number inputs -->
-              <input v-else-if="col === 'proposalValue'" :value="item.proposalValue" type="number" class="cell-input number" @blur="updateField(item, 'proposalValue', Number($event.target.value))" />
-              <input v-else-if="col === 'securedValue'" :value="item.jobSecuredValue" type="number" class="cell-input number" @blur="updateField(item, 'jobSecuredValue', Number($event.target.value))" />
-              <input v-else-if="col === 'additionalWork'" :value="item.additionalWorkSecured" type="number" class="cell-input number" @blur="updateField(item, 'additionalWorkSecured', Number($event.target.value))" />
-            </td>
-            <td class="actions-col">
-              <button class="btn-delete" @click="removeItem(item)" title="Delete">×</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+            )
+              span.drag-handle(title="Drag to reorder") ⠿
+              span.header-text(contenteditable="true" @blur="saveHeaderLabel(col, $event)" @keydown.enter.prevent="$event.target.blur()") {{ headerLabels[col] }}
+              span.resize-handle(@mousedown="startResize(col, $event)")
+            th.actions-col(:style="{ width: columnWidths.actions + 'px' }")
+        tbody
+          tr(v-for="item in items" :key="item.id" :class="['status-' + item.prospectStatus.toLowerCase().replace(/\s+/g, '-')]")
+            td(v-for="col in columnOrder" :key="col" :class="getCellClass(col)")
+              input.cell-input(v-if="col === 'prospect'" v-model="item.prospectName" @blur="updateField(item, 'prospectName', item.prospectName)")
+              input.cell-input(v-else-if="col === 'business'" v-model="item.businessName" @blur="updateField(item, 'businessName', item.businessName)")
+              input.cell-input.wide(v-else-if="col === 'comments'" v-model="item.comments" @blur="updateField(item, 'comments', item.comments)")
+              select.cell-select(v-else-if="col === 'partner'" v-model="item.partner" @change="updateField(item, 'partner', item.partner)")
+                option(value="") -
+                option(v-for="opt in partnerOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'leadStaff'" v-model="item.leadStaff" @change="updateField(item, 'leadStaff', item.leadStaff)")
+                option(value="") -
+                option(v-for="opt in leadStaffOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'status'" v-model="item.prospectStatus" @change="updateField(item, 'prospectStatus', item.prospectStatus)")
+                option(v-for="opt in statusOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'relationship'" v-model="item.relationshipType" @change="updateField(item, 'relationshipType', item.relationshipType)")
+                option(value="") -
+                option(v-for="opt in relationshipOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'source'" v-model="item.prospectSource" @change="updateField(item, 'prospectSource', item.prospectSource)")
+                option(value="") -
+                option(v-for="opt in sourceOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'coi'" v-model="item.coiInvolved" @change="updateField(item, 'coiInvolved', item.coiInvolved)")
+                option(value="") -
+                option(v-for="opt in coiOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'industry'" v-model="item.industry" @change="updateField(item, 'industry', item.industry)")
+                option(value="") -
+                option(v-for="opt in industryOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'approachStyle'" v-model="item.approachStyle" @change="updateField(item, 'approachStyle', item.approachStyle)")
+                option(value="") -
+                option(v-for="opt in approachOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'salesStyle'" v-model="item.salesStyle" @change="updateField(item, 'salesStyle', item.salesStyle)")
+                option(value="") -
+                option(v-for="opt in salesStyleOptions" :key="opt" :value="opt") {{ opt }}
+              select.cell-select(v-else-if="col === 'tnStage'" v-model="item.totalNeedsStage" @change="updateField(item, 'totalNeedsStage', item.totalNeedsStage)")
+                option(value="") -
+                option(v-for="opt in totalNeedsStageOptions" :key="opt" :value="opt") {{ opt }}
+              input.cell-input.date(v-else-if="col === 'approachDate'" :value="toInputDate(item.approachDate)" type="date" @change="updateField(item, 'approachDate', $event.target.value)")
+              input.cell-input.date(v-else-if="col === 'meetingDate'" :value="toInputDate(item.meetingDate)" type="date" @change="updateField(item, 'meetingDate', $event.target.value)")
+              input.cell-input.date(v-else-if="col === 'followUpDate'" :value="toInputDate(item.followUpMeetingDate)" type="date" @change="updateField(item, 'followUpMeetingDate', $event.target.value)")
+              input.cell-input.date(v-else-if="col === 'dateSecured'" :value="toInputDate(item.dateSecured)" type="date" @change="updateField(item, 'dateSecured', $event.target.value)")
+              input(v-else-if="col === 'meeting'" type="checkbox" :checked="item.secureMeeting" @change="updateField(item, 'secureMeeting', !item.secureMeeting)")
+              input(v-else-if="col === 'quizDone'" type="checkbox" :checked="item.quizCompleted" @change="updateField(item, 'quizCompleted', !item.quizCompleted)")
+              input(v-else-if="col === 'followUp'" type="checkbox" :checked="item.followUpMeeting" @change="updateField(item, 'followUpMeeting', !item.followUpMeeting)")
+              input(v-else-if="col === 'proposal'" type="checkbox" :checked="item.proposalSent" @change="updateField(item, 'proposalSent', !item.proposalSent)")
+              input(v-else-if="col === 'secured'" type="checkbox" :checked="item.jobSecured" @change="updateField(item, 'jobSecured', !item.jobSecured)")
+              input.cell-input.number(v-else-if="col === 'proposalValue'" :value="item.proposalValue" type="number" @blur="updateField(item, 'proposalValue', Number($event.target.value))")
+              input.cell-input.number(v-else-if="col === 'securedValue'" :value="item.jobSecuredValue" type="number" @blur="updateField(item, 'jobSecuredValue', Number($event.target.value))")
+              input.cell-input.number(v-else-if="col === 'additionalWork'" :value="item.additionalWorkSecured" type="number" @blur="updateField(item, 'additionalWorkSecured', Number($event.target.value))")
+            td.actions-col
+              button.btn-delete(@click="removeItem(item)" title="Delete") ×
 </template>
 
 <style scoped>

@@ -66,70 +66,76 @@ export default {
 };
 </script>
 
-<template>
-  <section class="home-page">
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-text">
-          <span class="header-badge">{{ $t('home.badge') }}</span>
-          <h1>{{ $t('home.title') }}</h1>
-          <p>{{ $t('home.subtitle') }}</p>
-        </div>
-      </div>
-    </header>
+<template lang="pug">
+  section.home-page
+    header.page-header
+      .header-content
+        .header-text
+          span.header-badge {{ $t('home.badge') }}
+          h1 {{ $t('home.title') }}
+          p {{ $t('home.subtitle') }}
 
-    <p v-if="errorText" class="error">{{ errorText }}</p>
+    p.error(v-if="errorText") {{ errorText }}
 
-    <section v-if="metrics" class="home-kpis">
-      <article class="metric-card coral"><h3>{{ $t('home.filteredProspects') }}</h3><p>{{ metrics.totalProspects }}</p></article>
-      <article class="metric-card sky"><h3>{{ $t('home.activeStaff') }}</h3><p>{{ teamRows.length }}</p></article>
-      <article class="metric-card sun"><h3>{{ $t('home.securedValue') }}</h3><p>${{ Number(metrics.workSecured || 0).toLocaleString() }}</p></article>
-      <article class="metric-card mint"><h3>{{ $t('home.coiRecords') }}</h3><p>{{ coiRows.length }}</p></article>
-    </section>
+    section.home-kpis(v-if="metrics")
+      article.metric-card.coral
+        h3 {{ $t('home.filteredProspects') }}
+        p {{ metrics.totalProspects }}
+      article.metric-card.sky
+        h3 {{ $t('home.activeStaff') }}
+        p {{ teamRows.length }}
+      article.metric-card.sun
+        h3 {{ $t('home.securedValue') }}
+        p ${{ Number(metrics.workSecured || 0).toLocaleString() }}
+      article.metric-card.mint
+        h3 {{ $t('home.coiRecords') }}
+        p {{ coiRows.length }}
 
-    <section class="quick-links">
-      <nuxt-link to="/dashboard" class="quick-link"><strong>{{ $t('home.dashboard') }}</strong><span>{{ $t('home.dashboardDesc') }}</span></nuxt-link>
-      <nuxt-link to="/dashboard" class="quick-link"><strong>{{ $t('home.dashboardCharts') }}</strong><span>{{ $t('home.dashboardChartsDesc') }}</span></nuxt-link>
-      <nuxt-link to="/pipeline" class="quick-link"><strong>{{ $t('home.pipeline') }}</strong><span>{{ $t('home.pipelineDesc') }}</span></nuxt-link>
-      <nuxt-link to="/team" class="quick-link"><strong>{{ $t('home.team') }}</strong><span>{{ $t('home.teamDesc') }}</span></nuxt-link>
-      <nuxt-link to="/coi" class="quick-link"><strong>{{ $t('home.coi') }}</strong><span>{{ $t('home.coiDesc') }}</span></nuxt-link>
-      <nuxt-link to="/" class="quick-link"><strong>{{ $t('home.blog') }}</strong><span>{{ $t('home.blogDesc') }}</span></nuxt-link>
-    </section>
+    section.quick-links
+      nuxt-link.quick-link(to="/dashboard")
+        strong {{ $t('home.dashboard') }}
+        span {{ $t('home.dashboardDesc') }}
+      nuxt-link.quick-link(to="/dashboard")
+        strong {{ $t('home.dashboardCharts') }}
+        span {{ $t('home.dashboardChartsDesc') }}
+      nuxt-link.quick-link(to="/pipeline")
+        strong {{ $t('home.pipeline') }}
+        span {{ $t('home.pipelineDesc') }}
+      nuxt-link.quick-link(to="/team")
+        strong {{ $t('home.team') }}
+        span {{ $t('home.teamDesc') }}
+      nuxt-link.quick-link(to="/coi")
+        strong {{ $t('home.coi') }}
+        span {{ $t('home.coiDesc') }}
+      nuxt-link.quick-link(to="/")
+        strong {{ $t('home.blog') }}
+        span {{ $t('home.blogDesc') }}
 
-    <section class="home-columns">
-      <article class="panel preview-panel">
-        <h2>{{ $t('home.todayGlance') }}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>{{ $t('home.prospectName') }}</th>
-              <th>{{ $t('home.businessName') }}</th>
-              <th>{{ $t('home.teamMember') }}</th>
-              <th>{{ $t('home.status') }}</th>
-              <th>{{ $t('home.securedValueCol') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in pipelineRows" :key="item.id">
-              <td>{{ item.prospectName }}</td>
-              <td>{{ item.businessName || $t('common.na') }}</td>
-              <td>{{ item.leadStaff || $t('common.unassigned') }}</td>
-              <td>{{ item.prospectStatus }}</td>
-              <td>${{ Number(item.jobSecuredValue || 0).toLocaleString() }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </article>
+    section.home-columns
+      article.panel.preview-panel
+        h2 {{ $t('home.todayGlance') }}
+        table
+          thead
+            tr
+              th {{ $t('home.prospectName') }}
+              th {{ $t('home.businessName') }}
+              th {{ $t('home.teamMember') }}
+              th {{ $t('home.status') }}
+              th {{ $t('home.securedValueCol') }}
+          tbody
+            tr(v-for="item in pipelineRows" :key="item.id")
+              td {{ item.prospectName }}
+              td {{ item.businessName || $t('common.na') }}
+              td {{ item.leadStaff || $t('common.unassigned') }}
+              td {{ item.prospectStatus }}
+              td ${{ Number(item.jobSecuredValue || 0).toLocaleString() }}
 
-      <article class="panel info-panel">
-        <h2>{{ $t('home.whatEachSection') }}</h2>
-        <p class="info blue">{{ $t('home.infoDashboard') }}</p>
-        <p class="info green">{{ $t('home.infoTrends') }}</p>
-        <p class="info gold">{{ $t('home.infoPipeline') }}</p>
-        <p class="caption">{{ $t('home.rowsLoaded', { team: teamRows.length, coi: coiRows.length }) }}</p>
-      </article>
-    </section>
-  </section>
+      article.panel.info-panel
+        h2 {{ $t('home.whatEachSection') }}
+        p.info.blue {{ $t('home.infoDashboard') }}
+        p.info.green {{ $t('home.infoTrends') }}
+        p.info.gold {{ $t('home.infoPipeline') }}
+        p.caption {{ $t('home.rowsLoaded', { team: teamRows.length, coi: coiRows.length }) }}
 </template>
 
 <style scoped>

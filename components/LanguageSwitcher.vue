@@ -24,24 +24,17 @@ export default {
 };
 </script>
 
-<template>
-  <div class="language-switcher-wrap">
-    <client-only>
-      <select
-        class="language-switcher"
+<template lang="pug">
+  .language-switcher-wrap
+    client-only
+      select.language-switcher(
         v-model="currentLocale"
         :key="currentLocale"
         :aria-label="$t('language.select')"
-      >
-        <option v-for="loc in locales" :key="loc.code" :value="loc.code">
-          {{ loc.name }}
-        </option>
-      </select>
-      <select slot="placeholder" class="language-switcher" disabled>
-        <option>...</option>
-      </select>
-    </client-only>
-  </div>
+      )
+        option(v-for="loc in locales" :key="loc.code" :value="loc.code") {{ loc.name }}
+      select.language-switcher(slot="placeholder" disabled)
+        option ...
 </template>
 
 <style scoped>
