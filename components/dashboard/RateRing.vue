@@ -1,12 +1,20 @@
-<script setup>
-defineProps({
-  rate: Number,
-  label: String,
-  count: String,
-  color: String
-});
+<script>
+export default {
+  name: 'RateRing',
 
-const circumference = 264; // 2 * PI * 42 (radius)
+  props: {
+    rate: Number,
+    label: String,
+    count: String,
+    color: String
+  },
+
+  data() {
+    return {
+      circumference: 264 // 2 * PI * 42 (radius)
+    };
+  }
+};
 </script>
 
 <template>

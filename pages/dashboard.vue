@@ -1,359 +1,356 @@
-<script setup>
-import { useI18n } from 'vue-i18n';
+<script>
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
-import { Pie, Doughnut, Bar, Line } from 'vue-chartjs';
-
-const { t } = useI18n({ useScope: 'global' });
+import { Pie, Doughnut, Bar, Line as LineChart } from 'vue-chartjs';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
-const metrics = ref(null);
-const loading = ref(false);
-const errorText = ref("");
+export default {
+  name: 'DashboardPage',
 
-const money = new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD", maximumFractionDigits: 0 });
+  components: { Pie, Doughnut, Bar, LineChart },
 
-// Color palettes - cyan-based for dashboard theme (#00b1e0)
-const colors = {
-  primary: ['#00b1e0', '#0ea5e9', '#38bdf8', '#67e8f9', '#a5f3fc'],
-  cool: ['#00b1e0', '#0ea5e9', '#3b82f6', '#0891b2', '#06b6d4'],
-  warm: ['#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e'],
-  earth: ['#78716c', '#a8a29e', '#0d9488', '#0891b2', '#0284c7'],
-  vibrant: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#00b1e0', '#0ea5e9', '#38bdf8'],
-};
+  data() {
+    return {
+      metrics: null,
+      loading: false,
+      errorText: "",
+      money: new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD", maximumFractionDigits: 0 }),
 
-// Combined funnel rates (Campaign + Total Needs)
-const combinedApproaches = computed(() =>
-  (metrics.value?.campaignFunnel?.approaches || 0) + (metrics.value?.totalNeedsFunnel?.approaches || 0)
-);
-const combinedMeetings = computed(() =>
-  (metrics.value?.campaignFunnel?.meetings || 0) + (metrics.value?.totalNeedsFunnel?.meetings || 0)
-);
-const combinedProposals = computed(() =>
-  (metrics.value?.campaignFunnel?.proposals || 0) + (metrics.value?.totalNeedsFunnel?.proposals || 0)
-);
-const combinedSecured = computed(() =>
-  (metrics.value?.campaignFunnel?.secured || 0) + (metrics.value?.totalNeedsFunnel?.secured || 0)
-);
+      // Color palettes - cyan-based for dashboard theme (#00b1e0)
+      colors: {
+        primary: ['#00b1e0', '#0ea5e9', '#38bdf8', '#67e8f9', '#a5f3fc'],
+        cool: ['#00b1e0', '#0ea5e9', '#3b82f6', '#0891b2', '#06b6d4'],
+        warm: ['#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e'],
+        earth: ['#78716c', '#a8a29e', '#0d9488', '#0891b2', '#0284c7'],
+        vibrant: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#00b1e0', '#0ea5e9', '#38bdf8'],
+      },
 
-const combinedMeetingRate = computed(() => {
-  const approaches = combinedApproaches.value;
-  return approaches ? Math.round((combinedMeetings.value / approaches) * 100) : 0;
-});
+      // Status colors mapped to specific statuses
+      statusColors: {
+        'Active': '#22c55e',
+        'Await Research': '#f59e0b',
+        'Completed': '#3b82f6',
+        'Dead': '#ef4444',
+        'On Hold': '#0891b2',
+      },
 
-const combinedProposalRate = computed(() => {
-  const meetings = combinedMeetings.value;
-  return meetings ? Math.round((combinedProposals.value / meetings) * 100) : 0;
-});
+      // High contrast colors for sources
+      sourceColors: [
+        '#ef4444',
+        '#f97316',
+        '#eab308',
+        '#22c55e',
+        '#06b6d4',
+        '#3b82f6',
+        '#8b5cf6',
+        '#ec4899',
+      ],
 
-const combinedSecuredRate = computed(() => {
-  const proposals = combinedProposals.value;
-  return proposals ? Math.round((combinedSecured.value / proposals) * 100) : 0;
-});
+      // Chart options
+      pieOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              padding: 12,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = Math.round((context.raw / total) * 100);
+                return ` ${context.raw} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      },
 
-const combinedOverallRate = computed(() => {
-  const approaches = combinedApproaches.value;
-  return approaches ? Math.round((combinedSecured.value / approaches) * 100) : 0;
-});
+      doughnutOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '55%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              padding: 12,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = Math.round((context.raw / total) * 100);
+                return ` ${context.raw} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      },
 
-// Campaign funnel rates
-const campaignMeetingRate = computed(() => {
-  const approaches = metrics.value?.campaignFunnel?.approaches || 0;
-  return approaches ? Math.round(((metrics.value?.campaignFunnel?.meetings || 0) / approaches) * 100) : 0;
-});
+      horizontalBarOptions: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            ticks: {
+              callback: (value) => '$' + (value / 1000).toFixed(0) + 'k'
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { weight: 'bold' } }
+          }
+        }
+      },
 
-const campaignProposalRate = computed(() => {
-  const meetings = metrics.value?.campaignFunnel?.meetings || 0;
-  return meetings ? Math.round(((metrics.value?.campaignFunnel?.proposals || 0) / meetings) * 100) : 0;
-});
+      verticalBarOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { weight: 'normal' } }
+          },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            beginAtZero: true
+          }
+        }
+      },
 
-const campaignSecuredRate = computed(() => {
-  const proposals = metrics.value?.campaignFunnel?.proposals || 0;
-  return proposals ? Math.round(((metrics.value?.campaignFunnel?.secured || 0) / proposals) * 100) : 0;
-});
-
-const campaignOverallRate = computed(() => {
-  const approaches = metrics.value?.campaignFunnel?.approaches || 0;
-  return approaches ? Math.round(((metrics.value?.campaignFunnel?.secured || 0) / approaches) * 100) : 0;
-});
-
-// Total Needs funnel rates
-const totalNeedsMeetingRate = computed(() => {
-  const approaches = metrics.value?.totalNeedsFunnel?.approaches || 0;
-  return approaches ? Math.round(((metrics.value?.totalNeedsFunnel?.meetings || 0) / approaches) * 100) : 0;
-});
-
-const totalNeedsProposalRate = computed(() => {
-  const meetings = metrics.value?.totalNeedsFunnel?.meetings || 0;
-  return meetings ? Math.round(((metrics.value?.totalNeedsFunnel?.proposals || 0) / meetings) * 100) : 0;
-});
-
-const totalNeedsSecuredRate = computed(() => {
-  const proposals = metrics.value?.totalNeedsFunnel?.proposals || 0;
-  return proposals ? Math.round(((metrics.value?.totalNeedsFunnel?.secured || 0) / proposals) * 100) : 0;
-});
-
-const totalNeedsOverallRate = computed(() => {
-  const approaches = metrics.value?.totalNeedsFunnel?.approaches || 0;
-  return approaches ? Math.round(((metrics.value?.totalNeedsFunnel?.secured || 0) / approaches) * 100) : 0;
-});
-
-// Status colors mapped to specific statuses
-const statusColors = {
-  'Active': '#22c55e',      // Green
-  'Await Research': '#f59e0b', // Amber
-  'Completed': '#3b82f6',   // Blue
-  'Dead': '#ef4444',        // Red
-  'On Hold': '#0891b2',     // Cyan/Teal
-};
-
-// High contrast colors for sources
-const sourceColors = [
-  '#ef4444', // Red
-  '#f97316', // Orange
-  '#eab308', // Yellow
-  '#22c55e', // Green
-  '#06b6d4', // Cyan
-  '#3b82f6', // Blue
-  '#8b5cf6', // Purple
-  '#ec4899', // Pink
-];
-
-// Chart data configurations
-const statusPieData = computed(() => {
-  const breakdown = metrics.value?.statusBreakdown || [];
-  return {
-    labels: breakdown.map(s => `${s.status} (${s.count})`),
-    datasets: [{
-      data: breakdown.map(s => s.count),
-      backgroundColor: breakdown.map(s => statusColors[s.status] || '#64748b'),
-      borderColor: '#ffffff',
-      borderWidth: 3,
-      hoverOffset: 10
-    }]
-  };
-});
-
-const sourceDoughnutData = computed(() => {
-  const breakdown = metrics.value?.sourceBreakdown || [];
-  return {
-    labels: breakdown.map(s => `${s.source} (${s.count})`),
-    datasets: [{
-      data: breakdown.map(s => s.count),
-      backgroundColor: breakdown.map((_, i) => sourceColors[i % sourceColors.length]),
-      borderColor: '#ffffff',
-      borderWidth: 3,
-      hoverOffset: 8
-    }]
-  };
-});
-
-const staffBarData = computed(() => ({
-  labels: metrics.value?.staffSecuredBreakdown.map(s => s.leadStaff) || [],
-  datasets: [{
-    label: 'Work Secured ($)',
-    data: metrics.value?.staffSecuredBreakdown.map(s => s.value) || [],
-    backgroundColor: (ctx) => {
-      const gradient = ctx.chart.ctx.createLinearGradient(0, 0, ctx.chart.width, 0);
-      gradient.addColorStop(0, '#00b1e0');
-      gradient.addColorStop(1, '#38bdf8');
-      return gradient;
-    },
-    borderRadius: 6,
-    borderSkipped: false,
-  }]
-}));
-
-const coiIndustryBarData = computed(() => ({
-  labels: metrics.value?.coiIndustryBreakdown.map(s => s.industry) || [],
-  datasets: [{
-    label: 'Relationships',
-    data: metrics.value?.coiIndustryBreakdown.map(s => s.relationships) || [],
-    backgroundColor: colors.warm,
-    borderRadius: 8,
-    borderSkipped: false,
-  }]
-}));
-
-const coiPerformanceBarData = computed(() => ({
-  labels: ['Could We', 'How Would We', 'Will We', 'Test/Review'],
-  datasets: [{
-    label: 'COI Status',
-    data: [
-      metrics.value?.coiPerformance.couldWe || 0,
-      metrics.value?.coiPerformance.howWouldWe || 0,
-      metrics.value?.coiPerformance.willWe || 0,
-      metrics.value?.coiPerformance.testReview || 0
-    ],
-    backgroundColor: [
-      '#f97316', // Orange - Could We
-      '#eab308', // Yellow - How Would We
-      '#22c55e', // Green - Will We
-      '#06b6d4'  // Cyan - Test/Review
-    ],
-    borderRadius: 6,
-    borderSkipped: false,
-    barThickness: 24,
-  }]
-}));
-
-const monthlyTrendData = computed(() => ({
-  labels: metrics.value?.monthlySecuredTrend.map(s => s.month) || [],
-  datasets: [{
-    label: 'Secured Value',
-    data: metrics.value?.monthlySecuredTrend.map(s => s.value) || [],
-    borderColor: '#00b1e0',
-    backgroundColor: (ctx) => {
-      const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
-      gradient.addColorStop(0, 'rgba(0, 177, 224, 0.3)');
-      gradient.addColorStop(1, 'rgba(0, 177, 224, 0.02)');
-      return gradient;
-    },
-    fill: true,
-    tension: 0.4,
-    pointBackgroundColor: '#00b1e0',
-    pointBorderColor: '#fff',
-    pointBorderWidth: 2,
-    pointRadius: 5,
-    pointHoverRadius: 7,
-  }]
-}));
-
-// Chart options
-const pieOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'right',
-      labels: {
-        padding: 12,
-        usePointStyle: true,
-        pointStyle: 'circle',
-        font: { size: 11 }
-      }
-    },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const total = context.dataset.data.reduce((a, b) => a + b, 0);
-          const percentage = Math.round((context.raw / total) * 100);
-          return ` ${context.raw} (${percentage}%)`;
+      lineOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            ticks: {
+              callback: (value) => '$' + (value / 1000).toFixed(0) + 'k'
+            }
+          }
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index'
         }
       }
-    }
-  }
-};
+    };
+  },
 
-const doughnutOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  cutout: '55%',
-  plugins: {
-    legend: {
-      position: 'right',
-      labels: {
-        padding: 12,
-        usePointStyle: true,
-        pointStyle: 'circle',
-        font: { size: 11 }
-      }
+  computed: {
+    combinedApproaches() {
+      return (this.metrics?.campaignFunnel?.approaches || 0) + (this.metrics?.totalNeedsFunnel?.approaches || 0);
     },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const total = context.dataset.data.reduce((a, b) => a + b, 0);
-          const percentage = Math.round((context.raw / total) * 100);
-          return ` ${context.raw} (${percentage}%)`;
+    combinedMeetings() {
+      return (this.metrics?.campaignFunnel?.meetings || 0) + (this.metrics?.totalNeedsFunnel?.meetings || 0);
+    },
+    combinedProposals() {
+      return (this.metrics?.campaignFunnel?.proposals || 0) + (this.metrics?.totalNeedsFunnel?.proposals || 0);
+    },
+    combinedSecured() {
+      return (this.metrics?.campaignFunnel?.secured || 0) + (this.metrics?.totalNeedsFunnel?.secured || 0);
+    },
+    combinedMeetingRate() {
+      const approaches = this.combinedApproaches;
+      return approaches ? Math.round((this.combinedMeetings / approaches) * 100) : 0;
+    },
+    combinedProposalRate() {
+      const meetings = this.combinedMeetings;
+      return meetings ? Math.round((this.combinedProposals / meetings) * 100) : 0;
+    },
+    combinedSecuredRate() {
+      const proposals = this.combinedProposals;
+      return proposals ? Math.round((this.combinedSecured / proposals) * 100) : 0;
+    },
+    combinedOverallRate() {
+      const approaches = this.combinedApproaches;
+      return approaches ? Math.round((this.combinedSecured / approaches) * 100) : 0;
+    },
+    campaignMeetingRate() {
+      const approaches = this.metrics?.campaignFunnel?.approaches || 0;
+      return approaches ? Math.round(((this.metrics?.campaignFunnel?.meetings || 0) / approaches) * 100) : 0;
+    },
+    campaignProposalRate() {
+      const meetings = this.metrics?.campaignFunnel?.meetings || 0;
+      return meetings ? Math.round(((this.metrics?.campaignFunnel?.proposals || 0) / meetings) * 100) : 0;
+    },
+    campaignSecuredRate() {
+      const proposals = this.metrics?.campaignFunnel?.proposals || 0;
+      return proposals ? Math.round(((this.metrics?.campaignFunnel?.secured || 0) / proposals) * 100) : 0;
+    },
+    campaignOverallRate() {
+      const approaches = this.metrics?.campaignFunnel?.approaches || 0;
+      return approaches ? Math.round(((this.metrics?.campaignFunnel?.secured || 0) / approaches) * 100) : 0;
+    },
+    totalNeedsMeetingRate() {
+      const approaches = this.metrics?.totalNeedsFunnel?.approaches || 0;
+      return approaches ? Math.round(((this.metrics?.totalNeedsFunnel?.meetings || 0) / approaches) * 100) : 0;
+    },
+    totalNeedsProposalRate() {
+      const meetings = this.metrics?.totalNeedsFunnel?.meetings || 0;
+      return meetings ? Math.round(((this.metrics?.totalNeedsFunnel?.proposals || 0) / meetings) * 100) : 0;
+    },
+    totalNeedsSecuredRate() {
+      const proposals = this.metrics?.totalNeedsFunnel?.proposals || 0;
+      return proposals ? Math.round(((this.metrics?.totalNeedsFunnel?.secured || 0) / proposals) * 100) : 0;
+    },
+    totalNeedsOverallRate() {
+      const approaches = this.metrics?.totalNeedsFunnel?.approaches || 0;
+      return approaches ? Math.round(((this.metrics?.totalNeedsFunnel?.secured || 0) / approaches) * 100) : 0;
+    },
+    statusPieData() {
+      const breakdown = this.metrics?.statusBreakdown || [];
+      return {
+        labels: breakdown.map(s => `${s.status} (${s.count})`),
+        datasets: [{
+          data: breakdown.map(s => s.count),
+          backgroundColor: breakdown.map(s => this.statusColors[s.status] || '#64748b'),
+          borderColor: '#ffffff',
+          borderWidth: 3,
+          hoverOffset: 10
+        }]
+      };
+    },
+    sourceDoughnutData() {
+      const breakdown = this.metrics?.sourceBreakdown || [];
+      return {
+        labels: breakdown.map(s => `${s.source} (${s.count})`),
+        datasets: [{
+          data: breakdown.map(s => s.count),
+          backgroundColor: breakdown.map((_, i) => this.sourceColors[i % this.sourceColors.length]),
+          borderColor: '#ffffff',
+          borderWidth: 3,
+          hoverOffset: 8
+        }]
+      };
+    },
+    staffBarData() {
+      return {
+        labels: this.metrics?.staffSecuredBreakdown.map(s => s.leadStaff) || [],
+        datasets: [{
+          label: 'Work Secured ($)',
+          data: this.metrics?.staffSecuredBreakdown.map(s => s.value) || [],
+          backgroundColor: (ctx) => {
+            const gradient = ctx.chart.ctx.createLinearGradient(0, 0, ctx.chart.width, 0);
+            gradient.addColorStop(0, '#00b1e0');
+            gradient.addColorStop(1, '#38bdf8');
+            return gradient;
+          },
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      };
+    },
+    coiIndustryBarData() {
+      return {
+        labels: this.metrics?.coiIndustryBreakdown.map(s => s.industry) || [],
+        datasets: [{
+          label: 'Relationships',
+          data: this.metrics?.coiIndustryBreakdown.map(s => s.relationships) || [],
+          backgroundColor: this.colors.warm,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      };
+    },
+    coiPerformanceBarData() {
+      return {
+        labels: ['Could We', 'How Would We', 'Will We', 'Test/Review'],
+        datasets: [{
+          label: 'COI Status',
+          data: [
+            this.metrics?.coiPerformance.couldWe || 0,
+            this.metrics?.coiPerformance.howWouldWe || 0,
+            this.metrics?.coiPerformance.willWe || 0,
+            this.metrics?.coiPerformance.testReview || 0
+          ],
+          backgroundColor: [
+            '#f97316',
+            '#eab308',
+            '#22c55e',
+            '#06b6d4'
+          ],
+          borderRadius: 6,
+          borderSkipped: false,
+          barThickness: 24,
+        }]
+      };
+    },
+    monthlyTrendData() {
+      return {
+        labels: this.metrics?.monthlySecuredTrend.map(s => s.month) || [],
+        datasets: [{
+          label: 'Secured Value',
+          data: this.metrics?.monthlySecuredTrend.map(s => s.value) || [],
+          borderColor: '#00b1e0',
+          backgroundColor: (ctx) => {
+            const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+            gradient.addColorStop(0, 'rgba(0, 177, 224, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 177, 224, 0.02)');
+            return gradient;
+          },
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#00b1e0',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      };
+    }
+  },
+
+  methods: {
+    async loadMetrics() {
+      this.loading = true;
+      this.errorText = "";
+      try {
+        this.metrics = await fetch("/api/dashboard/metrics", { credentials: 'same-origin' }).then(r => r.json());
+      } catch (error) {
+        const status = Number(error?.statusCode || error?.data?.statusCode || 0);
+        if (status === 401) {
+          this.errorText = "Session expired. Redirecting to sign in...";
+          this.$router.push('/login');
+          return;
         }
-      }
-    }
-  }
-};
-
-const horizontalBarOptions = {
-  indexAxis: 'y',
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false }
-  },
-  scales: {
-    x: {
-      grid: { color: 'rgba(0,0,0,0.05)' },
-      ticks: {
-        callback: (value) => '$' + (value / 1000).toFixed(0) + 'k'
-      }
-    },
-    y: {
-      grid: { display: false },
-      ticks: { font: { weight: 'bold' } }
-    }
-  }
-};
-
-const verticalBarOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false }
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { font: { weight: 'normal' } }
-    },
-    y: {
-      grid: { color: 'rgba(0,0,0,0.05)' },
-      beginAtZero: true
-    }
-  }
-};
-
-const lineOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false }
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { font: { size: 11 } }
-    },
-    y: {
-      grid: { color: 'rgba(0,0,0,0.05)' },
-      ticks: {
-        callback: (value) => '$' + (value / 1000).toFixed(0) + 'k'
+        this.errorText = String(error?.data?.statusMessage || error?.data?.message || error?.message || "Failed to load dashboard metrics");
+      } finally {
+        this.loading = false;
       }
     }
   },
-  interaction: {
-    intersect: false,
-    mode: 'index'
+
+  mounted() {
+    this.loadMetrics();
   }
 };
-
-async function loadMetrics() {
-  loading.value = true;
-  errorText.value = "";
-  try {
-    metrics.value = await $fetch("/api/dashboard/metrics");
-  } catch (error) {
-    const e = error;
-    const status = Number(e?.statusCode || e?.data?.statusCode || 0);
-    if (status === 401) {
-      errorText.value = "Session expired. Redirecting to sign in...";
-      await navigateTo("/login");
-      return;
-    }
-    errorText.value = String(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to load dashboard metrics");
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(loadMetrics);
 </script>
 
 <template>
@@ -362,13 +359,13 @@ onMounted(loadMetrics);
     <header class="dashboard-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ t('dashboard.badge') }}</span>
-          <h1>{{ t('dashboard.title') }}</h1>
-          <p>{{ t('dashboard.subtitle') }}</p>
+          <span class="header-badge">{{ $t('dashboard.badge') }}</span>
+          <h1>{{ $t('dashboard.title') }}</h1>
+          <p>{{ $t('dashboard.subtitle') }}</p>
         </div>
         <button class="refresh-btn" @click="loadMetrics" :disabled="loading">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          {{ loading ? t('common.loading') : t('common.refresh') }}
+          {{ loading ? $t('common.loading') : $t('common.refresh') }}
         </button>
       </div>
     </header>
@@ -377,7 +374,7 @@ onMounted(loadMetrics);
 
     <div v-if="loading && !metrics" class="loading-state">
       <div class="spinner"></div>
-      <p>{{ t('common.loadingDashboard') }}</p>
+      <p>{{ $t('common.loadingDashboard') }}</p>
     </div>
 
     <template v-if="metrics">
@@ -385,19 +382,19 @@ onMounted(loadMetrics);
       <section class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.totalProspects') }}</span>
-            <span class="stat-badge blue">{{ t('dashboard.pipeline') }}</span>
+            <span class="stat-label">{{ $t('dashboard.totalProspects') }}</span>
+            <span class="stat-badge blue">{{ $t('dashboard.pipeline') }}</span>
           </div>
           <strong class="stat-value">{{ metrics.totalProspects }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ metrics.activeProspects }} {{ t('common.active') }}</span>
+            <span class="stat-sub">{{ metrics.activeProspects }} {{ $t('common.active') }}</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.approachMeeting') }}</span>
-            <span class="stat-badge cyan">{{ t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ $t('dashboard.approachMeeting') }}</span>
+            <span class="stat-badge cyan">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedMeetingRate }}%</strong>
           <div class="stat-footer">
@@ -407,8 +404,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.meetingProposal') }}</span>
-            <span class="stat-badge blue">{{ t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ $t('dashboard.meetingProposal') }}</span>
+            <span class="stat-badge blue">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedProposalRate }}%</strong>
           <div class="stat-footer">
@@ -418,8 +415,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.proposalSecured') }}</span>
-            <span class="stat-badge teal">{{ t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ $t('dashboard.proposalSecured') }}</span>
+            <span class="stat-badge teal">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedSecuredRate }}%</strong>
           <div class="stat-footer">
@@ -429,8 +426,8 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.overallWinRate') }}</span>
-            <span class="stat-badge green">{{ t('dashboard.combined') }}</span>
+            <span class="stat-label">{{ $t('dashboard.overallWinRate') }}</span>
+            <span class="stat-badge green">{{ $t('dashboard.combined') }}</span>
           </div>
           <strong class="stat-value">{{ combinedOverallRate }}%</strong>
           <div class="stat-footer">
@@ -440,23 +437,23 @@ onMounted(loadMetrics);
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.pipelineValue') }}</span>
-            <span class="stat-badge cyan">{{ t('dashboard.proposals') }}</span>
+            <span class="stat-label">{{ $t('dashboard.pipelineValue') }}</span>
+            <span class="stat-badge cyan">{{ $t('dashboard.proposals') }}</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalProposalValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ t('dashboard.outstandingProposals') }}</span>
+            <span class="stat-sub">{{ $t('dashboard.outstandingProposals') }}</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">{{ t('dashboard.workSecured') }}</span>
-            <span class="stat-badge green">{{ t('dashboard.revenue') }}</span>
+            <span class="stat-label">{{ $t('dashboard.workSecured') }}</span>
+            <span class="stat-badge green">{{ $t('dashboard.revenue') }}</span>
           </div>
           <strong class="stat-value">{{ money.format(metrics.totalSecuredValue) }}</strong>
           <div class="stat-footer">
-            <span class="stat-sub">{{ t('dashboard.totalClosedValue') }}</span>
+            <span class="stat-sub">{{ $t('dashboard.totalClosedValue') }}</span>
           </div>
         </div>
       </section>
@@ -467,7 +464,7 @@ onMounted(loadMetrics);
           <span class="title-icon cyan">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </span>
-          {{ t('dashboard.campaignResults') }}
+          {{ $t('dashboard.campaignResults') }}
         </h2>
         <div class="funnel-grid">
           <div class="rate-card">
@@ -480,7 +477,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignMeetingRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.approachMeeting') }}</span>
+            <span class="rate-label">{{ $t('dashboard.approachMeeting') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.meetings }}/{{ metrics.campaignFunnel.approaches }}</span>
           </div>
 
@@ -494,7 +491,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignProposalRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.meetingProposal') }}</span>
+            <span class="rate-label">{{ $t('dashboard.meetingProposal') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.proposals }}/{{ metrics.campaignFunnel.meetings }}</span>
           </div>
 
@@ -508,7 +505,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignSecuredRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.proposalSecured') }}</span>
+            <span class="rate-label">{{ $t('dashboard.proposalSecured') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.proposals }}</span>
           </div>
 
@@ -522,7 +519,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ campaignOverallRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.overallWinRate') }}</span>
+            <span class="rate-label">{{ $t('dashboard.overallWinRate') }}</span>
             <span class="rate-count">{{ metrics.campaignFunnel.secured }}/{{ metrics.campaignFunnel.approaches }}</span>
           </div>
 
@@ -530,7 +527,7 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <span class="stat-label">{{ t('dashboard.avgFee') }}</span>
+            <span class="stat-label">{{ $t('dashboard.avgFee') }}</span>
             <strong class="stat-value">{{ money.format(metrics.campaignFunnel.avgFee) }}</strong>
           </div>
 
@@ -538,8 +535,8 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <span class="stat-label">{{ t('dashboard.avgDays') }}</span>
-            <strong class="stat-value">{{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} {{ t('common.days') }}</strong>
+            <span class="stat-label">{{ $t('dashboard.avgDays') }}</span>
+            <strong class="stat-value">{{ Math.round(metrics.campaignFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}</strong>
           </div>
         </div>
       </section>
@@ -550,7 +547,7 @@ onMounted(loadMetrics);
           <span class="title-icon orange">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
           </span>
-          {{ t('dashboard.totalNeedsResults') }}
+          {{ $t('dashboard.totalNeedsResults') }}
         </h2>
         <div class="funnel-grid">
           <div class="rate-card">
@@ -563,7 +560,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsMeetingRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.approachMeeting') }}</span>
+            <span class="rate-label">{{ $t('dashboard.approachMeeting') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.meetings }}/{{ metrics.totalNeedsFunnel.approaches }}</span>
           </div>
 
@@ -577,7 +574,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsProposalRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.meetingProposal') }}</span>
+            <span class="rate-label">{{ $t('dashboard.meetingProposal') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.proposals }}/{{ metrics.totalNeedsFunnel.meetings }}</span>
           </div>
 
@@ -591,7 +588,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsSecuredRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.proposalSecured') }}</span>
+            <span class="rate-label">{{ $t('dashboard.proposalSecured') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.proposals }}</span>
           </div>
 
@@ -605,7 +602,7 @@ onMounted(loadMetrics);
               </svg>
               <div class="rate-value">{{ totalNeedsOverallRate }}%</div>
             </div>
-            <span class="rate-label">{{ t('dashboard.overallWinRate') }}</span>
+            <span class="rate-label">{{ $t('dashboard.overallWinRate') }}</span>
             <span class="rate-count">{{ metrics.totalNeedsFunnel.secured }}/{{ metrics.totalNeedsFunnel.approaches }}</span>
           </div>
 
@@ -613,7 +610,7 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <span class="stat-label">{{ t('dashboard.avgFee') }}</span>
+            <span class="stat-label">{{ $t('dashboard.avgFee') }}</span>
             <strong class="stat-value">{{ money.format(metrics.totalNeedsFunnel.avgFee) }}</strong>
           </div>
 
@@ -621,8 +618,8 @@ onMounted(loadMetrics);
             <div class="stat-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <span class="stat-label">{{ t('dashboard.avgDays') }}</span>
-            <strong class="stat-value">{{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} {{ t('common.days') }}</strong>
+            <span class="stat-label">{{ $t('dashboard.avgDays') }}</span>
+            <strong class="stat-value">{{ Math.round(metrics.totalNeedsFunnel.avgDaysElapsed * 10) / 10 }} {{ $t('common.days') }}</strong>
           </div>
         </div>
       </section>
@@ -633,43 +630,43 @@ onMounted(loadMetrics);
           <span class="title-icon teal">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
-          {{ t('dashboard.coiPerformance') }}
+          {{ $t('dashboard.coiPerformance') }}
         </h2>
         <div class="coi-panel-grid">
           <div class="coi-chart-box">
-            <h4>{{ t('dashboard.statusProgression') }}</h4>
+            <h4>{{ $t('dashboard.statusProgression') }}</h4>
             <div class="coi-chart-inner">
-              <Bar :data="coiPerformanceBarData" :options="verticalBarOptions" />
+              <Bar :chart-data="coiPerformanceBarData" :chart-options="verticalBarOptions" />
             </div>
           </div>
 
           <div class="coi-stats-table">
             <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ t('dashboard.totalCOIs') }}</span>
+              <span class="coi-stat-label">{{ $t('dashboard.totalCOIs') }}</span>
               <strong class="coi-stat-value">{{ metrics.coiPerformance.total }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ t('dashboard.referrals') }}</span>
+              <span class="coi-stat-label">{{ $t('dashboard.referrals') }}</span>
               <strong class="coi-stat-value">{{ metrics.coiPerformance.totalReferrals }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ t('dashboard.converted') }}</span>
+              <span class="coi-stat-label">{{ $t('dashboard.converted') }}</span>
               <strong class="coi-stat-value">{{ metrics.coiPerformance.totalConverted }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ t('dashboard.proposalFeeValue') }}</span>
+              <span class="coi-stat-label">{{ $t('dashboard.proposalFeeValue') }}</span>
               <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalProposalFeeValue) }}</strong>
             </div>
             <div class="coi-stat-row">
-              <span class="coi-stat-label">{{ t('dashboard.securedFeeValue') }}</span>
+              <span class="coi-stat-label">{{ $t('dashboard.securedFeeValue') }}</span>
               <strong class="coi-stat-value">{{ money.format(metrics.coiPerformance.totalSecuredFeeValue) }}</strong>
             </div>
           </div>
 
           <div class="coi-chart-box">
-            <h4>{{ t('dashboard.byIndustry') }}</h4>
+            <h4>{{ $t('dashboard.byIndustry') }}</h4>
             <div class="coi-chart-inner">
-              <Bar :data="coiIndustryBarData" :options="verticalBarOptions" />
+              <Bar :chart-data="coiIndustryBarData" :chart-options="verticalBarOptions" />
             </div>
           </div>
         </div>
@@ -678,26 +675,26 @@ onMounted(loadMetrics);
       <!-- Charts Row 1 -->
       <section class="charts-row">
         <div class="chart-card">
-          <h3>{{ t('dashboard.prospectStatus') }}</h3>
-          <p class="chart-subtitle">{{ t('dashboard.statusDistribution') }}</p>
+          <h3>{{ $t('dashboard.prospectStatus') }}</h3>
+          <p class="chart-subtitle">{{ $t('dashboard.statusDistribution') }}</p>
           <div class="chart-container pie">
-            <Pie :data="statusPieData" :options="pieOptions" />
+            <Pie :chart-data="statusPieData" :chart-options="pieOptions" />
           </div>
         </div>
 
         <div class="chart-card">
-          <h3>{{ t('dashboard.leadSources') }}</h3>
-          <p class="chart-subtitle">{{ t('dashboard.whereProspectsCome') }}</p>
+          <h3>{{ $t('dashboard.leadSources') }}</h3>
+          <p class="chart-subtitle">{{ $t('dashboard.whereProspectsCome') }}</p>
           <div class="chart-container doughnut">
-            <Doughnut :data="sourceDoughnutData" :options="doughnutOptions" />
+            <Doughnut :chart-data="sourceDoughnutData" :chart-options="doughnutOptions" />
           </div>
         </div>
 
         <div class="chart-card wide">
-          <h3>{{ t('dashboard.monthlyTrend') }}</h3>
-          <p class="chart-subtitle">{{ t('dashboard.revenueOverTime') }}</p>
+          <h3>{{ $t('dashboard.monthlyTrend') }}</h3>
+          <p class="chart-subtitle">{{ $t('dashboard.revenueOverTime') }}</p>
           <div class="chart-container line">
-            <Line :data="monthlyTrendData" :options="lineOptions" />
+            <LineChart :chart-data="monthlyTrendData" :chart-options="lineOptions" />
           </div>
         </div>
       </section>
@@ -705,10 +702,10 @@ onMounted(loadMetrics);
       <!-- Charts Row 2 -->
       <section class="charts-row single">
         <div class="chart-card wide">
-          <h3>{{ t('dashboard.workSecuredByTeam') }}</h3>
-          <p class="chart-subtitle">{{ t('dashboard.individualPerformance') }}</p>
+          <h3>{{ $t('dashboard.workSecuredByTeam') }}</h3>
+          <p class="chart-subtitle">{{ $t('dashboard.individualPerformance') }}</p>
           <div class="chart-container bar-h">
-            <Bar :data="staffBarData" :options="horizontalBarOptions" />
+            <Bar :chart-data="staffBarData" :chart-options="horizontalBarOptions" />
           </div>
         </div>
       </section>
@@ -816,81 +813,6 @@ onMounted(loadMetrics);
   cursor: wait;
 }
 
-/* Primary KPI Cards */
-.kpi-section.primary {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.kpi-card {
-  background: white;
-  border-radius: 16px;
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s;
-}
-
-.kpi-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-}
-
-.kpi-card.highlight {
-  position: relative;
-  overflow: hidden;
-}
-
-.kpi-card.highlight::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-}
-
-.kpi-card.cyan::before { background: linear-gradient(90deg, #00b1e0, #38bdf8); }
-.kpi-card.blue::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
-.kpi-card.teal::before { background: linear-gradient(90deg, #14b8a6, #06b6d4); }
-.kpi-card.green::before { background: linear-gradient(90deg, #22c55e, #10b981); }
-
-.kpi-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.kpi-card.cyan .kpi-icon { background: linear-gradient(135deg, #cffafe, #a5f3fc); color: #0891b2; }
-.kpi-card.blue .kpi-icon { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; }
-.kpi-card.teal .kpi-icon { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0d9488; }
-.kpi-card.green .kpi-icon { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #16a34a; }
-
-.kpi-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.kpi-label {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.kpi-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -949,16 +871,6 @@ onMounted(loadMetrics);
 .stat-footer {
   font-size: 0.8rem;
   color: #94a3b8;
-}
-
-.stat-rate {
-  color: #22c55e;
-  font-weight: 600;
-}
-
-.stat-active {
-  color: #3b82f6;
-  font-weight: 500;
 }
 
 /* Rates Section */

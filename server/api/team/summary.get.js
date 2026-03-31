@@ -1,12 +1,12 @@
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { prisma } = require('../../utils/db')
+const { requireUser } = require('../../utils/auth')
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
 
   // Advisors get empty data (they can't view team performance)
-  if (user.role !== "firm_manager") {
-    return { items: [] };
+  if (user.role !== 'firm_manager') {
+    return res.json({ items: [] })
   }
 
   const rows = await prisma.pipelineEntry.findMany({
@@ -21,12 +21,12 @@ export default defineEventHandler(async (event) => {
       jobSecured: true,
       jobSecuredValue: true
     }
-  });
+  })
 
-  const byTeam = new Map();
+  const byTeam = new Map()
 
   for (const row of rows) {
-    const key = (row.leadStaff || "Unassigned").trim() || "Unassigned";
+    const key = (row.leadStaff || 'Unassigned').trim() || 'Unassigned'
     if (!byTeam.has(key)) {
       byTeam.set(key, {
         prospects: 0,
@@ -41,39 +41,39 @@ export default defineEventHandler(async (event) => {
         completed: 0,
         dead: 0,
         onHold: 0
-      });
+      })
     }
-    const item = byTeam.get(key);
-    item.prospects += 1;
-    item.approachesMade += row.approachStyle && row.approachStyle.trim() ? 1 : 0;
-    item.secureMeetings += row.secureMeeting ? 1 : 0;
-    item.proposalsSent += row.proposalSent ? 1 : 0;
-    item.totalProposalValue += Number(row.proposalValue || 0);
-    item.engagementsSecured += row.jobSecured ? 1 : 0;
-    item.totalSecuredValue += Number(row.jobSecuredValue || 0);
+    const item = byTeam.get(key)
+    item.prospects += 1
+    item.approachesMade += row.approachStyle && row.approachStyle.trim() ? 1 : 0
+    item.secureMeetings += row.secureMeeting ? 1 : 0
+    item.proposalsSent += row.proposalSent ? 1 : 0
+    item.totalProposalValue += Number(row.proposalValue || 0)
+    item.engagementsSecured += row.jobSecured ? 1 : 0
+    item.totalSecuredValue += Number(row.jobSecuredValue || 0)
 
-    const status = String(row.prospectStatus || "").trim();
-    if (status === "Active") item.active += 1;
-    else if (status === "Await Research") item.awaitResearch += 1;
-    else if (status === "Completed") item.completed += 1;
-    else if (status === "Dead") item.dead += 1;
-    else if (status === "On Hold") item.onHold += 1;
+    const status = String(row.prospectStatus || '').trim()
+    if (status === 'Active') item.active += 1
+    else if (status === 'Await Research') item.awaitResearch += 1
+    else if (status === 'Completed') item.completed += 1
+    else if (status === 'Dead') item.dead += 1
+    else if (status === 'On Hold') item.onHold += 1
   }
 
   const items = Array.from(byTeam.entries())
     .map(([leadStaff, item]) => {
-      const avgApproachConversion = item.prospects > 0 ? item.approachesMade / item.prospects : 0;
-      const avgProposalValue = item.proposalsSent > 0 ? item.totalProposalValue / item.proposalsSent : 0;
-      const avgSecuredConversion = item.proposalsSent > 0 ? item.engagementsSecured / item.proposalsSent : 0;
+      const avgApproachConversion = item.prospects > 0 ? item.approachesMade / item.prospects : 0
+      const avgProposalValue = item.proposalsSent > 0 ? item.totalProposalValue / item.proposalsSent : 0
+      const avgSecuredConversion = item.proposalsSent > 0 ? item.engagementsSecured / item.proposalsSent : 0
       return {
         leadStaff,
         ...item,
         avgApproachConversion,
         avgProposalValue,
         avgSecuredConversion
-      };
+      }
     })
-    .sort((a, b) => a.leadStaff.localeCompare(b.leadStaff));
+    .sort((a, b) => a.leadStaff.localeCompare(b.leadStaff))
 
-  return { items };
-});
+  return res.json({ items })
+}

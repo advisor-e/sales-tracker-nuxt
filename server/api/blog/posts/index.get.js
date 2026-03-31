@@ -1,14 +1,14 @@
-import { BlogPostKind } from "@prisma/client";
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { BlogPostKind } = require('@prisma/client')
+const { prisma } = require('../../../utils/db')
+const { requireUser } = require('../../../utils/auth')
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const query = getQuery(event);
-  const kindParam = String(query.kind || "draft").toLowerCase();
-  const kind = kindParam === "final" ? BlogPostKind.final : BlogPostKind.draft;
-  const search = String(query.search || "").trim();
-  const pinnedOnly = String(query.pinnedOnly || "false").toLowerCase() === "true";
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const query = req.query
+  const kindParam = String(query.kind || 'draft').toLowerCase()
+  const kind = kindParam === 'final' ? BlogPostKind.final : BlogPostKind.draft
+  const search = String(query.search || '').trim()
+  const pinnedOnly = String(query.pinnedOnly || 'false').toLowerCase() === 'true'
 
   const posts = await prisma.blogPost.findMany({
     where: {
@@ -23,8 +23,8 @@ export default defineEventHandler(async (event) => {
           ]
         : undefined
     },
-    orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }]
-  });
+    orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }]
+  })
 
-  return { items: posts };
-});
+  return res.json({ items: posts })
+}

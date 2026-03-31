@@ -1,7 +1,11 @@
-<script setup>
-defineProps({
-  message: String
-});
+<script>
+export default {
+  name: 'LoadingSpinner',
+
+  props: {
+    message: String
+  }
+};
 </script>
 
 <template>

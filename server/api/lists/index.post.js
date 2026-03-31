@@ -1,23 +1,23 @@
-import { z } from "zod";
-import { prisma } from "~/server/utils/db";
-import { requireFirmManager } from "~/server/utils/auth";
+const { z } = require('zod')
+const { prisma } = require('../../utils/db')
+const { requireFirmManager } = require('../../utils/auth')
 
 const schema = z.object({
   key: z.string().min(1).max(50),
   items: z.array(z.string()),
   colors: z.record(z.string()).optional()
-});
+})
 
-export default defineEventHandler(async (event) => {
+module.exports = async function(req, res) {
   // Only Firm Managers can modify lists
-  const user = await requireFirmManager(event);
-  const payload = schema.parse(await readBody(event));
+  const user = await requireFirmManager(req, res)
+  const payload = schema.parse(req.body)
 
-  const configKey = `list:${payload.key}`;
+  const configKey = `list:${payload.key}`
   const configVal = JSON.stringify({
     items: payload.items,
     colors: payload.colors
-  });
+  })
 
   // Upsert the config
   await prisma.appConfig.upsert({
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
       configKey,
       configVal
     }
-  });
+  })
 
-  return { success: true };
-});
+  return res.json({ success: true })
+}

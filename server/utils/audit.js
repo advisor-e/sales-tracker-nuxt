@@ -1,15 +1,10 @@
-import { getHeader } from "h3";
-import { prisma } from "./db";
-import { getClientIP } from "./ratelimit";
+const { prisma } = require('./db')
+const { getClientIP } = require('./ratelimit')
 
-/**
- * Log an audit event
- * Non-blocking - errors are caught and logged but don't affect the request
- */
-export async function logAudit(event, data) {
+async function logAudit(req, data) {
   try {
-    const ipAddress = getClientIP(event);
-    const userAgent = getHeader(event, "user-agent")?.slice(0, 500) || null;
+    const ipAddress = getClientIP(req)
+    const userAgent = (req.headers['user-agent'] || '').slice(0, 500) || null
 
     await prisma.auditLog.create({
       data: {
@@ -21,72 +16,30 @@ export async function logAudit(event, data) {
         ipAddress,
         userAgent
       }
-    });
+    })
   } catch (error) {
-    // Log to console but don't fail the request
-    console.error("[audit] Failed to log audit event:", error);
+    console.error('[audit] Failed to log audit event:', error)
   }
 }
 
-/**
- * Helper to log a CREATE action
- */
-export function logCreate(event, userId, entityType, entityId, data) {
-  logAudit(event, {
-    userId,
-    action: "CREATE",
-    entityType,
-    entityId,
-    changes: data
-  });
+function logCreate(req, userId, entityType, entityId, data) {
+  logAudit(req, { userId, action: 'CREATE', entityType, entityId, changes: data })
 }
 
-/**
- * Helper to log an UPDATE action
- */
-export function logUpdate(event, userId, entityType, entityId, changes) {
-  logAudit(event, {
-    userId,
-    action: "UPDATE",
-    entityType,
-    entityId,
-    changes
-  });
+function logUpdate(req, userId, entityType, entityId, changes) {
+  logAudit(req, { userId, action: 'UPDATE', entityType, entityId, changes })
 }
 
-/**
- * Helper to log a DELETE action
- */
-export function logDelete(event, userId, entityType, entityId) {
-  logAudit(event, {
-    userId,
-    action: "DELETE",
-    entityType,
-    entityId
-  });
+function logDelete(req, userId, entityType, entityId) {
+  logAudit(req, { userId, action: 'DELETE', entityType, entityId })
 }
 
-/**
- * Helper to log a LOGIN action
- */
-export function logLogin(event, userId, email) {
-  logAudit(event, {
-    userId,
-    action: "LOGIN",
-    entityType: "User",
-    entityId: userId,
-    changes: { email }
-  });
+function logLogin(req, userId, email) {
+  logAudit(req, { userId, action: 'LOGIN', entityType: 'User', entityId: userId, changes: { email } })
 }
 
-/**
- * Helper to log a LOGOUT action
- */
-export function logLogout(event, userId) {
-  logAudit(event, {
-    userId,
-    action: "LOGOUT",
-    entityType: "User",
-    entityId: userId
-  });
+function logLogout(req, userId) {
+  logAudit(req, { userId, action: 'LOGOUT', entityType: 'User', entityId: userId })
 }
+
+module.exports = { logAudit, logCreate, logUpdate, logDelete, logLogin, logLogout }

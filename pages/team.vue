@@ -1,42 +1,77 @@
-<script setup>
-// Protect this page - only Firm Managers can access
-definePageMeta({
-  middleware: ["firm-manager"]
-});
+<script>
+export default {
+  name: 'TeamPage',
 
-import { useI18n } from 'vue-i18n';
+  middleware: ['firm-manager'],
 
-const { t } = useI18n({ useScope: 'global' });
+  data() {
+    return {
+      rows: [],
+      loading: false,
+      errorText: ""
+    };
+  },
 
-const rows = ref([]);
-const loading = ref(false);
-const errorText = ref("");
-
-const totalSecuredValue = computed(() => rows.value.reduce((sum, row) => sum + row.totalSecuredValue, 0));
-const totalProspects = computed(() => rows.value.reduce((sum, row) => sum + row.prospects, 0));
-const totalProposals = computed(() => rows.value.reduce((sum, row) => sum + row.proposalsSent, 0));
-
-async function loadRows() {
-  loading.value = true;
-  errorText.value = "";
-  try {
-    const res = await $fetch("/api/team/summary");
-    rows.value = res.items;
-  } catch (error) {
-    const e = error;
-    const status = Number(e?.statusCode || e?.data?.statusCode || 0);
-    if (status === 401) {
-      errorText.value = "Session expired. Redirecting to sign in...";
-      await navigateTo("/login");
-      return;
+  computed: {
+    totalSecuredValue() {
+      return this.rows.reduce((sum, row) => sum + row.totalSecuredValue, 0);
+    },
+    totalProspects() {
+      return this.rows.reduce((sum, row) => sum + row.prospects, 0);
+    },
+    totalProposals() {
+      return this.rows.reduce((sum, row) => sum + row.proposalsSent, 0);
     }
-    errorText.value = String(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to load team summary");
-  } finally {
-    loading.value = false;
-  }
-}
+  },
 
-onMounted(loadRows);
+  methods: {
+    getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    },
+    async apiFetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...options.headers };
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        headers['x-csrf-token'] = this.getCsrfToken();
+      }
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json();
+    },
+    async loadRows() {
+      this.loading = true;
+      this.errorText = "";
+      try {
+        const res = await fetch("/api/team/summary", { credentials: 'same-origin' }).then(r => r.json());
+        this.rows = res.items;
+      } catch (error) {
+        const status = Number(error?.statusCode || error?.data?.statusCode || 0);
+        if (status === 401) {
+          this.errorText = "Session expired. Redirecting to sign in...";
+          this.$router.push('/login');
+          return;
+        }
+        this.errorText = String(error?.data?.statusMessage || error?.data?.message || error?.message || "Failed to load team summary");
+      } finally {
+        this.loading = false;
+      }
+    }
+  },
+
+  mounted() {
+    this.loadRows();
+  }
+};
 </script>
 
 <template>
@@ -44,44 +79,44 @@ onMounted(loadRows);
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ t('team.badge') }}</span>
-          <h1>{{ t('team.title') }}</h1>
-          <p>{{ t('team.subtitle') }}</p>
+          <span class="header-badge">{{ $t('team.badge') }}</span>
+          <h1>{{ $t('team.title') }}</h1>
+          <p>{{ $t('team.subtitle') }}</p>
         </div>
-        <button class="refresh-btn" @click="loadRows">{{ t('common.refresh') }}</button>
+        <button class="refresh-btn" @click="loadRows">{{ $t('common.refresh') }}</button>
       </div>
     </header>
 
     <section class="summary-strip">
-      <article><span>{{ t('team.teamMembers') }}</span><strong>{{ rows.length }}</strong></article>
-      <article><span>{{ t('team.totalProspects') }}</span><strong>{{ totalProspects }}</strong></article>
-      <article><span>{{ t('team.proposalsSent') }}</span><strong>{{ totalProposals }}</strong></article>
-      <article><span>{{ t('team.securedValue') }}</span><strong>${{ totalSecuredValue.toLocaleString() }}</strong></article>
+      <article><span>{{ $t('team.teamMembers') }}</span><strong>{{ rows.length }}</strong></article>
+      <article><span>{{ $t('team.totalProspects') }}</span><strong>{{ totalProspects }}</strong></article>
+      <article><span>{{ $t('team.proposalsSent') }}</span><strong>{{ totalProposals }}</strong></article>
+      <article><span>{{ $t('team.securedValue') }}</span><strong>${{ totalSecuredValue.toLocaleString() }}</strong></article>
     </section>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
-    <p v-if="loading">{{ t('team.loadingSummary') }}</p>
+    <p v-if="loading">{{ $t('team.loadingSummary') }}</p>
 
     <section class="card">
       <table>
         <thead>
           <tr>
-            <th>{{ t('team.teamMember') }}</th>
-            <th>{{ t('team.prospects') }}</th>
-            <th>{{ t('team.approaches') }}</th>
-            <th>{{ t('team.meetings') }}</th>
-            <th>{{ t('team.proposals') }}</th>
-            <th>{{ t('team.proposalValue') }}</th>
-            <th>{{ t('team.secured') }}</th>
-            <th>{{ t('team.securedValue') }}</th>
-            <th>{{ t('team.approachConv') }}</th>
-            <th>{{ t('team.avgProposal') }}</th>
-            <th>{{ t('team.securedConv') }}</th>
-            <th>{{ t('team.active') }}</th>
-            <th>{{ t('team.awaitResearch') }}</th>
-            <th>{{ t('team.completed') }}</th>
-            <th>{{ t('team.dead') }}</th>
-            <th>{{ t('team.onHold') }}</th>
+            <th>{{ $t('team.teamMember') }}</th>
+            <th>{{ $t('team.prospects') }}</th>
+            <th>{{ $t('team.approaches') }}</th>
+            <th>{{ $t('team.meetings') }}</th>
+            <th>{{ $t('team.proposals') }}</th>
+            <th>{{ $t('team.proposalValue') }}</th>
+            <th>{{ $t('team.secured') }}</th>
+            <th>{{ $t('team.securedValue') }}</th>
+            <th>{{ $t('team.approachConv') }}</th>
+            <th>{{ $t('team.avgProposal') }}</th>
+            <th>{{ $t('team.securedConv') }}</th>
+            <th>{{ $t('team.active') }}</th>
+            <th>{{ $t('team.awaitResearch') }}</th>
+            <th>{{ $t('team.completed') }}</th>
+            <th>{{ $t('team.dead') }}</th>
+            <th>{{ $t('team.onHold') }}</th>
           </tr>
         </thead>
         <tbody>

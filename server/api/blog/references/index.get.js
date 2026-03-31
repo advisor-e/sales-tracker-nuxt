@@ -1,20 +1,20 @@
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { prisma } = require('../../../utils/db')
+const { requireUser } = require('../../../utils/auth')
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const query = getQuery(event);
-  const topic = query.topic;
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const query = req.query
+  const topic = query.topic
 
-  const where = { userId: user.id };
+  const where = { userId: user.id }
   if (topic) {
-    where.topic = topic;
+    where.topic = topic
   }
 
   const items = await prisma.blogReference.findMany({
     where,
-    orderBy: { updatedAt: "desc" }
-  });
+    orderBy: { updatedAt: 'desc' }
+  })
 
-  return { items };
-});
+  return res.json({ items })
+}

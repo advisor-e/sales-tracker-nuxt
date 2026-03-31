@@ -1,10 +1,14 @@
-<script setup>
-defineProps({
-  title: String,
-  subtitle: String,
-  chartType: String,
-  wide: Boolean
-});
+<script>
+export default {
+  name: 'ChartCard',
+
+  props: {
+    title: String,
+    subtitle: String,
+    chartType: String,
+    wide: Boolean
+  }
+};
 </script>
 
 <template>

@@ -1,7 +1,6 @@
-import { defineEventHandler } from "h3";
-import { clearUserSession } from "../../utils/auth";
+const { clearUserSession } = require('../../utils/auth')
 
-export default defineEventHandler(async (event) => {
-  await clearUserSession(event);
-  return { ok: true };
-});
+module.exports = async function(req, res) {
+  await clearUserSession(req, res)
+  return res.json({ ok: true })
+}

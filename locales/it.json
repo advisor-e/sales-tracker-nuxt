@@ -290,6 +290,24 @@
     "totalNeedsStage": "Fase Bisogni Totali",
     "totalNeedsStageDesc": "Per le vendite Bisogni Totali, traccia la progressione attraverso il processo a 5 fasi.",
     "industry": "Settore",
-    "industryDesc": "Usato in Attività di Vendita e Sviluppo CDI per segmentazione per settore."
+    "industryDesc": "Usato in Attività di Vendita e Sviluppo CDI per segmentazione per settore.",
+    "languagesTitle": "Lingue",
+    "languagesDesc": "Aggiungi lingue personalizzate per il tuo team. Le lingue integrate non possono essere rimosse.",
+    "addLanguage": "Aggiungi lingua",
+    "languageCode": "Codice lingua",
+    "languageCodePlaceholder": "es. nl, ja, zh",
+    "languageName": "Nome della lingua",
+    "languageNamePlaceholder": "es. Olandese, Giapponese",
+    "nativeName": "Nome nativo",
+    "nativeNamePlaceholder": "es. Nederlands, 日本語",
+    "translations": "Traduzioni",
+    "generateFromEnglish": "Genera dall'inglese",
+    "generating": "Generazione in corso...",
+    "builtIn": "Integrato",
+    "custom": "Personalizzato",
+    "deleteLanguage": "Elimina lingua",
+    "confirmDeleteLanguage": "Sei sicuro di voler eliminare questa lingua? Questa azione non può essere annullata.",
+    "languageAdded": "Lingua aggiunta con successo",
+    "languageDeleted": "Lingua eliminata"
   }
 }

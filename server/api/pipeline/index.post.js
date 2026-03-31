@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
-import { logCreate } from "~/server/utils/audit";
+const { z } = require('zod')
+const { prisma } = require('../../utils/db')
+const { requireUser } = require('../../utils/auth')
+const { logCreate } = require('../../utils/audit')
 
 const schema = z.object({
   prospectName: z.string().min(1).max(255),
@@ -36,11 +36,11 @@ const schema = z.object({
   jobSecuredValue: z.number().optional(),
   additionalWorkSecured: z.number().optional(),
   comments: z.string().optional().nullable()
-});
+})
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const payload = schema.parse(await readBody(event));
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const payload = schema.parse(req.body)
 
   const item = await prisma.pipelineEntry.create({
     data: {
@@ -78,17 +78,17 @@ export default defineEventHandler(async (event) => {
       additionalWorkSecured: payload.additionalWorkSecured ?? 0,
       comments: payload.comments || null
     }
-  });
+  })
 
   // Audit log
-  logCreate(event, user.id, "PipelineEntry", item.id, { prospectName: payload.prospectName });
+  logCreate(req, user.id, 'PipelineEntry', item.id, { prospectName: payload.prospectName })
 
-  return {
+  return res.json({
     item: {
       ...item,
       proposalValue: Number(item.proposalValue || 0),
       jobSecuredValue: Number(item.jobSecuredValue || 0),
       additionalWorkSecured: Number(item.additionalWorkSecured || 0)
     }
-  };
-});
+  })
+}

@@ -1,13 +1,13 @@
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { prisma } = require('../../utils/db')
+const { requireUser } = require('../../utils/auth')
 
-export default defineEventHandler(async (event) => {
+module.exports = async function(req, res) {
   // Any authenticated user can view pipeline (shared across the firm)
-  await requireUser(event);
-  const query = getQuery(event);
-  const search = String(query.search || "").trim();
-  const status = String(query.status || "").trim();
-  const owner = String(query.owner || "").trim();
+  await requireUser(req, res)
+  const query = req.query
+  const search = String(query.search || '').trim()
+  const status = String(query.status || '').trim()
+  const owner = String(query.owner || '').trim()
 
   const items = await prisma.pipelineEntry.findMany({
     where: {
@@ -23,15 +23,15 @@ export default defineEventHandler(async (event) => {
           ]
         : undefined
     },
-    orderBy: [{ updatedAt: "desc" }],
+    orderBy: [{ updatedAt: 'desc' }],
     take: 500
-  });
+  })
 
-  return {
+  return res.json({
     items: items.map((item) => ({
       ...item,
       proposalValue: Number(item.proposalValue || 0),
       jobSecuredValue: Number(item.jobSecuredValue || 0)
     }))
-  };
-});
+  })
+}

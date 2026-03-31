@@ -1,10 +1,9 @@
-import { defineEventHandler } from "h3";
-import { getOptionalUser } from "../../utils/auth";
+const { getOptionalUser } = require('../../utils/auth')
 
-export default defineEventHandler(async (event) => {
-  const user = await getOptionalUser(event);
-  return {
+module.exports = async function(req, res) {
+  const user = await getOptionalUser(req)
+  return res.json({
     authenticated: Boolean(user),
     user
-  };
-});
+  })
+}

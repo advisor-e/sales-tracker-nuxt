@@ -1,435 +1,445 @@
-<script setup>
-import { useI18n } from 'vue-i18n';
+<script>
+export default {
+  name: 'PipelinePage',
 
-const { t } = useI18n({ useScope: 'global' });
+  data() {
+    return {
+      search: "",
+      ownerFilter: "",
+      items: [],
+      errorText: "",
+      loading: false,
+      showAddForm: false,
+      submitting: false,
+      coiEntries: [],
+      draft: this.emptyDraft(),
+      defaultColumnWidths: {
+        prospect: 180,
+        business: 160,
+        partner: 120,
+        leadStaff: 120,
+        status: 110,
+        relationship: 120,
+        source: 120,
+        coi: 140,
+        industry: 120,
+        approachDate: 120,
+        approachStyle: 110,
+        meeting: 70,
+        quizDone: 80,
+        salesStyle: 110,
+        meetingDate: 120,
+        followUp: 75,
+        followUpDate: 120,
+        tnStage: 110,
+        proposal: 75,
+        proposalValue: 110,
+        secured: 75,
+        dateSecured: 120,
+        securedValue: 110,
+        additionalWork: 110,
+        comments: 250,
+        actions: 50
+      },
+      columnWidths: {},
+      customHeaderLabels: {},
+      defaultColumnOrder: [
+        'prospect', 'business', 'partner', 'leadStaff', 'status', 'relationship', 'source',
+        'coi', 'industry', 'approachDate', 'approachStyle', 'meeting', 'quizDone', 'salesStyle',
+        'meetingDate', 'followUp', 'followUpDate', 'tnStage', 'proposal', 'proposalValue',
+        'secured', 'dateSecured', 'securedValue', 'additionalWork', 'comments'
+      ],
+      columnOrder: [],
+      draggingColumn: null,
+      dragOverColumn: null,
+      resizing: null,
+      money: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+    };
+  },
 
-const search = ref("");
-const ownerFilter = ref("");
-const items = ref([]);
-const errorText = ref("");
-const loading = ref(false);
-const showAddForm = ref(false);
-const submitting = ref(false);
+  computed: {
+    statusOptions() {
+      return this.$store.getters['lists/getListItems']('prospectStatus');
+    },
+    relationshipOptions() {
+      return this.$store.getters['lists/getListItems']('relationshipType');
+    },
+    sourceOptions() {
+      return this.$store.getters['lists/getListItems']('prospectSource');
+    },
+    approachOptions() {
+      return this.$store.getters['lists/getListItems']('approachStyle');
+    },
+    salesStyleOptions() {
+      return this.$store.getters['lists/getListItems']('salesStyle');
+    },
+    totalNeedsStageOptions() {
+      return this.$store.getters['lists/getListItems']('totalNeedsStage');
+    },
+    partnerOptions() {
+      return this.$store.getters['lists/getListItems']('partner');
+    },
+    leadStaffOptions() {
+      return this.$store.getters['lists/getListItems']('leadStaff');
+    },
+    industryOptions() {
+      return this.$store.getters['lists/getListItems']('industry');
+    },
+    statusColors() {
+      return this.$store.getters['lists/getListColors']('prospectStatus');
+    },
+    coiOptions() {
+      return this.coiEntries.map(e => e.coiName);
+    },
+    defaultHeaderLabels() {
+      return {
+        prospect: this.$t('pipeline.columns.prospect'),
+        business: this.$t('pipeline.columns.business'),
+        partner: this.$t('pipeline.columns.partner'),
+        leadStaff: this.$t('pipeline.columns.leadStaff'),
+        status: this.$t('pipeline.columns.status'),
+        relationship: this.$t('pipeline.columns.relationship'),
+        source: this.$t('pipeline.columns.source'),
+        coi: this.$t('pipeline.columns.coi'),
+        industry: this.$t('pipeline.columns.industry'),
+        approachDate: this.$t('pipeline.columns.approachDate'),
+        approachStyle: this.$t('pipeline.columns.approachStyle'),
+        meeting: this.$t('pipeline.columns.meeting'),
+        quizDone: this.$t('pipeline.columns.quizDone'),
+        salesStyle: this.$t('pipeline.columns.salesStyle'),
+        meetingDate: this.$t('pipeline.columns.meetingDate'),
+        followUp: this.$t('pipeline.columns.followUp'),
+        followUpDate: this.$t('pipeline.columns.followUpDate'),
+        tnStage: this.$t('pipeline.columns.tnStage'),
+        proposal: this.$t('pipeline.columns.proposal'),
+        proposalValue: this.$t('pipeline.columns.proposalValue'),
+        secured: this.$t('pipeline.columns.secured'),
+        dateSecured: this.$t('pipeline.columns.dateSecured'),
+        securedValue: this.$t('pipeline.columns.securedValue'),
+        additionalWork: this.$t('pipeline.columns.additionalWork'),
+        comments: this.$t('pipeline.columns.comments')
+      };
+    },
+    headerLabels() {
+      return {
+        ...this.defaultHeaderLabels,
+        ...this.customHeaderLabels
+      };
+    },
+    totalProspects() {
+      return this.items.length;
+    },
+    activeProspects() {
+      return this.items.filter(i => i.prospectStatus === "Active").length;
+    },
+    meetingsCount() {
+      return this.items.filter(i => i.secureMeeting).length;
+    },
+    proposalsSent() {
+      return this.items.filter(i => i.proposalSent).length;
+    },
+    securedCount() {
+      return this.items.filter(i => i.jobSecured).length;
+    },
+    totalSecuredValue() {
+      return this.items.reduce((sum, i) => sum + Number(i.jobSecuredValue || 0), 0);
+    },
+    totalProposalValue() {
+      return this.items.reduce((sum, i) => sum + Number(i.proposalValue || 0), 0);
+    }
+  },
 
-// Use shared lists from database
-const { fetchLists, getListItems, getListColors } = useLists();
+  methods: {
+    emptyDraft() {
+      return {
+        prospectName: "",
+        businessName: "",
+        partner: "",
+        leadStaff: "",
+        prospectStatus: "Active",
+        dateLastContact: "",
+        address: "",
+        contactPhone: "",
+        email: "",
+        industry: "",
+        existingFeeValue: "",
+        supportStaff: "",
+        relationshipType: "New Prospect",
+        prospectSource: "",
+        coiInvolved: "",
+        approachDate: "",
+        approachStyle: "",
+        secureMeeting: false,
+        quizCompleted: false,
+        salesStyle: "",
+        meetingTheme: "",
+        meetingDate: "",
+        followUpMeeting: false,
+        followUpMeetingDate: "",
+        totalNeedsStage: "",
+        proposalSent: false,
+        proposalValue: 0,
+        jobSecured: false,
+        dateSecured: "",
+        jobSecuredValue: 0,
+        additionalWorkSecured: 0,
+        comments: ""
+      };
+    },
+    getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    },
+    async apiFetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...options.headers };
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        headers['x-csrf-token'] = this.getCsrfToken();
+      }
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json();
+    },
+    loadColumnWidths() {
+      if (typeof window === "undefined") return { ...this.defaultColumnWidths };
+      try {
+        const saved = localStorage.getItem("pipeline-column-widths");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return { ...this.defaultColumnWidths, ...parsed };
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return { ...this.defaultColumnWidths };
+    },
+    loadCustomHeaderLabels() {
+      if (typeof window === "undefined") return {};
+      try {
+        const saved = localStorage.getItem("pipeline-header-labels");
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return {};
+    },
+    loadColumnOrder() {
+      if (typeof window === "undefined") return [...this.defaultColumnOrder];
+      try {
+        const saved = localStorage.getItem("pipeline-column-order");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && this.defaultColumnOrder.every(col => parsed.includes(col))) {
+            return parsed;
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return [...this.defaultColumnOrder];
+    },
+    onDragStart(col, event) {
+      this.draggingColumn = col;
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', col);
+      }
+    },
+    onDragOver(col, event) {
+      event.preventDefault();
+      if (this.draggingColumn && this.draggingColumn !== col) {
+        this.dragOverColumn = col;
+      }
+    },
+    onDragLeave() {
+      this.dragOverColumn = null;
+    },
+    onDrop(col, event) {
+      event.preventDefault();
+      if (!this.draggingColumn || this.draggingColumn === col) {
+        this.draggingColumn = null;
+        this.dragOverColumn = null;
+        return;
+      }
 
-// Computed list options from database
-const statusOptions = computed(() => getListItems("prospectStatus"));
-const relationshipOptions = computed(() => getListItems("relationshipType"));
-const sourceOptions = computed(() => getListItems("prospectSource"));
-const approachOptions = computed(() => getListItems("approachStyle"));
-const salesStyleOptions = computed(() => getListItems("salesStyle"));
-const totalNeedsStageOptions = computed(() => getListItems("totalNeedsStage"));
-const partnerOptions = computed(() => getListItems("partner"));
-const leadStaffOptions = computed(() => getListItems("leadStaff"));
-const industryOptions = computed(() => getListItems("industry"));
-const statusColors = computed(() => getListColors("prospectStatus"));
+      const order = [...this.columnOrder];
+      const fromIndex = order.indexOf(this.draggingColumn);
+      const toIndex = order.indexOf(col);
 
-// COI entries from database
-const coiEntries = ref([]);
-const coiOptions = computed(() => coiEntries.value.map(e => e.coiName));
+      if (fromIndex !== -1 && toIndex !== -1) {
+        order.splice(fromIndex, 1);
+        order.splice(toIndex, 0, this.draggingColumn);
+        this.columnOrder = order;
 
-async function loadCoiEntries() {
-  try {
-    const res = await $fetch("/api/coi");
-    coiEntries.value = res.items;
-  } catch {
-    // Silently fail - COI dropdown will just be empty
+        try {
+          localStorage.setItem("pipeline-column-order", JSON.stringify(order));
+        } catch {
+          // ignore storage errors
+        }
+      }
+
+      this.draggingColumn = null;
+      this.dragOverColumn = null;
+    },
+    onDragEnd() {
+      this.draggingColumn = null;
+      this.dragOverColumn = null;
+    },
+    getCellClass(col) {
+      const classes = [];
+
+      if (col === this.columnOrder[0]) {
+        classes.push('sticky-col');
+      }
+
+      if (['meeting', 'quizDone', 'followUp', 'proposal', 'secured'].includes(col)) {
+        classes.push('center');
+      }
+
+      if (['proposalValue', 'additionalWork'].includes(col)) {
+        classes.push('money-cell');
+      }
+
+      if (col === 'securedValue') {
+        classes.push('money-cell', 'secured');
+      }
+
+      return classes;
+    },
+    saveHeaderLabel(col, event) {
+      const target = event.target;
+      const newLabel = target.innerText.trim() || this.defaultHeaderLabels[col];
+      target.innerText = newLabel;
+      if (newLabel !== this.defaultHeaderLabels[col]) {
+        this.$set(this.customHeaderLabels, col, newLabel);
+      } else {
+        this.$delete(this.customHeaderLabels, col);
+      }
+      try {
+        localStorage.setItem("pipeline-header-labels", JSON.stringify(this.customHeaderLabels));
+      } catch {
+        // ignore storage errors
+      }
+    },
+    startResize(col, event) {
+      event.preventDefault();
+      this.resizing = {
+        col,
+        startX: event.clientX,
+        startWidth: this.columnWidths[col]
+      };
+      document.addEventListener("mousemove", this.onResize);
+      document.addEventListener("mouseup", this.stopResize);
+    },
+    onResize(event) {
+      if (!this.resizing) return;
+      const delta = event.clientX - this.resizing.startX;
+      const newWidth = Math.max(50, this.resizing.startWidth + delta);
+      this.$set(this.columnWidths, this.resizing.col, newWidth);
+    },
+    stopResize() {
+      this.resizing = null;
+      document.removeEventListener("mousemove", this.onResize);
+      document.removeEventListener("mouseup", this.stopResize);
+      try {
+        localStorage.setItem("pipeline-column-widths", JSON.stringify(this.columnWidths));
+      } catch {
+        // ignore storage errors
+      }
+    },
+    toInputDate(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+      return d.toISOString().split("T")[0];
+    },
+    async loadCoiEntries() {
+      try {
+        const res = await fetch("/api/coi", { credentials: 'same-origin' }).then(r => r.json());
+        this.coiEntries = res.items;
+      } catch {
+        // Silently fail - COI dropdown will just be empty
+      }
+    },
+    async loadItems() {
+      this.loading = true;
+      this.errorText = "";
+      try {
+        const params = new URLSearchParams();
+        if (this.search) params.append('search', this.search);
+        if (this.ownerFilter) params.append('owner', this.ownerFilter);
+        const url = `/api/pipeline${params.toString() ? '?' + params.toString() : ''}`;
+        const res = await fetch(url, { credentials: 'same-origin' }).then(r => r.json());
+        this.items = res.items;
+      } catch (error) {
+        if (Number(error?.statusCode) === 401) {
+          this.$router.push('/login');
+          return;
+        }
+        this.errorText = String(error?.message || "Failed to load");
+      } finally {
+        this.loading = false;
+      }
+    },
+    async createItem() {
+      if (this.submitting) return;
+      this.submitting = true;
+      this.errorText = "";
+      try {
+        await this.apiFetch("/api/pipeline", { method: "POST", body: this.draft });
+        Object.assign(this.draft, this.emptyDraft());
+        this.showAddForm = false;
+        await this.loadItems();
+      } catch (error) {
+        this.errorText = String(error?.message || "Failed to create");
+      } finally {
+        this.submitting = false;
+      }
+    },
+    async updateField(item, field, value) {
+      try {
+        await this.apiFetch(`/api/pipeline/${item.id}`, {
+          method: "PATCH",
+          body: { [field]: value }
+        });
+        item[field] = value;
+      } catch (error) {
+        this.errorText = String(error?.message || "Failed to update");
+      }
+    },
+    async removeItem(item) {
+      if (!confirm(`Delete prospect "${item.prospectName}"?`)) return;
+      try {
+        await this.apiFetch(`/api/pipeline/${item.id}`, { method: "DELETE" });
+        await this.loadItems();
+      } catch (error) {
+        this.errorText = String(error?.message || "Failed to delete");
+      }
+    }
+  },
+
+  mounted() {
+    this.columnWidths = this.loadColumnWidths();
+    this.customHeaderLabels = this.loadCustomHeaderLabels();
+    this.columnOrder = this.loadColumnOrder();
+    Promise.all([
+      this.$store.dispatch('lists/fetchLists'),
+      this.loadItems(),
+      this.loadCoiEntries()
+    ]);
   }
-}
-
-const emptyDraft = () => ({
-  prospectName: "",
-  businessName: "",
-  partner: "",
-  leadStaff: "",
-  prospectStatus: "Active",
-  dateLastContact: "",
-  address: "",
-  contactPhone: "",
-  email: "",
-  industry: "",
-  existingFeeValue: "",
-  supportStaff: "",
-  relationshipType: "New Prospect",
-  prospectSource: "",
-  coiInvolved: "",
-  approachDate: "",
-  approachStyle: "",
-  secureMeeting: false,
-  quizCompleted: false,
-  salesStyle: "",
-  meetingTheme: "",
-  meetingDate: "",
-  followUpMeeting: false,
-  followUpMeetingDate: "",
-  totalNeedsStage: "",
-  proposalSent: false,
-  proposalValue: 0,
-  jobSecured: false,
-  dateSecured: "",
-  jobSecuredValue: 0,
-  additionalWorkSecured: 0,
-  comments: ""
-});
-
-const draft = reactive(emptyDraft());
-
-// Default column widths
-const defaultColumnWidths = {
-  prospect: 180,
-  business: 160,
-  partner: 120,
-  leadStaff: 120,
-  status: 110,
-  relationship: 120,
-  source: 120,
-  coi: 140,
-  industry: 120,
-  approachDate: 120,
-  approachStyle: 110,
-  meeting: 70,
-  quizDone: 80,
-  salesStyle: 110,
-  meetingDate: 120,
-  followUp: 75,
-  followUpDate: 120,
-  tnStage: 110,
-  proposal: 75,
-  proposalValue: 110,
-  secured: 75,
-  dateSecured: 120,
-  securedValue: 110,
-  additionalWork: 110,
-  comments: 250,
-  actions: 50
 };
-
-// Load saved widths from localStorage or use defaults
-function loadColumnWidths() {
-  if (typeof window === "undefined") return { ...defaultColumnWidths };
-  try {
-    const saved = localStorage.getItem("pipeline-column-widths");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...defaultColumnWidths, ...parsed };
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return { ...defaultColumnWidths };
-}
-
-// Column widths for resizing
-const columnWidths = ref(loadColumnWidths());
-
-// Default header labels (computed for i18n reactivity)
-const defaultHeaderLabels = computed(() => ({
-  prospect: t('pipeline.columns.prospect'),
-  business: t('pipeline.columns.business'),
-  partner: t('pipeline.columns.partner'),
-  leadStaff: t('pipeline.columns.leadStaff'),
-  status: t('pipeline.columns.status'),
-  relationship: t('pipeline.columns.relationship'),
-  source: t('pipeline.columns.source'),
-  coi: t('pipeline.columns.coi'),
-  industry: t('pipeline.columns.industry'),
-  approachDate: t('pipeline.columns.approachDate'),
-  approachStyle: t('pipeline.columns.approachStyle'),
-  meeting: t('pipeline.columns.meeting'),
-  quizDone: t('pipeline.columns.quizDone'),
-  salesStyle: t('pipeline.columns.salesStyle'),
-  meetingDate: t('pipeline.columns.meetingDate'),
-  followUp: t('pipeline.columns.followUp'),
-  followUpDate: t('pipeline.columns.followUpDate'),
-  tnStage: t('pipeline.columns.tnStage'),
-  proposal: t('pipeline.columns.proposal'),
-  proposalValue: t('pipeline.columns.proposalValue'),
-  secured: t('pipeline.columns.secured'),
-  dateSecured: t('pipeline.columns.dateSecured'),
-  securedValue: t('pipeline.columns.securedValue'),
-  additionalWork: t('pipeline.columns.additionalWork'),
-  comments: t('pipeline.columns.comments')
-}));
-
-// Load saved custom header labels from localStorage (only user overrides)
-function loadCustomHeaderLabels() {
-  if (typeof window === "undefined") return {};
-  try {
-    const saved = localStorage.getItem("pipeline-header-labels");
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return {};
-}
-
-// Store only custom overrides
-const customHeaderLabels = ref(loadCustomHeaderLabels());
-
-// Header labels: merge translated defaults with custom overrides
-const headerLabels = computed(() => ({
-  ...defaultHeaderLabels.value,
-  ...customHeaderLabels.value
-}));
-
-// Default column order
-const defaultColumnOrder = [
-  'prospect', 'business', 'partner', 'leadStaff', 'status', 'relationship', 'source',
-  'coi', 'industry', 'approachDate', 'approachStyle', 'meeting', 'quizDone', 'salesStyle',
-  'meetingDate', 'followUp', 'followUpDate', 'tnStage', 'proposal', 'proposalValue',
-  'secured', 'dateSecured', 'securedValue', 'additionalWork', 'comments'
-];
-
-// Load saved column order from localStorage
-function loadColumnOrder() {
-  if (typeof window === "undefined") return [...defaultColumnOrder];
-  try {
-    const saved = localStorage.getItem("pipeline-column-order");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Validate that all default columns are present
-      if (Array.isArray(parsed) && defaultColumnOrder.every(col => parsed.includes(col))) {
-        return parsed;
-      }
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return [...defaultColumnOrder];
-}
-
-// Column order for drag reordering
-const columnOrder = ref(loadColumnOrder());
-
-// Drag state for column reordering
-const draggingColumn = ref(null);
-const dragOverColumn = ref(null);
-
-function onDragStart(col, event) {
-  draggingColumn.value = col;
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', col);
-  }
-}
-
-function onDragOver(col, event) {
-  event.preventDefault();
-  if (draggingColumn.value && draggingColumn.value !== col) {
-    dragOverColumn.value = col;
-  }
-}
-
-function onDragLeave() {
-  dragOverColumn.value = null;
-}
-
-function onDrop(col, event) {
-  event.preventDefault();
-  if (!draggingColumn.value || draggingColumn.value === col) {
-    draggingColumn.value = null;
-    dragOverColumn.value = null;
-    return;
-  }
-
-  const order = [...columnOrder.value];
-  const fromIndex = order.indexOf(draggingColumn.value);
-  const toIndex = order.indexOf(col);
-
-  if (fromIndex !== -1 && toIndex !== -1) {
-    order.splice(fromIndex, 1);
-    order.splice(toIndex, 0, draggingColumn.value);
-    columnOrder.value = order;
-
-    // Save to localStorage
-    try {
-      localStorage.setItem("pipeline-column-order", JSON.stringify(order));
-    } catch {
-      // ignore storage errors
-    }
-  }
-
-  draggingColumn.value = null;
-  dragOverColumn.value = null;
-}
-
-function onDragEnd() {
-  draggingColumn.value = null;
-  dragOverColumn.value = null;
-}
-
-// Get CSS class for a cell based on column type
-function getCellClass(col) {
-  const classes = [];
-
-  // First column is sticky
-  if (col === columnOrder.value[0]) {
-    classes.push('sticky-col');
-  }
-
-  // Checkbox columns are centered
-  if (['meeting', 'quizDone', 'followUp', 'proposal', 'secured'].includes(col)) {
-    classes.push('center');
-  }
-
-  // Money columns
-  if (['proposalValue', 'additionalWork'].includes(col)) {
-    classes.push('money-cell');
-  }
-
-  if (col === 'securedValue') {
-    classes.push('money-cell', 'secured');
-  }
-
-  return classes;
-}
-
-// Save header label on edit
-function saveHeaderLabel(col, event) {
-  const target = event.target;
-  const newLabel = target.innerText.trim() || defaultHeaderLabels.value[col];
-  target.innerText = newLabel;
-  // Only save if different from the translated default
-  if (newLabel !== defaultHeaderLabels.value[col]) {
-    customHeaderLabels.value[col] = newLabel;
-  } else {
-    // Remove custom override if user reset to default
-    delete customHeaderLabels.value[col];
-  }
-  try {
-    localStorage.setItem("pipeline-header-labels", JSON.stringify(customHeaderLabels.value));
-  } catch {
-    // ignore storage errors
-  }
-}
-
-// Resize state
-const resizing = ref(null);
-
-function startResize(col, event) {
-  event.preventDefault();
-  resizing.value = {
-    col,
-    startX: event.clientX,
-    startWidth: columnWidths.value[col]
-  };
-  document.addEventListener("mousemove", onResize);
-  document.addEventListener("mouseup", stopResize);
-}
-
-function onResize(event) {
-  if (!resizing.value) return;
-  const delta = event.clientX - resizing.value.startX;
-  const newWidth = Math.max(50, resizing.value.startWidth + delta);
-  columnWidths.value[resizing.value.col] = newWidth;
-}
-
-function stopResize() {
-  resizing.value = null;
-  document.removeEventListener("mousemove", onResize);
-  document.removeEventListener("mouseup", stopResize);
-  // Save to localStorage
-  try {
-    localStorage.setItem("pipeline-column-widths", JSON.stringify(columnWidths.value));
-  } catch {
-    // ignore storage errors
-  }
-}
-
-// Computed stats
-const totalProspects = computed(() => items.value.length);
-const activeProspects = computed(() => items.value.filter(i => i.prospectStatus === "Active").length);
-const meetingsCount = computed(() => items.value.filter(i => i.secureMeeting).length);
-const proposalsSent = computed(() => items.value.filter(i => i.proposalSent).length);
-const securedCount = computed(() => items.value.filter(i => i.jobSecured).length);
-const totalSecuredValue = computed(() => items.value.reduce((sum, i) => sum + Number(i.jobSecuredValue || 0), 0));
-const totalProposalValue = computed(() => items.value.reduce((sum, i) => sum + Number(i.proposalValue || 0), 0));
-
-const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-
-function toInputDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "";
-  return d.toISOString().split("T")[0];
-}
-
-async function loadItems() {
-  loading.value = true;
-  errorText.value = "";
-  try {
-    const res = await $fetch("/api/pipeline", {
-      query: {
-        search: search.value || undefined,
-        owner: ownerFilter.value || undefined
-      }
-    });
-    items.value = res.items;
-  } catch (error) {
-    const e = error;
-    if (Number(e?.statusCode) === 401) {
-      await navigateTo("/login");
-      return;
-    }
-    errorText.value = String(e?.data?.statusMessage || e?.data?.message || "Failed to load");
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function createItem() {
-  if (submitting.value) return;
-  submitting.value = true;
-  errorText.value = "";
-  try {
-    await $fetch("/api/pipeline", { method: "POST", body: draft });
-    Object.assign(draft, emptyDraft());
-    showAddForm.value = false;
-    await loadItems();
-  } catch (error) {
-    const e = error;
-    errorText.value = String(e?.data?.statusMessage || "Failed to create");
-  } finally {
-    submitting.value = false;
-  }
-}
-
-async function updateField(item, field, value) {
-  try {
-    await $fetch(`/api/pipeline/${item.id}`, {
-      method: "PATCH",
-      body: { [field]: value }
-    });
-    item[field] = value;
-  } catch (error) {
-    const e = error;
-    errorText.value = String(e?.data?.statusMessage || "Failed to update");
-  }
-}
-
-async function removeItem(item) {
-  if (!confirm(`Delete prospect "${item.prospectName}"?`)) return;
-  try {
-    await $fetch(`/api/pipeline/${item.id}`, { method: "DELETE" });
-    await loadItems();
-  } catch (error) {
-    const e = error;
-    errorText.value = String(e?.data?.statusMessage || "Failed to delete");
-  }
-}
-
-onMounted(async () => {
-  // Load column widths, header labels, and column order from localStorage on client
-  Object.assign(columnWidths.value, loadColumnWidths());
-  Object.assign(customHeaderLabels.value, loadCustomHeaderLabels());
-  columnOrder.value = loadColumnOrder();
-  // Load all data in parallel for faster page load
-  await Promise.all([fetchLists(), loadItems(), loadCoiEntries()]);
-});
 </script>
 
 <template>
@@ -438,15 +448,15 @@ onMounted(async () => {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ t('pipeline.badge') }}</span>
-          <h1>{{ t('pipeline.title') }}</h1>
-          <p>{{ t('pipeline.subtitle') }}</p>
+          <span class="header-badge">{{ $t('pipeline.badge') }}</span>
+          <h1>{{ $t('pipeline.title') }}</h1>
+          <p>{{ $t('pipeline.subtitle') }}</p>
         </div>
         <div class="header-actions">
           <button class="btn-primary" @click="showAddForm = !showAddForm">
-            {{ showAddForm ? t('common.cancel') : t('pipeline.addProspect') }}
+            {{ showAddForm ? $t('common.cancel') : $t('pipeline.addProspect') }}
           </button>
-          <button class="btn-secondary" @click="loadItems">{{ t('common.refresh') }}</button>
+          <button class="btn-secondary" @click="loadItems">{{ $t('common.refresh') }}</button>
         </div>
       </div>
     </header>
@@ -454,38 +464,38 @@ onMounted(async () => {
     <!-- Summary Stats -->
     <section class="stats-bar">
       <div class="stat-item">
-        <span class="stat-label">{{ t('pipeline.totalProspects') }}</span>
+        <span class="stat-label">{{ $t('pipeline.totalProspects') }}</span>
         <span class="stat-value">{{ totalProspects }}</span>
       </div>
       <div class="stat-item active">
-        <span class="stat-label">{{ t('pipeline.active') }}</span>
+        <span class="stat-label">{{ $t('pipeline.active') }}</span>
         <span class="stat-value">{{ activeProspects }}</span>
       </div>
       <div class="stat-item">
-        <span class="stat-label">{{ t('pipeline.meetings') }}</span>
+        <span class="stat-label">{{ $t('pipeline.meetings') }}</span>
         <span class="stat-value">{{ meetingsCount }}</span>
       </div>
       <div class="stat-item">
-        <span class="stat-label">{{ t('pipeline.proposals') }}</span>
+        <span class="stat-label">{{ $t('pipeline.proposals') }}</span>
         <span class="stat-value">{{ proposalsSent }}</span>
       </div>
       <div class="stat-item secured">
-        <span class="stat-label">{{ t('pipeline.secured') }}</span>
+        <span class="stat-label">{{ $t('pipeline.secured') }}</span>
         <span class="stat-value">{{ securedCount }}</span>
       </div>
       <div class="stat-item money">
-        <span class="stat-label">{{ t('pipeline.proposalValue') }}</span>
+        <span class="stat-label">{{ $t('pipeline.proposalValue') }}</span>
         <span class="stat-value">{{ money.format(totalProposalValue) }}</span>
       </div>
       <div class="stat-item money secured">
-        <span class="stat-label">{{ t('pipeline.securedValue') }}</span>
+        <span class="stat-label">{{ $t('pipeline.securedValue') }}</span>
         <span class="stat-value">{{ money.format(totalSecuredValue) }}</span>
       </div>
     </section>
 
     <!-- Add Form -->
     <section v-if="showAddForm" class="add-form-panel">
-      <h2>{{ t('pipeline.newProspect') }}</h2>
+      <h2>{{ $t('pipeline.newProspect') }}</h2>
       <div class="form-grid">
         <div class="form-group">
           <label>Prospect Name *</label>
@@ -574,21 +584,21 @@ onMounted(async () => {
         </div>
       </div>
       <div class="form-actions">
-        <button class="btn-primary" :disabled="!draft.prospectName.trim() || submitting" @click="createItem">{{ submitting ? t('pipeline.saving') : t('pipeline.saveProspect') }}</button>
-        <button class="btn-secondary" @click="showAddForm = false">{{ t('common.cancel') }}</button>
+        <button class="btn-primary" :disabled="!draft.prospectName.trim() || submitting" @click="createItem">{{ submitting ? $t('pipeline.saving') : $t('pipeline.saveProspect') }}</button>
+        <button class="btn-secondary" @click="showAddForm = false">{{ $t('common.cancel') }}</button>
       </div>
     </section>
 
     <!-- Filters -->
     <section class="filters-bar">
-      <input v-model="search" :placeholder="t('pipeline.searchProspects')" @keyup.enter="loadItems" />
-      <input v-model="ownerFilter" :placeholder="t('pipeline.filterByOwner')" @keyup.enter="loadItems" />
-      <button class="btn-secondary" @click="loadItems">{{ t('pipeline.apply') }}</button>
+      <input v-model="search" :placeholder="$t('pipeline.searchProspects')" @keyup.enter="loadItems" />
+      <input v-model="ownerFilter" :placeholder="$t('pipeline.filterByOwner')" @keyup.enter="loadItems" />
+      <button class="btn-secondary" @click="loadItems">{{ $t('pipeline.apply') }}</button>
     </section>
 
     <!-- Error message -->
     <p v-if="errorText" class="error-msg">{{ errorText }}</p>
-    <p v-if="loading" class="loading-msg">{{ t('pipeline.loadingData') }}</p>
+    <p v-if="loading" class="loading-msg">{{ $t('pipeline.loadingData') }}</p>
 
     <!-- Data Table - Spreadsheet Style -->
     <div class="table-container">

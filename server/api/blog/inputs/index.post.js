@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { Prisma } from "@prisma/client";
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { z } = require('zod')
+const { Prisma } = require('@prisma/client')
+const { prisma } = require('../../../utils/db')
+const { requireUser } = require('../../../utils/auth')
 
 const schema = z.object({
   signature: z.string().trim().min(1).max(191),
@@ -21,16 +21,16 @@ const schema = z.object({
   styleTitles: z.array(z.string().trim()).optional(),
   lengthRanges: z.unknown().optional(),
   styleThresholds: z.unknown().optional()
-});
+})
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const payload = schema.parse(await readBody(event));
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const payload = schema.parse(req.body)
 
   const existing = await prisma.blogInput.findFirst({
     where: { signature: payload.signature, userId: user.id },
-    orderBy: { updatedAt: "desc" }
-  });
+    orderBy: { updatedAt: 'desc' }
+  })
 
   const data = {
     userId: user.id,
@@ -48,11 +48,11 @@ export default defineEventHandler(async (event) => {
     styleTitlesJson: payload.styleTitles ?? Prisma.JsonNull,
     lengthRangesJson: payload.lengthRanges ?? Prisma.JsonNull,
     styleThresholdsJson: payload.styleThresholds ?? Prisma.JsonNull
-  };
+  }
 
   const item = existing
     ? await prisma.blogInput.update({ where: { id: existing.id }, data })
-    : await prisma.blogInput.create({ data });
+    : await prisma.blogInput.create({ data })
 
-  return { item };
-});
+  return res.json({ item })
+}

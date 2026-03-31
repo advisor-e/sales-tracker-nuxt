@@ -1,11 +1,15 @@
-<script setup>
-defineProps({
-  label: String,
-  value: [String, Number],
-  badge: String,
-  badgeColor: String,
-  footer: String
-});
+<script>
+export default {
+  name: 'StatCard',
+
+  props: {
+    label: String,
+    value: [String, Number],
+    badge: String,
+    badgeColor: String,
+    footer: String
+  }
+};
 </script>
 
 <template>

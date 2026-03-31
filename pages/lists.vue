@@ -1,182 +1,204 @@
-<script setup>
-// Protect this page - only Firm Managers can access
-definePageMeta({
-  middleware: ["firm-manager"]
-});
+<script>
+export default {
+  name: 'ListsPage',
 
-import { useI18n } from 'vue-i18n';
+  middleware: ['firm-manager'],
 
-const { t } = useI18n({ useScope: 'global' });
-const { $addLocale, $removeLocale, $refreshLocales } = useNuxtApp();
+  data() {
+    return {
+      lists: {},
+      expandedList: null,
+      newItemText: "",
+      saving: false,
+      saveMessage: "",
+      languages: [],
+      languagesLoading: false,
+      showAddLanguage: false,
+      newLanguage: {
+        code: '',
+        name: '',
+        nativeName: '',
+        translations: {}
+      },
+      languageSaving: false
+    };
+  },
 
-const { lists: listsData, loading: listsLoading, fetchLists, saveList, invalidateCache } = useLists();
+  computed: {
+    listsData() {
+      return this.$store.state.lists.lists;
+    },
+    listsLoading() {
+      return this.$store.state.lists.loading;
+    }
+  },
 
-// Local editable copy of lists
-const lists = reactive({});
+  watch: {
+    listsData: {
+      handler(newLists) {
+        if (Object.keys(this.lists).length === 0) {
+          Object.assign(this.lists, JSON.parse(JSON.stringify(newLists)));
+        }
+      },
+      deep: true
+    }
+  },
 
-const expandedList = ref(null);
-const newItemText = ref("");
-const saving = ref(false);
-const saveMessage = ref("");
-
-const languages = ref([]);
-const languagesLoading = ref(false);
-const showAddLanguage = ref(false);
-const newLanguage = reactive({
-  code: '',
-  name: '',
-  nativeName: '',
-  translations: {}
-});
-const languageSaving = ref(false);
-
-// Load lists on mount
-onMounted(async () => {
-  await Promise.all([
-    fetchLists(true),
-    loadLanguages()
-  ]);
-  // Copy to local editable state
-  Object.assign(lists, JSON.parse(JSON.stringify(listsData.value)));
-});
-
-// Watch for external updates
-watch(listsData, (newLists) => {
-  if (Object.keys(lists).length === 0) {
-    Object.assign(lists, JSON.parse(JSON.stringify(newLists)));
-  }
-}, { deep: true });
-
-function toggleExpand(key) {
-  expandedList.value = expandedList.value === key ? null : key;
-  newItemText.value = "";
-}
-
-async function addItem(key) {
-  const text = newItemText.value.trim();
-  if (text && lists[key] && !lists[key].items.includes(text)) {
-    lists[key].items.push(text);
-    newItemText.value = "";
-    await saveListToDb(key);
-  }
-}
-
-async function removeItem(key, item) {
-  if (!lists[key]) return;
-  const idx = lists[key].items.indexOf(item);
-  if (idx !== -1) {
-    lists[key].items.splice(idx, 1);
-    await saveListToDb(key);
-  }
-}
-
-async function moveItem(key, index, direction) {
-  if (!lists[key]) return;
-  const arr = lists[key].items;
-  const newIndex = index + direction;
-  if (newIndex >= 0 && newIndex < arr.length) {
-    const temp = arr[index];
-    arr[index] = arr[newIndex];
-    arr[newIndex] = temp;
-    await saveListToDb(key);
-  }
-}
-
-async function saveListToDb(key) {
-  if (!lists[key]) return;
-  saving.value = true;
-  saveMessage.value = "";
-
-  const success = await saveList(key, lists[key].items, lists[key].colors);
-
-  if (success) {
-    saveMessage.value = "Saved";
-    invalidateCache();
-    setTimeout(() => {
-      saveMessage.value = "";
-    }, 2000);
-  } else {
-    saveMessage.value = "Failed to save";
-  }
-
-  saving.value = false;
-}
-
-// Language management functions
-async function loadLanguages() {
-  languagesLoading.value = true;
-  try {
-    const response = await $fetch('/api/languages');
-    languages.value = response.languages;
-  } catch (e) {
-    console.error('Failed to load languages:', e);
-  } finally {
-    languagesLoading.value = false;
-  }
-}
-
-async function addNewLanguage() {
-  if (!newLanguage.code || !newLanguage.name || !newLanguage.nativeName) return;
-
-  languageSaving.value = true;
-  try {
-    const result = await $fetch('/api/languages/translate', {
-      method: 'POST',
-      body: {
-        code: newLanguage.code.toLowerCase(),
-        name: newLanguage.name,
-        nativeName: newLanguage.nativeName
+  methods: {
+    getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    },
+    async apiFetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...options.headers };
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        headers['x-csrf-token'] = this.getCsrfToken();
       }
-    });
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json();
+    },
+    toggleExpand(key) {
+      this.expandedList = this.expandedList === key ? null : key;
+      this.newItemText = "";
+    },
+    async addItem(key) {
+      const text = this.newItemText.trim();
+      if (text && this.lists[key] && !this.lists[key].items.includes(text)) {
+        this.lists[key].items.push(text);
+        this.newItemText = "";
+        await this.saveListToDb(key);
+      }
+    },
+    async removeItem(key, item) {
+      if (!this.lists[key]) return;
+      const idx = this.lists[key].items.indexOf(item);
+      if (idx !== -1) {
+        this.lists[key].items.splice(idx, 1);
+        await this.saveListToDb(key);
+      }
+    },
+    async moveItem(key, index, direction) {
+      if (!this.lists[key]) return;
+      const arr = this.lists[key].items;
+      const newIndex = index + direction;
+      if (newIndex >= 0 && newIndex < arr.length) {
+        const temp = arr[index];
+        arr[index] = arr[newIndex];
+        arr[newIndex] = temp;
+        await this.saveListToDb(key);
+      }
+    },
+    async saveListToDb(key) {
+      if (!this.lists[key]) return;
+      this.saving = true;
+      this.saveMessage = "";
 
-    // Register with vue-i18n and add to dropdown immediately
-    if ($addLocale) {
-      $addLocale(result.language.code, result.language.name, result.language.nativeName, result.translations);
+      const success = await this.$store.dispatch('lists/saveList', {
+        key,
+        items: this.lists[key].items,
+        colors: this.lists[key].colors
+      });
+
+      if (success) {
+        this.saveMessage = "Saved";
+        this.$store.dispatch('lists/invalidateCache');
+        setTimeout(() => {
+          this.saveMessage = "";
+        }, 2000);
+      } else {
+        this.saveMessage = "Failed to save";
+      }
+
+      this.saving = false;
+    },
+    async loadLanguages() {
+      this.languagesLoading = true;
+      try {
+        const response = await fetch('/api/languages', { credentials: 'same-origin' }).then(r => r.json());
+        this.languages = response.languages;
+      } catch (e) {
+        console.error('Failed to load languages:', e);
+      } finally {
+        this.languagesLoading = false;
+      }
+    },
+    async addNewLanguage() {
+      if (!this.newLanguage.code || !this.newLanguage.name || !this.newLanguage.nativeName) return;
+
+      this.languageSaving = true;
+      try {
+        const result = await this.apiFetch('/api/languages/translate', {
+          method: 'POST',
+          body: {
+            code: this.newLanguage.code.toLowerCase(),
+            name: this.newLanguage.name,
+            nativeName: this.newLanguage.nativeName
+          }
+        });
+
+        if (this.$addLocale) {
+          this.$addLocale(result.language.code, result.language.name, result.language.nativeName, result.translations);
+        }
+
+        await this.loadLanguages();
+
+        this.newLanguage.code = '';
+        this.newLanguage.name = '';
+        this.newLanguage.nativeName = '';
+        this.newLanguage.translations = {};
+        this.showAddLanguage = false;
+
+        this.saveMessage = this.$t('lists.languageAdded');
+        setTimeout(() => { this.saveMessage = ''; }, 3000);
+      } catch (e) {
+        this.saveMessage = e?.message || 'Translation failed. Please try again.';
+        setTimeout(() => { this.saveMessage = ''; }, 4000);
+      } finally {
+        this.languageSaving = false;
+      }
+    },
+    async deleteLanguage(code) {
+      if (!confirm(this.$t('lists.confirmDeleteLanguage'))) return;
+
+      try {
+        await this.apiFetch(`/api/languages/${code}`, { method: 'DELETE' });
+
+        if (this.$removeLocale) {
+          this.$removeLocale(code);
+        }
+
+        await this.loadLanguages();
+        if (this.$refreshLocales) {
+          await this.$refreshLocales();
+        }
+
+        this.saveMessage = this.$t('lists.languageDeleted');
+        setTimeout(() => { this.saveMessage = ''; }, 2000);
+      } catch (e) {
+        console.error('Failed to delete language:', e);
+      }
     }
+  },
 
-    // Refresh the languages panel
-    await loadLanguages();
-
-    // Reset form
-    newLanguage.code = '';
-    newLanguage.name = '';
-    newLanguage.nativeName = '';
-    newLanguage.translations = {};
-    showAddLanguage.value = false;
-
-    saveMessage.value = t('lists.languageAdded');
-    setTimeout(() => { saveMessage.value = ''; }, 3000);
-  } catch (e) {
-    saveMessage.value = e?.data?.statusMessage || 'Translation failed. Please try again.';
-    setTimeout(() => { saveMessage.value = ''; }, 4000);
-  } finally {
-    languageSaving.value = false;
+  async mounted() {
+    await Promise.all([
+      this.$store.dispatch('lists/fetchLists', true),
+      this.loadLanguages()
+    ]);
+    Object.assign(this.lists, JSON.parse(JSON.stringify(this.listsData)));
   }
-}
-
-async function deleteLanguage(code) {
-  if (!confirm(t('lists.confirmDeleteLanguage'))) return;
-
-  try {
-    await $fetch(`/api/languages/${code}`, { method: 'DELETE' });
-
-    // Remove from i18n runtime
-    if ($removeLocale) {
-      $removeLocale(code);
-    }
-
-    // Refresh the languages list
-    await loadLanguages();
-    if ($refreshLocales) {
-      await $refreshLocales();
-    }
-
-    saveMessage.value = t('lists.languageDeleted');
-    setTimeout(() => { saveMessage.value = ''; }, 2000);
-  } catch (e) {
-    console.error('Failed to delete language:', e);
-  }
-}
+};
 </script>
 
 <template>
@@ -185,21 +207,21 @@ async function deleteLanguage(code) {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ t('lists.badge') }}</span>
-          <h1>{{ t('lists.title') }}</h1>
-          <p>{{ t('lists.subtitle') }}</p>
+          <span class="header-badge">{{ $t('lists.badge') }}</span>
+          <h1>{{ $t('lists.title') }}</h1>
+          <p>{{ $t('lists.subtitle') }}</p>
         </div>
       </div>
     </header>
 
     <!-- Loading State -->
     <div v-if="listsLoading && Object.keys(lists).length === 0" class="loading-banner">
-      {{ t('lists.loading') }}
+      {{ $t('lists.loading') }}
     </div>
 
     <!-- Save Status -->
     <div v-if="saveMessage" class="save-banner" :class="{ error: saveMessage.includes('Failed') }">
-      {{ saveMessage === 'Saved' ? t('lists.saved') : saveMessage }}
+      {{ saveMessage === 'Saved' ? $t('lists.saved') : saveMessage }}
     </div>
 
     <!-- Info Banner -->
@@ -209,21 +231,21 @@ async function deleteLanguage(code) {
         <path d="M12 16v-4"/>
         <path d="M12 8h.01"/>
       </svg>
-      <p>{{ t('lists.infoBanner') }}</p>
+      <p>{{ $t('lists.infoBanner') }}</p>
     </div>
 
     <!-- Languages Section -->
     <section class="languages-section">
       <div class="section-header">
         <div>
-          <h2>{{ t('lists.languagesTitle') }}</h2>
-          <p>{{ t('lists.languagesDesc') }}</p>
+          <h2>{{ $t('lists.languagesTitle') }}</h2>
+          <p>{{ $t('lists.languagesDesc') }}</p>
         </div>
         <button
           class="btn-add-language"
           @click="showAddLanguage = !showAddLanguage"
         >
-          {{ showAddLanguage ? '−' : '+' }} {{ t('lists.addLanguage') }}
+          {{ showAddLanguage ? '−' : '+' }} {{ $t('lists.addLanguage') }}
         </button>
       </div>
 
@@ -231,25 +253,25 @@ async function deleteLanguage(code) {
       <div v-if="showAddLanguage" class="add-language-form">
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('lists.languageCode') }}</label>
+            <label>{{ $t('lists.languageCode') }}</label>
             <input
               v-model="newLanguage.code"
-              :placeholder="t('lists.languageCodePlaceholder')"
+              :placeholder="$t('lists.languageCodePlaceholder')"
               maxlength="10"
             />
           </div>
           <div class="form-group">
-            <label>{{ t('lists.languageName') }}</label>
+            <label>{{ $t('lists.languageName') }}</label>
             <input
               v-model="newLanguage.name"
-              :placeholder="t('lists.languageNamePlaceholder')"
+              :placeholder="$t('lists.languageNamePlaceholder')"
             />
           </div>
           <div class="form-group">
-            <label>{{ t('lists.nativeName') }}</label>
+            <label>{{ $t('lists.nativeName') }}</label>
             <input
               v-model="newLanguage.nativeName"
-              :placeholder="t('lists.nativeNamePlaceholder')"
+              :placeholder="$t('lists.nativeNamePlaceholder')"
             />
           </div>
         </div>
@@ -263,7 +285,7 @@ async function deleteLanguage(code) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
               Translating...
             </span>
-            <span v-else>{{ t('lists.addLanguage') }}</span>
+            <span v-else>{{ $t('lists.addLanguage') }}</span>
           </button>
         </div>
         <p class="form-hint" v-if="!languageSaving">
@@ -285,13 +307,13 @@ async function deleteLanguage(code) {
           <div class="language-info">
             <span class="language-code">{{ lang.code }}</span>
             <span class="language-name">{{ lang.nativeName }}</span>
-            <span class="language-tag">{{ lang.isBuiltIn ? t('lists.builtIn') : t('lists.custom') }}</span>
+            <span class="language-tag">{{ lang.isBuiltIn ? $t('lists.builtIn') : $t('lists.custom') }}</span>
           </div>
           <button
             v-if="!lang.isBuiltIn"
             class="btn-delete-lang"
             @click="deleteLanguage(lang.code)"
-            :title="t('lists.deleteLanguage')"
+            :title="$t('lists.deleteLanguage')"
           >
             ×
           </button>
@@ -313,7 +335,7 @@ async function deleteLanguage(code) {
             <p>{{ list.description }}</p>
           </div>
           <div class="list-meta">
-            <span class="item-count">{{ list.items.length }} {{ t('lists.items') }}</span>
+            <span class="item-count">{{ list.items.length }} {{ $t('lists.items') }}</span>
             <span class="expand-icon">{{ expandedList === key ? '−' : '+' }}</span>
           </div>
         </div>
@@ -324,7 +346,7 @@ async function deleteLanguage(code) {
               v-for="(item, idx) in list.items"
               :key="item"
               class="list-item"
-              :style="list.colors?.[item] ? { backgroundColor: list.colors[item] } : {}"
+              :style="list.colors && list.colors[item] ? { backgroundColor: list.colors[item] } : {}"
             >
               <span class="item-text">{{ item }}</span>
               <div class="item-actions">
@@ -332,18 +354,18 @@ async function deleteLanguage(code) {
                   class="btn-move"
                   :disabled="idx === 0"
                   @click.stop="moveItem(key, idx, -1)"
-                  :title="t('lists.moveUp')"
+                  :title="$t('lists.moveUp')"
                 >↑</button>
                 <button
                   class="btn-move"
                   :disabled="idx === list.items.length - 1"
                   @click.stop="moveItem(key, idx, 1)"
-                  :title="t('lists.moveDown')"
+                  :title="$t('lists.moveDown')"
                 >↓</button>
                 <button
                   class="btn-remove"
                   @click.stop="removeItem(key, item)"
-                  :title="t('lists.remove')"
+                  :title="$t('lists.remove')"
                 >×</button>
               </div>
             </li>
@@ -352,14 +374,14 @@ async function deleteLanguage(code) {
           <div class="add-item-form">
             <input
               v-model="newItemText"
-              :placeholder="t('lists.addNewItem')"
+              :placeholder="$t('lists.addNewItem')"
               @keyup.enter="addItem(key)"
             />
             <button
               class="btn-add"
               :disabled="!newItemText.trim()"
               @click="addItem(key)"
-            >{{ t('common.add') }}</button>
+            >{{ $t('common.add') }}</button>
           </div>
         </div>
       </div>
@@ -367,31 +389,31 @@ async function deleteLanguage(code) {
 
     <!-- Usage Guide -->
     <section class="usage-guide">
-      <h2>{{ t('lists.usageGuideTitle') }}</h2>
+      <h2>{{ $t('lists.usageGuideTitle') }}</h2>
       <div class="usage-grid">
         <div class="usage-item">
-          <h4>{{ t('lists.prospectStatus') }}</h4>
-          <p>{{ t('lists.prospectStatusDesc') }}</p>
+          <h4>{{ $t('lists.prospectStatus') }}</h4>
+          <p>{{ $t('lists.prospectStatusDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>{{ t('lists.prospectSource') }}</h4>
-          <p>{{ t('lists.prospectSourceDesc') }}</p>
+          <h4>{{ $t('lists.prospectSource') }}</h4>
+          <p>{{ $t('lists.prospectSourceDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>{{ t('lists.approachStyle') }}</h4>
-          <p>{{ t('lists.approachStyleDesc') }}</p>
+          <h4>{{ $t('lists.approachStyle') }}</h4>
+          <p>{{ $t('lists.approachStyleDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>{{ t('lists.salesStyle') }}</h4>
-          <p>{{ t('lists.salesStyleDesc') }}</p>
+          <h4>{{ $t('lists.salesStyle') }}</h4>
+          <p>{{ $t('lists.salesStyleDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>{{ t('lists.totalNeedsStage') }}</h4>
-          <p>{{ t('lists.totalNeedsStageDesc') }}</p>
+          <h4>{{ $t('lists.totalNeedsStage') }}</h4>
+          <p>{{ $t('lists.totalNeedsStageDesc') }}</p>
         </div>
         <div class="usage-item">
-          <h4>{{ t('lists.industry') }}</h4>
-          <p>{{ t('lists.industryDesc') }}</p>
+          <h4>{{ $t('lists.industry') }}</h4>
+          <p>{{ $t('lists.industryDesc') }}</p>
         </div>
       </div>
     </section>

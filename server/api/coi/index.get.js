@@ -1,11 +1,11 @@
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { prisma } = require('../../utils/db')
+const { requireUser } = require('../../utils/auth')
 
-export default defineEventHandler(async (event) => {
+module.exports = async function(req, res) {
   // Any authenticated user can view COIs (shared across the firm)
-  await requireUser(event);
-  const query = getQuery(event);
-  const search = String(query.search || "").trim();
+  await requireUser(req, res)
+  const query = req.query
+  const search = String(query.search || '').trim()
 
   const items = await prisma.coiEntry.findMany({
     where: {
@@ -19,14 +19,14 @@ export default defineEventHandler(async (event) => {
           ]
         : undefined
     },
-    orderBy: [{ updatedAt: "desc" }],
+    orderBy: [{ updatedAt: 'desc' }],
     take: 500
-  });
+  })
 
-  return {
+  return res.json({
     items: items.map((item) => ({
       ...item,
       feeValue: Number(item.feeValue || 0)
     }))
-  };
-});
+  })
+}

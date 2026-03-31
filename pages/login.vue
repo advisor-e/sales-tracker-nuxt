@@ -1,55 +1,81 @@
-<script setup>
-import { useI18n } from 'vue-i18n';
+<script>
+export default {
+  name: 'LoginPage',
 
-const { t } = useI18n({ useScope: 'global' });
-const { checkAuth } = useAuth();
+  data() {
+    return {
+      email: "",
+      password: "",
+      errorText: "",
+      busy: false
+    };
+  },
 
-const email = ref("");
-const password = ref("");
-const errorText = ref("");
-const busy = ref(false);
-
-async function submit() {
-  busy.value = true;
-  errorText.value = "";
-  try {
-    await $fetch("/api/auth/login", {
-      method: "POST",
-      body: {
-        email: email.value,
-        password: password.value
+  methods: {
+    getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    },
+    async apiFetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...options.headers };
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        headers['x-csrf-token'] = this.getCsrfToken();
       }
-    });
-    // Force refresh auth state so header shows correct user
-    await checkAuth(true);
-    await navigateTo("/dashboard");
-  } catch (error) {
-    const e = error;
-    errorText.value = String(e?.data?.statusMessage || e?.message || "Login failed");
-  } finally {
-    busy.value = false;
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json();
+    },
+    async submit() {
+      this.busy = true;
+      this.errorText = "";
+      try {
+        await this.apiFetch("/api/auth/login", {
+          method: "POST",
+          body: {
+            email: this.email,
+            password: this.password
+          }
+        });
+        await this.$store.dispatch('auth/checkAuth', true);
+        this.$router.push('/dashboard');
+      } catch (error) {
+        this.errorText = String(error?.message || "Login failed");
+      } finally {
+        this.busy = false;
+      }
+    }
   }
-}
+};
 </script>
 
 <template>
   <section class="login-wrap">
     <article class="login-card">
-      <h1>{{ t('login.title') }}</h1>
-      <p>{{ t('login.subtitle') }}</p>
+      <h1>{{ $t('login.title') }}</h1>
+      <p>{{ $t('login.subtitle') }}</p>
       <form @submit.prevent="submit" class="login-form">
         <label>
-          {{ t('auth.email') }}
-          <input id="email" name="email" v-model="email" type="email" :placeholder="t('login.emailPlaceholder')" autocomplete="username" />
+          {{ $t('auth.email') }}
+          <input id="email" name="email" v-model="email" type="email" :placeholder="$t('login.emailPlaceholder')" autocomplete="username" />
         </label>
         <label>
-          {{ t('auth.password') }}
-          <input id="password" name="password" v-model="password" type="password" :placeholder="t('login.passwordPlaceholder')" autocomplete="current-password" />
+          {{ $t('auth.password') }}
+          <input id="password" name="password" v-model="password" type="password" :placeholder="$t('login.passwordPlaceholder')" autocomplete="current-password" />
         </label>
-        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? t('auth.signingIn') : t('auth.signIn') }}</button>
+        <button type="submit" :disabled="busy || !email.trim() || !password.trim()">{{ busy ? $t('auth.signingIn') : $t('auth.signIn') }}</button>
       </form>
       <p v-if="errorText" class="error">{{ errorText }}</p>
-      <p class="hint">{{ t('login.hint') }}</p>
+      <p class="hint">{{ $t('login.hint') }}</p>
     </article>
   </section>
 </template>

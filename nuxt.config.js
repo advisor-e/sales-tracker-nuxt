@@ -1,59 +1,56 @@
-export default defineNuxtConfig({
-  devtools: { enabled: true },
+module.exports = {
+  // Server-side rendering
+  ssr: true,
+  target: 'server',
 
-  runtimeConfig: {
-    openaiApiKey: process.env.OPENAI_API_KEY || "",
-    public: {
-      appName: "Sales Tracker (Nuxt)"
+  // Environment variables exposed to client
+  publicRuntimeConfig: {
+    appName: 'Sales Tracker (Nuxt)'
+  },
+
+  // Server-only env vars (not exposed to client)
+  privateRuntimeConfig: {
+    openaiApiKey: process.env.OPENAI_API_KEY || ''
+  },
+
+  // Build
+  build: {
+    // Increase chunk size warning limit (Chart.js is large)
+    extend(config) {
+      // Webpack config extensions if needed
     }
   },
 
-  nitro: {
-    preset: "node-server",
-    // Enable compression for responses
-    compressPublicAssets: true,
+  // Plugins
+  plugins: [
+    '~/plugins/i18n.js',
+    { src: '~/plugins/csrf.client.js', mode: 'client' }
+  ],
+
+  // Server middleware (Express API server replaces Nitro routes)
+  serverMiddleware: [
+    '~/server/middleware/security-headers.js',
+    '~/server/middleware/csrf.js',
+    { path: '/api', handler: '~/server/api/index.js' }
+  ],
+
+  // Router
+  router: {
+    middleware: ['auth']
   },
 
-  // Experimental optimizations
-  experimental: {
-    // Smaller hydration payload
-    payloadExtraction: true,
-    // Render JSON payloads with support for reviving complex types
-    renderJsonPayloads: true,
-  },
+  // Modules
+  modules: [],
 
-  // Build optimizations
-  vite: {
-    build: {
-      // Increase chunk size warning limit (Chart.js is large)
-      chunkSizeWarningLimit: 600,
-      rollupOptions: {
-        output: {
-          // Manual chunking for better caching
-          manualChunks: {
-            // Separate Chart.js into its own chunk (loaded only when needed)
-            'chart': ['chart.js', 'vue-chartjs'],
-            // Separate vue-i18n
-            'i18n': ['vue-i18n'],
-            // Separate xlsx (large library for Excel)
-            'xlsx': ['xlsx'],
-          }
-        }
-      }
-    },
-    // Optimize deps
-    optimizeDeps: {
-      include: ['vue-i18n', 'chart.js', 'vue-chartjs']
-    }
-  },
+  // Component auto-import (Nuxt 2 style)
+  components: true,
 
-  // Enable component auto-imports with tree-shaking
-  components: {
-    dirs: [
-      {
-        path: '~/components',
-        pathPrefix: false,
-      }
+  // Head defaults
+  head: {
+    title: 'Sales Tracker',
+    meta: [
+      { charset: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' }
     ]
-  },
-});
+  }
+}

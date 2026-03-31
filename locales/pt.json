@@ -290,6 +290,24 @@
     "totalNeedsStage": "Etapa de Necessidades Totais",
     "totalNeedsStageDesc": "Para vendas de Necessidades Totais, acompanha a progressão através do processo de 5 etapas.",
     "industry": "Indústria",
-    "industryDesc": "Usado em Atividade de Vendas e Desenvolvimento CDI para segmentação por indústria."
+    "industryDesc": "Usado em Atividade de Vendas e Desenvolvimento CDI para segmentação por indústria.",
+    "languagesTitle": "Idiomas",
+    "languagesDesc": "Adicione idiomas personalizados para sua equipe. Idiomas integrados não podem ser removidos.",
+    "addLanguage": "Adicionar idioma",
+    "languageCode": "Código do idioma",
+    "languageCodePlaceholder": "ex. nl, ja, zh",
+    "languageName": "Nome do idioma",
+    "languageNamePlaceholder": "ex. Holandês, Japonês",
+    "nativeName": "Nome nativo",
+    "nativeNamePlaceholder": "ex. Nederlands, 日本語",
+    "translations": "Traduções",
+    "generateFromEnglish": "Gerar a partir do inglês",
+    "generating": "Gerando...",
+    "builtIn": "Integrado",
+    "custom": "Personalizado",
+    "deleteLanguage": "Excluir idioma",
+    "confirmDeleteLanguage": "Tem certeza de que deseja excluir este idioma? Esta ação não pode ser desfeita.",
+    "languageAdded": "Idioma adicionado com sucesso",
+    "languageDeleted": "Idioma excluído"
   }
 }

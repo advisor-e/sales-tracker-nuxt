@@ -1,12 +1,15 @@
-import { createI18n } from 'vue-i18n';
-import en from '~/locales/en.json';
-import es from '~/locales/es.json';
-import fr from '~/locales/fr.json';
-import de from '~/locales/de.json';
-import pt from '~/locales/pt.json';
-import it from '~/locales/it.json';
+import Vue from 'vue'
+import VueI18n from 'vue-i18n'
+import en from '~/locales/en.json'
+import es from '~/locales/es.json'
+import fr from '~/locales/fr.json'
+import de from '~/locales/de.json'
+import pt from '~/locales/pt.json'
+import it from '~/locales/it.json'
 
-const builtInMessages = { en, es, fr, de, pt, it };
+Vue.use(VueI18n)
+
+const builtInMessages = { en, es, fr, de, pt, it }
 
 const builtInLocales = [
   { code: 'en', name: 'English', nativeName: 'English' },
@@ -15,89 +18,93 @@ const builtInLocales = [
   { code: 'de', name: 'German', nativeName: 'Deutsch' },
   { code: 'pt', name: 'Portuguese', nativeName: 'Português' },
   { code: 'it', name: 'Italian', nativeName: 'Italiano' }
-];
+]
 
-export default defineNuxtPlugin(async (nuxtApp) => {
-  const localeCookie = useCookie('i18n_locale', {
-    maxAge: 60 * 60 * 24 * 365,
-    path: '/',
-    sameSite: 'lax'
-  });
+function getCookieValue(name) {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
+  return match ? decodeURIComponent(match[1]) : null
+}
 
-  const builtInCodes = Object.keys(builtInMessages);
-  const savedLocale = localeCookie.value && builtInCodes.includes(localeCookie.value)
-    ? localeCookie.value
-    : 'en';
+function setCookieValue(name, value) {
+  const maxAge = 60 * 60 * 24 * 365
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; samesite=lax`
+}
 
-  const i18n = createI18n({
-    legacy: false,
-    globalInjection: true,
-    locale: savedLocale,
+export default async ({ app }, inject) => {
+  const builtInCodes = Object.keys(builtInMessages)
+  const savedLocale = getCookieValue('i18n_locale')
+  const locale = savedLocale && builtInCodes.includes(savedLocale) ? savedLocale : 'en'
+
+  const i18n = new VueI18n({
+    locale,
     fallbackLocale: 'en',
     messages: builtInMessages
-  });
+  })
 
-  nuxtApp.vueApp.use(i18n);
+  app.i18n = i18n
 
-  const availableLocales = ref([...builtInLocales]);
+  const availableLocales = Vue.observable([...builtInLocales])
 
-  // Load custom languages from DB and register them with vue-i18n
-  try {
-    const response = await $fetch('/api/languages/translations');
-
-    for (const [code, translations] of Object.entries(response.translations)) {
-      i18n.global.setLocaleMessage(code, translations);
-      const meta = response.metadata[code];
-      if (meta && !availableLocales.value.find(l => l.code === code)) {
-        availableLocales.value.push({ code, name: meta.name, nativeName: meta.nativeName });
+  // Load custom languages from DB
+  if (process.client) {
+    try {
+      const res = await fetch('/api/languages/translations', { credentials: 'same-origin' })
+      if (res.ok) {
+        const response = await res.json()
+        for (const [code, translations] of Object.entries(response.translations)) {
+          i18n.setLocaleMessage(code, translations)
+          const meta = response.metadata[code]
+          if (meta && !availableLocales.find((l) => l.code === code)) {
+            availableLocales.push({ code, name: meta.name, nativeName: meta.nativeName })
+          }
+        }
+        if (savedLocale && response.translations[savedLocale]) {
+          i18n.locale = savedLocale
+        }
       }
+    } catch {
+      // DB unavailable — continue with built-in locales only
     }
-
-    // Apply saved locale if it's a custom one that just loaded
-    if (localeCookie.value && response.translations[localeCookie.value]) {
-      i18n.global.locale.value = localeCookie.value;
-    }
-  } catch {
-    // DB unavailable — continue with built-in locales only
   }
 
-  return {
-    provide: {
-      i18n: i18n.global,
-      availableLocales,
-      setLocale: (newLocale) => {
-        i18n.global.locale.value = newLocale;
-        localeCookie.value = newLocale;
-      },
-      addLocale: (code, name, nativeName, translations) => {
-        i18n.global.setLocaleMessage(code, translations);
-        if (!availableLocales.value.find(l => l.code === code)) {
-          availableLocales.value.push({ code, name, nativeName });
-        }
-      },
-      removeLocale: (code) => {
-        const idx = availableLocales.value.findIndex(l => l.code === code);
-        if (idx !== -1) availableLocales.value.splice(idx, 1);
-        if (i18n.global.locale.value === code) {
-          i18n.global.locale.value = 'en';
-          localeCookie.value = 'en';
-        }
-      },
-      refreshLocales: async () => {
-        try {
-          const response = await $fetch('/api/languages/translations');
+  inject('availableLocales', availableLocales)
 
-          for (const [code, translations] of Object.entries(response.translations)) {
-            i18n.global.setLocaleMessage(code, translations);
-            const meta = response.metadata[code];
-            if (meta && !availableLocales.value.find(l => l.code === code)) {
-              availableLocales.value.push({ code, name: meta.name, nativeName: meta.nativeName });
-            }
-          }
-        } catch {
-          // ignore
+  inject('setLocale', (newLocale) => {
+    i18n.locale = newLocale
+    setCookieValue('i18n_locale', newLocale)
+  })
+
+  inject('addLocale', (code, name, nativeName, translations) => {
+    i18n.setLocaleMessage(code, translations)
+    if (!availableLocales.find((l) => l.code === code)) {
+      availableLocales.push({ code, name, nativeName })
+    }
+  })
+
+  inject('removeLocale', (code) => {
+    const idx = availableLocales.findIndex((l) => l.code === code)
+    if (idx !== -1) availableLocales.splice(idx, 1)
+    if (i18n.locale === code) {
+      i18n.locale = 'en'
+      setCookieValue('i18n_locale', 'en')
+    }
+  })
+
+  inject('refreshLocales', async () => {
+    try {
+      const res = await fetch('/api/languages/translations', { credentials: 'same-origin' })
+      if (!res.ok) return
+      const response = await res.json()
+      for (const [code, translations] of Object.entries(response.translations)) {
+        i18n.setLocaleMessage(code, translations)
+        const meta = response.metadata[code]
+        if (meta && !availableLocales.find((l) => l.code === code)) {
+          availableLocales.push({ code, name: meta.name, nativeName: meta.nativeName })
         }
       }
+    } catch {
+      // ignore
     }
-  };
-});
+  })
+}

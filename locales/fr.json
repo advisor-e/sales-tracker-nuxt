@@ -290,6 +290,24 @@
     "totalNeedsStage": "Étape Besoins Totaux",
     "totalNeedsStageDesc": "Pour les ventes Besoins Totaux, suit la progression à travers le processus en 5 étapes.",
     "industry": "Industrie",
-    "industryDesc": "Utilisé dans Activité de Ventes et Développement COI pour la segmentation par industrie."
+    "industryDesc": "Utilisé dans Activité de Ventes et Développement COI pour la segmentation par industrie.",
+    "languagesTitle": "Langues",
+    "languagesDesc": "Ajoutez des langues personnalisées pour votre équipe. Les langues intégrées ne peuvent pas être supprimées.",
+    "addLanguage": "Ajouter une langue",
+    "languageCode": "Code de langue",
+    "languageCodePlaceholder": "ex. nl, ja, zh",
+    "languageName": "Nom de la langue",
+    "languageNamePlaceholder": "ex. Néerlandais, Japonais",
+    "nativeName": "Nom natif",
+    "nativeNamePlaceholder": "ex. Nederlands, 日本語",
+    "translations": "Traductions",
+    "generateFromEnglish": "Générer depuis l'anglais",
+    "generating": "Génération en cours...",
+    "builtIn": "Intégré",
+    "custom": "Personnalisé",
+    "deleteLanguage": "Supprimer la langue",
+    "confirmDeleteLanguage": "Êtes-vous sûr de vouloir supprimer cette langue ? Cette action est irréversible.",
+    "languageAdded": "Langue ajoutée avec succès",
+    "languageDeleted": "Langue supprimée"
   }
 }

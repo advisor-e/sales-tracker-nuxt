@@ -1,71 +1,48 @@
-import { randomBytes } from "crypto";
-import { getCookie, setCookie, getHeader, createError, getMethod } from "h3";
+const { randomBytes } = require('crypto')
 
-const CSRF_COOKIE = "csrf_token";
-const CSRF_HEADER = "x-csrf-token";
-const TOKEN_LENGTH = 32;
+const CSRF_COOKIE = 'csrf_token'
+const CSRF_HEADER = 'x-csrf-token'
+const TOKEN_LENGTH = 32
 
-/**
- * Generate a new CSRF token
- */
-export function generateCSRFToken() {
-  return randomBytes(TOKEN_LENGTH).toString("hex");
+function generateCSRFToken() {
+  return randomBytes(TOKEN_LENGTH).toString('hex')
 }
 
-/**
- * Ensure CSRF cookie is set and return the token
- */
-export function ensureCSRFToken(event) {
-  let token = getCookie(event, CSRF_COOKIE);
+function ensureCSRFToken(req, res) {
+  let token = req.cookies && req.cookies[CSRF_COOKIE]
 
   if (!token) {
-    token = generateCSRFToken();
-    setCookie(event, CSRF_COOKIE, token, {
-      httpOnly: false,  // Must be readable by client JS
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24  // 24 hours
-    });
+    token = generateCSRFToken()
+    res.cookie(CSRF_COOKIE, token, {
+      httpOnly: false, // Must be readable by client JS
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 // 24 hours (seconds)
+    })
   }
 
-  return token;
+  return token
 }
 
-/**
- * Validate CSRF token for state-changing requests
- * Skips validation for:
- * - GET/HEAD/OPTIONS requests
- * - Login endpoint (no cookie yet)
- * - Requests with valid API key header (future API use)
- */
-export function validateCSRF(event) {
-  const method = getMethod(event);
+function validateCSRF(req, res) {
+  const method = req.method
 
   // Only check state-changing methods
-  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
-    return;
-  }
+  if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return
 
-  const path = event.path || "";
+  const path = req.path || ''
 
   // Skip CSRF for login (user doesn't have token yet)
-  if (path === "/api/auth/login") {
-    return;
-  }
+  if (path === '/auth/login') return
 
-  // Skip for non-API routes
-  if (!path.startsWith("/api/")) {
-    return;
-  }
-
-  const cookieToken = getCookie(event, CSRF_COOKIE);
-  const headerToken = getHeader(event, CSRF_HEADER);
+  const cookieToken = req.cookies && req.cookies[CSRF_COOKIE]
+  const headerToken = req.headers[CSRF_HEADER]
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: "Invalid or missing CSRF token"
-    });
+    res.status(403).json({ error: 'Invalid or missing CSRF token' })
+    throw new Error('RESPONSE_SENT')
   }
 }
+
+module.exports = { generateCSRFToken, ensureCSRFToken, validateCSRF }

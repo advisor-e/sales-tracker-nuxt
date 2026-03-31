@@ -1,22 +1,22 @@
-import { z } from "zod";
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { z } = require('zod')
+const { prisma } = require('../../../utils/db')
+const { requireUser } = require('../../../utils/auth')
 
 const schema = z.object({
   isPinned: z.boolean().optional(),
   outlineText: z.string().optional(),
   finalText: z.string().nullable().optional(),
   title: z.string().min(1).max(255).optional()
-});
+})
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const id = Number(getRouterParam(event, "id"));
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const id = Number(req.params.id)
   if (!Number.isFinite(id) || id <= 0) {
-    throw createError({ statusCode: 400, statusMessage: "Invalid id" });
+    return res.status(400).json({ error: 'Invalid id' })
   }
 
-  const body = schema.parse(await readBody(event));
+  const body = schema.parse(req.body)
 
   // Atomic ownership check + update to prevent TOCTOU race conditions
   const result = await prisma.blogPost.updateMany({
@@ -27,12 +27,12 @@ export default defineEventHandler(async (event) => {
       finalText: body.finalText,
       title: body.title
     }
-  });
+  })
 
   if (result.count === 0) {
-    throw createError({ statusCode: 404, statusMessage: "Not found" });
+    return res.status(404).json({ error: 'Not found' })
   }
 
-  const item = await prisma.blogPost.findUnique({ where: { id } });
-  return { item };
-});
+  const item = await prisma.blogPost.findUnique({ where: { id } })
+  return res.json({ item })
+}

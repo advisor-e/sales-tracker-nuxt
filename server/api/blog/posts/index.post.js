@@ -1,10 +1,10 @@
-import { BlogPostKind, Prisma } from "@prisma/client";
-import { z } from "zod";
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { BlogPostKind, Prisma } = require('@prisma/client')
+const { z } = require('zod')
+const { prisma } = require('../../../utils/db')
+const { requireUser } = require('../../../utils/auth')
 
 const schema = z.object({
-  kind: z.enum(["draft", "final"]),
+  kind: z.enum(['draft', 'final']),
   title: z.string().min(1).max(255),
   topic: z.string().min(1).max(255),
   audience: z.string().min(1).max(255),
@@ -18,17 +18,17 @@ const schema = z.object({
   finalText: z.string().optional().nullable(),
   isPinned: z.boolean().optional(),
   metadata: z.unknown().optional()
-});
+})
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const body = await readBody(event);
-  const payload = schema.parse(body);
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const body = req.body
+  const payload = schema.parse(body)
 
   const item = await prisma.blogPost.create({
     data: {
       userId: user.id,
-      kind: payload.kind === "final" ? BlogPostKind.final : BlogPostKind.draft,
+      kind: payload.kind === 'final' ? BlogPostKind.final : BlogPostKind.draft,
       title: payload.title,
       topic: payload.topic,
       audience: payload.audience,
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
       isPinned: payload.isPinned ?? false,
       metadataJson: payload.metadata ?? Prisma.JsonNull
     }
-  });
+  })
 
-  return { item };
-});
+  return res.json({ item })
+}

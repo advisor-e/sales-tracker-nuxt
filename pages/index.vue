@@ -1,469 +1,491 @@
-<script setup>
+<script>
 import { marked } from "marked";
-import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n({ useScope: 'global' });
+export default {
+  name: 'IndexPage',
 
-// Use shared lists from database for Author dropdown
-const { fetchLists, getListItems } = useLists();
-const authorTypeOptions = ["Partner", "Lead Staff"];
+  data() {
+    return {
+      tones: ["Professional", "Friendly", "Confident", "Educational"],
+      lengths: ["Short", "Medium", "Long"],
+      polishLevels: ["Standard", "Strong", "Premium"],
+      authorTypeOptions: ["Partner", "Lead Staff"],
 
-const tones = ["Professional", "Friendly", "Confident", "Educational"];
-const lengths = ["Short", "Medium", "Long"];
-const polishLevels = ["Standard", "Strong", "Premium"];
+      form: {
+        topic: "",
+        audience: "Business owners",
+        objective: "Help readers make practical financial decisions",
+        tone: "Professional",
+        length: "Medium",
+        wordCount: "300-400",
+        cta: "book a short strategy call",
+        authorType: "Lead Staff",
+        author: "",
+        polishLevel: "Strong",
+        aiInstructions: ""
+      },
 
-const form = reactive({
-  topic: "",
-  audience: "Business owners",
-  objective: "Help readers make practical financial decisions",
-  tone: "Professional",
-  length: "Medium",
-  wordCount: "300-400",
-  cta: "book a short strategy call",
-  authorType: "Lead Staff",
-  author: "",
-  polishLevel: "Strong",
-  aiInstructions: ""
-});
+      defaultWordCounts: {
+        Short: "250-350",
+        Medium: "400-600",
+        Long: "800-1000"
+      },
+      lengthWordCounts: {
+        Short: "250-350",
+        Medium: "400-600",
+        Long: "800-1000"
+      },
 
-// Author options based on authorType selection
-const authorOptions = computed(() => {
-  if (form.authorType === "Partner") {
-    return getListItems("partner");
-  }
-  return getListItems("leadStaff");
-});
+      principles: [
+        { title: "Market context", details: ["What changed and why it matters", "Which indicators to watch", "Where uncertainty is highest"] },
+        { title: "Action plan", details: ["What to do this month", "How to sequence decisions", "How to avoid overreaction"] },
+        { title: "Review cadence", details: ["What to review regularly", "When to adjust", "How to measure progress"] }
+      ],
 
-// Clear author when authorType changes
-watch(() => form.authorType, () => {
-  form.author = "";
-});
+      draftText: "",
+      finalText: "",
+      aiSource: "",
+      aiError: "",
+      busy: false,
+      generatingType: "",
+      startupError: "",
+      saveStatus: null,
+      showPreview: true,
 
-// Word count preferences per length (reactive, persisted to localStorage)
-const defaultWordCounts = {
-  Short: "250-350",
-  Medium: "400-600",
-  Long: "800-1000"
-};
+      inputs: [],
+      draftPosts: [],
+      finalPosts: [],
+      references: [],
+      selectedReferenceIds: [],
 
-const lengthWordCounts = reactive({ ...defaultWordCounts });
+      newRef: {
+        title: "",
+        type: "document",
+        content: "",
+        url: "",
+        topic: ""
+      },
+      showRefForm: false,
 
-// Load saved word count preferences from localStorage on mount
-function loadWordCountPrefs() {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("blogLengthWordCounts");
-    if (saved) {
+      draftSearch: "",
+      finalSearch: "",
+      draftPinnedOnly: false,
+      finalPinnedOnly: false,
+
+      isRestoring: false,
+      wordCountSaveTimer: null
+    };
+  },
+
+  computed: {
+    authorOptions() {
+      if (this.form.authorType === "Partner") {
+        return this.$store.getters['lists/getListItems']("partner");
+      }
+      return this.$store.getters['lists/getListItems']("leadStaff");
+    },
+    draftHtml() {
+      return marked(this.draftText || "");
+    },
+    finalHtml() {
+      return marked(this.finalText || "");
+    },
+    draftWordCount() {
+      return this.countWords(this.draftText);
+    },
+    finalWordCount() {
+      return this.countWords(this.finalText);
+    },
+    isWordCountShort() {
+      if (!this.form.wordCount || this.finalWordCount === 0) return false;
+      const match = this.form.wordCount.match(/(\d+)/);
+      const minWords = match ? parseInt(match[1], 10) : 0;
+      return this.finalWordCount < minWords;
+    },
+    filteredDrafts() {
+      return this.draftPosts.filter((item) => {
+        if (this.draftPinnedOnly && !item.isPinned) return false;
+        if (!this.draftSearch.trim()) return true;
+        const q = this.draftSearch.toLowerCase();
+        return `${item.title} ${item.topic} ${item.selectedPerson || ""}`.toLowerCase().includes(q);
+      });
+    },
+    filteredFinals() {
+      return this.finalPosts.filter((item) => {
+        if (this.finalPinnedOnly && !item.isPinned) return false;
+        if (!this.finalSearch.trim()) return true;
+        const q = this.finalSearch.toLowerCase();
+        return `${item.title} ${item.topic} ${item.selectedPerson || ""}`.toLowerCase().includes(q);
+      });
+    }
+  },
+
+  watch: {
+    'form.authorType'() {
+      this.form.author = "";
+    },
+    'form.length'(newLength) {
+      this.form.wordCount = this.lengthWordCounts[newLength] || this.defaultWordCounts[newLength];
+    },
+    'form.wordCount'(newWordCount) {
+      if (this.isRestoring) return;
+      this.lengthWordCounts[this.form.length] = newWordCount;
+      if (this.wordCountSaveTimer) clearTimeout(this.wordCountSaveTimer);
+      this.wordCountSaveTimer = setTimeout(() => {
+        this.saveWordCountPrefs();
+      }, 500);
+    }
+  },
+
+  async mounted() {
+    try {
+      this.loadWordCountPrefs();
+      await Promise.all([
+        this.$store.dispatch('lists/fetchLists'),
+        this.loadInputs(),
+        this.loadPosts(),
+        this.loadReferences()
+      ]);
+      this.resizeAllTextareas();
+    } catch (error) {
+      this.startupError = String(error?.message || "Failed to load initial data");
+    }
+  },
+
+  methods: {
+    t(key) {
+      return this.$t(key);
+    },
+
+    getCsrfToken() {
+      if (typeof document === 'undefined') return '';
+      const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    },
+
+    async apiFetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...options.headers };
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        headers['x-csrf-token'] = this.getCsrfToken();
+      }
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json();
+    },
+
+    countWords(text) {
+      return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+    },
+
+    loadWordCountPrefs() {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("blogLengthWordCounts");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            Object.assign(this.lengthWordCounts, parsed);
+            this.form.wordCount = this.lengthWordCounts[this.form.length] || this.defaultWordCounts[this.form.length];
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
+    },
+
+    saveWordCountPrefs() {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("blogLengthWordCounts", JSON.stringify(this.lengthWordCounts));
+      }
+    },
+
+    signatureForInputs() {
+      const parts = [
+        this.form.topic.trim().slice(0, 50),
+        this.form.tone,
+        this.form.length,
+        this.form.author || "none"
+      ];
+      return parts.join("|").slice(0, 191);
+    },
+
+    buildPostTitle(kind) {
+      const prefix = kind === "draft" ? "Draft" : "Final";
+      return `${prefix}: ${this.form.topic || "Untitled"}`;
+    },
+
+    async loadInputs() {
+      const res = await this.apiFetch("/api/blog/inputs");
+      this.inputs = res.items;
+    },
+
+    async loadPosts() {
+      const [drafts, finals] = await Promise.all([
+        this.apiFetch("/api/blog/posts?kind=draft"),
+        this.apiFetch("/api/blog/posts?kind=final")
+      ]);
+      this.draftPosts = drafts.items;
+      this.finalPosts = finals.items;
+    },
+
+    async loadReferences() {
+      const res = await this.apiFetch("/api/blog/references");
+      this.references = res.items;
+    },
+
+    async saveReference() {
+      if (!this.newRef.title.trim()) return;
+      this.busy = true;
       try {
-        const parsed = JSON.parse(saved);
-        Object.assign(lengthWordCounts, parsed);
-        // Also update current form value to match selected length
-        form.wordCount = lengthWordCounts[form.length] || defaultWordCounts[form.length];
-      } catch {
-        // Ignore parse errors
+        await this.apiFetch("/api/blog/references", {
+          method: "POST",
+          body: {
+            title: this.newRef.title,
+            type: this.newRef.type,
+            content: this.newRef.type === "document" ? this.newRef.content : undefined,
+            url: this.newRef.type === "url" ? this.newRef.url : undefined,
+            topic: this.newRef.topic || undefined
+          }
+        });
+        await this.loadReferences();
+        this.newRef.title = "";
+        this.newRef.content = "";
+        this.newRef.url = "";
+        this.newRef.topic = "";
+        this.showRefForm = false;
+        this.saveStatus = { type: "success", message: "Reference saved!" };
+        setTimeout(() => { this.saveStatus = null; }, 3000);
+      } catch (error) {
+        this.saveStatus = { type: "error", message: String(error?.message || "Failed to save reference") };
+      } finally {
+        this.busy = false;
       }
-    }
-  }
-}
+    },
 
-// Save word count preferences to localStorage
-function saveWordCountPrefs() {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("blogLengthWordCounts", JSON.stringify(lengthWordCounts));
-  }
-}
+    async deleteReference(id) {
+      await this.apiFetch(`/api/blog/references/${id}`, { method: "DELETE" });
+      this.selectedReferenceIds = this.selectedReferenceIds.filter(rid => rid !== id);
+      await this.loadReferences();
+    },
 
-// Update word count when length changes
-watch(() => form.length, (newLength) => {
-  form.wordCount = lengthWordCounts[newLength] || defaultWordCounts[newLength];
-});
-
-// Flag to skip saving when restoring inputs
-let isRestoring = false;
-
-// Save word count preference when user edits it (debounced to avoid excessive saves)
-let wordCountSaveTimer = null;
-watch(() => form.wordCount, (newWordCount) => {
-  // Skip saving when we're restoring from saved inputs
-  if (isRestoring) return;
-
-  // Update the preference for the current length
-  lengthWordCounts[form.length] = newWordCount;
-
-  // Debounce the localStorage save
-  if (wordCountSaveTimer) clearTimeout(wordCountSaveTimer);
-  wordCountSaveTimer = setTimeout(() => {
-    saveWordCountPrefs();
-  }, 500);
-});
-
-const principles = ref([
-  { title: "Market context", details: ["What changed and why it matters", "Which indicators to watch", "Where uncertainty is highest"] },
-  { title: "Action plan", details: ["What to do this month", "How to sequence decisions", "How to avoid overreaction"] },
-  { title: "Review cadence", details: ["What to review regularly", "When to adjust", "How to measure progress"] }
-]);
-
-const draftText = ref("");
-const finalText = ref("");
-const aiSource = ref("");
-const aiError = ref("");
-const busy = ref(false);
-const generatingType = ref("");
-const startupError = ref("");
-const saveStatus = ref(null);
-const showPreview = ref(true);
-
-const draftHtml = computed(() => marked(draftText.value || ""));
-const finalHtml = computed(() => marked(finalText.value || ""));
-
-// Word count helpers
-function countWords(text) {
-  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
-}
-const draftWordCount = computed(() => countWords(draftText.value));
-const finalWordCount = computed(() => countWords(finalText.value));
-const isWordCountShort = computed(() => {
-  if (!form.wordCount || finalWordCount.value === 0) return false;
-  const match = form.wordCount.match(/(\d+)/);
-  const minWords = match ? parseInt(match[1], 10) : 0;
-  return finalWordCount.value < minWords;
-});
-
-const inputs = ref([]);
-const draftPosts = ref([]);
-const finalPosts = ref([]);
-const references = ref([]);
-const selectedReferenceIds = ref([]);
-
-// New reference form
-const newRef = reactive({
-  title: "",
-  type: "document",
-  content: "",
-  url: "",
-  topic: ""
-});
-const showRefForm = ref(false);
-
-const draftSearch = ref("");
-const finalSearch = ref("");
-const draftPinnedOnly = ref(false);
-const finalPinnedOnly = ref(false);
-
-const filteredDrafts = computed(() => {
-  return draftPosts.value.filter((item) => {
-    if (draftPinnedOnly.value && !item.isPinned) {
-      return false;
-    }
-    if (!draftSearch.value.trim()) {
-      return true;
-    }
-    const q = draftSearch.value.toLowerCase();
-    return `${item.title} ${item.topic} ${item.selectedPerson || ""}`.toLowerCase().includes(q);
-  });
-});
-
-const filteredFinals = computed(() => {
-  return finalPosts.value.filter((item) => {
-    if (finalPinnedOnly.value && !item.isPinned) {
-      return false;
-    }
-    if (!finalSearch.value.trim()) {
-      return true;
-    }
-    const q = finalSearch.value.toLowerCase();
-    return `${item.title} ${item.topic} ${item.selectedPerson || ""}`.toLowerCase().includes(q);
-  });
-});
-
-function signatureForInputs() {
-  // Create a short signature using key fields (max 191 chars for DB)
-  const parts = [
-    form.topic.trim().slice(0, 50),
-    form.tone,
-    form.length,
-    form.author || "none"
-  ];
-  return parts.join("|").slice(0, 191);
-}
-
-function buildPostTitle(kind) {
-  const prefix = kind === "draft" ? "Draft" : "Final";
-  return `${prefix}: ${form.topic || "Untitled"}`;
-}
-
-async function loadInputs() {
-  const res = await $fetch("/api/blog/inputs");
-  inputs.value = res.items;
-}
-
-async function loadPosts() {
-  const drafts = await $fetch("/api/blog/posts", { query: { kind: "draft" } });
-  const finals = await $fetch("/api/blog/posts", { query: { kind: "final" } });
-  draftPosts.value = drafts.items;
-  finalPosts.value = finals.items;
-}
-
-async function loadReferences() {
-  const res = await $fetch("/api/blog/references");
-  references.value = res.items;
-}
-
-async function saveReference() {
-  if (!newRef.title.trim()) return;
-  busy.value = true;
-  try {
-    await $fetch("/api/blog/references", {
-      method: "POST",
-      body: {
-        title: newRef.title,
-        type: newRef.type,
-        content: newRef.type === "document" ? newRef.content : undefined,
-        url: newRef.type === "url" ? newRef.url : undefined,
-        topic: newRef.topic || undefined
+    toggleReference(id) {
+      const idx = this.selectedReferenceIds.indexOf(id);
+      if (idx >= 0) {
+        this.selectedReferenceIds.splice(idx, 1);
+      } else {
+        this.selectedReferenceIds.push(id);
       }
-    });
-    await loadReferences();
-    newRef.title = "";
-    newRef.content = "";
-    newRef.url = "";
-    newRef.topic = "";
-    showRefForm.value = false;
-    saveStatus.value = { type: "success", message: "Reference saved!" };
-    setTimeout(() => { saveStatus.value = null; }, 3000);
-  } catch (error) {
-    const e = error;
-    saveStatus.value = { type: "error", message: String(e?.data?.message || e?.message || "Failed to save reference") };
-  } finally {
-    busy.value = false;
-  }
-}
+    },
 
-async function deleteReference(id) {
-  await $fetch(`/api/blog/references/${id}`, { method: "DELETE" });
-  selectedReferenceIds.value = selectedReferenceIds.value.filter(rid => rid !== id);
-  await loadReferences();
-}
+    getSelectedReferencesText() {
+      const selected = this.references.filter(r => this.selectedReferenceIds.includes(r.id));
+      return selected.map(r => {
+        if (r.type === "url") {
+          return `Reference: ${r.title}\nURL: ${r.url}`;
+        }
+        return `Reference: ${r.title}\n${r.content || ""}`;
+      }).join("\n\n");
+    },
 
-function toggleReference(id) {
-  const idx = selectedReferenceIds.value.indexOf(id);
-  if (idx >= 0) {
-    selectedReferenceIds.value.splice(idx, 1);
-  } else {
-    selectedReferenceIds.value.push(id);
-  }
-}
-
-function getSelectedReferencesText() {
-  const selected = references.value.filter(r => selectedReferenceIds.value.includes(r.id));
-  return selected.map(r => {
-    if (r.type === "url") {
-      return `Reference: ${r.title}\nURL: ${r.url}`;
-    }
-    return `Reference: ${r.title}\n${r.content || ""}`;
-  }).join("\n\n");
-}
-
-async function generateDraft() {
-  busy.value = true;
-  generatingType.value = "draft";
-  aiError.value = "";
-  try {
-    const res = await $fetch("/api/blog/generate/draft", {
-      method: "POST",
-      body: {
-        topic: form.topic,
-        audience: form.audience,
-        objective: form.objective,
-        tone: form.tone,
-        length: form.length,
-        wordCount: form.wordCount,
-        cta: form.cta,
-        author: form.author,
-        principles: principles.value,
-        references: getSelectedReferencesText()
+    async generateDraft() {
+      this.busy = true;
+      this.generatingType = "draft";
+      this.aiError = "";
+      try {
+        const res = await this.apiFetch("/api/blog/generate/draft", {
+          method: "POST",
+          body: {
+            topic: this.form.topic,
+            audience: this.form.audience,
+            objective: this.form.objective,
+            tone: this.form.tone,
+            length: this.form.length,
+            wordCount: this.form.wordCount,
+            cta: this.form.cta,
+            author: this.form.author,
+            principles: this.principles,
+            references: this.getSelectedReferencesText()
+          }
+        });
+        this.draftText = res.text;
+        this.aiSource = res.source;
+        this.aiError = res.error || "";
+        await this.saveInputs();
+      } finally {
+        this.busy = false;
+        this.generatingType = "";
       }
-    });
-    draftText.value = res.text;
-    aiSource.value = res.source;
-    aiError.value = res.error || "";
-    await saveInputs();
-  } finally {
-    busy.value = false;
-    generatingType.value = "";
-  }
-}
+    },
 
-async function generateFinal() {
-  busy.value = true;
-  generatingType.value = "final";
-  aiError.value = "";
-  try {
-    const res = await $fetch("/api/blog/generate/final", {
-      method: "POST",
-      body: {
-        outlineText: draftText.value,
-        topic: form.topic,
-        audience: form.audience,
-        objective: form.objective,
-        tone: form.tone,
-        cta: form.cta,
-        polishLevel: form.polishLevel,
-        wordCount: form.wordCount,
-        aiInstructions: form.aiInstructions
+    async generateFinal() {
+      this.busy = true;
+      this.generatingType = "final";
+      this.aiError = "";
+      try {
+        const res = await this.apiFetch("/api/blog/generate/final", {
+          method: "POST",
+          body: {
+            outlineText: this.draftText,
+            topic: this.form.topic,
+            audience: this.form.audience,
+            objective: this.form.objective,
+            tone: this.form.tone,
+            cta: this.form.cta,
+            polishLevel: this.form.polishLevel,
+            wordCount: this.form.wordCount,
+            aiInstructions: this.form.aiInstructions
+          }
+        });
+        this.finalText = res.text;
+        this.aiSource = res.source;
+        this.aiError = res.error || "";
+      } finally {
+        this.busy = false;
+        this.generatingType = "";
       }
-    });
-    finalText.value = res.text;
-    aiSource.value = res.source;
-    aiError.value = res.error || "";
-  } finally {
-    busy.value = false;
-    generatingType.value = "";
-  }
-}
+    },
 
-async function saveInputs() {
-  busy.value = true;
-  saveStatus.value = null;
-  try {
-    await $fetch("/api/blog/inputs", {
-      method: "POST",
-      body: {
-        signature: signatureForInputs(),
-        topic: form.topic,
-        audience: form.audience,
-        objective: form.objective,
-        tone: form.tone,
-        length: form.length,
-        wordCount: form.wordCount,
-        cta: form.cta,
-        principles: principles.value,
-        authorType: form.authorType,
-        author: form.author
+    async saveInputs() {
+      this.busy = true;
+      this.saveStatus = null;
+      try {
+        await this.apiFetch("/api/blog/inputs", {
+          method: "POST",
+          body: {
+            signature: this.signatureForInputs(),
+            topic: this.form.topic,
+            audience: this.form.audience,
+            objective: this.form.objective,
+            tone: this.form.tone,
+            length: this.form.length,
+            wordCount: this.form.wordCount,
+            cta: this.form.cta,
+            principles: this.principles,
+            authorType: this.form.authorType,
+            author: this.form.author
+          }
+        });
+        await this.loadInputs();
+        this.saveStatus = { type: "success", message: "Inputs saved successfully!" };
+        setTimeout(() => { this.saveStatus = null; }, 3000);
+      } catch (error) {
+        this.saveStatus = { type: "error", message: String(error?.message || "Failed to save inputs") };
+      } finally {
+        this.busy = false;
       }
-    });
-    await loadInputs();
-    saveStatus.value = { type: "success", message: "Inputs saved successfully!" };
-    setTimeout(() => { saveStatus.value = null; }, 3000);
-  } catch (error) {
-    const e = error;
-    saveStatus.value = { type: "error", message: String(e?.data?.message || e?.message || "Failed to save inputs") };
-  } finally {
-    busy.value = false;
-  }
-}
+    },
 
-async function savePost(kind) {
-  await $fetch("/api/blog/posts", {
-    method: "POST",
-    body: {
-      kind,
-      title: buildPostTitle(kind),
-      topic: form.topic,
-      audience: form.audience,
-      objective: form.objective,
-      tone: form.tone,
-      length: form.length,
-      wordCount: form.wordCount,
-      cta: form.cta,
-      authorType: form.authorType,
-      author: form.author,
-      outlineText: draftText.value,
-      finalText: kind === "final" ? finalText.value : null,
-      metadata: {
-        aiSource: aiSource.value,
-        aiError: aiError.value
-      }
-    }
-  });
-  await loadPosts();
-}
+    async savePost(kind) {
+      await this.apiFetch("/api/blog/posts", {
+        method: "POST",
+        body: {
+          kind,
+          title: this.buildPostTitle(kind),
+          topic: this.form.topic,
+          audience: this.form.audience,
+          objective: this.form.objective,
+          tone: this.form.tone,
+          length: this.form.length,
+          wordCount: this.form.wordCount,
+          cta: this.form.cta,
+          authorType: this.form.authorType,
+          author: this.form.author,
+          outlineText: this.draftText,
+          finalText: kind === "final" ? this.finalText : null,
+          metadata: {
+            aiSource: this.aiSource,
+            aiError: this.aiError
+          }
+        }
+      });
+      await this.loadPosts();
+    },
 
-function autoResize(event) {
-  const el = event.target;
-  el.style.height = "auto";
-  el.style.height = el.scrollHeight + "px";
-}
-
-function resizeAllTextareas() {
-  nextTick(() => {
-    document.querySelectorAll(".auto-resize").forEach((el) => {
+    autoResize(event) {
+      const el = event.target;
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
-    });
-  });
-}
+    },
 
-function restoreFromInput(item) {
-  isRestoring = true;
-  form.topic = item.topic;
-  form.audience = item.audience;
-  form.objective = item.objective;
-  form.tone = item.tone;
-  form.length = item.length;
-  // Use saved word count preference for this length, not the old input's value
-  form.wordCount = lengthWordCounts[item.length] || defaultWordCounts[item.length];
-  form.cta = item.cta;
-  form.authorType = item.authorType || "Lead Staff";
-  form.author = item.author || item.targetMode || "";
-  principles.value = Array.isArray(item.principlesJson) ? item.principlesJson : principles.value;
-  resizeAllTextareas();
-  nextTick(() => { isRestoring = false; });
-}
+    resizeAllTextareas() {
+      this.$nextTick(() => {
+        document.querySelectorAll(".auto-resize").forEach((el) => {
+          el.style.height = "auto";
+          el.style.height = el.scrollHeight + "px";
+        });
+      });
+    },
 
-function restoreDraft(item) {
-  isRestoring = true;
-  form.topic = item.topic;
-  form.audience = item.audience;
-  form.objective = item.objective;
-  form.tone = item.tone;
-  form.length = item.length;
-  // Use saved word count preference for this length, not the old post's value
-  form.wordCount = lengthWordCounts[item.length] || defaultWordCounts[item.length];
-  form.cta = item.cta;
-  form.authorType = item.authorType || "Lead Staff";
-  form.author = item.author || item.targetMode || "";
-  draftText.value = item.outlineText || "";
-  nextTick(() => { isRestoring = false; });
-}
+    restoreFromInput(item) {
+      this.isRestoring = true;
+      this.form.topic = item.topic;
+      this.form.audience = item.audience;
+      this.form.objective = item.objective;
+      this.form.tone = item.tone;
+      this.form.length = item.length;
+      this.form.wordCount = this.lengthWordCounts[item.length] || this.defaultWordCounts[item.length];
+      this.form.cta = item.cta;
+      this.form.authorType = item.authorType || "Lead Staff";
+      this.form.author = item.author || item.targetMode || "";
+      if (Array.isArray(item.principlesJson)) {
+        this.principles = item.principlesJson;
+      }
+      this.resizeAllTextareas();
+      this.$nextTick(() => { this.isRestoring = false; });
+    },
 
-function restoreFinal(item) {
-  restoreDraft(item);
-  finalText.value = item.finalText || "";
-}
+    restoreDraft(item) {
+      this.isRestoring = true;
+      this.form.topic = item.topic;
+      this.form.audience = item.audience;
+      this.form.objective = item.objective;
+      this.form.tone = item.tone;
+      this.form.length = item.length;
+      this.form.wordCount = this.lengthWordCounts[item.length] || this.defaultWordCounts[item.length];
+      this.form.cta = item.cta;
+      this.form.authorType = item.authorType || "Lead Staff";
+      this.form.author = item.author || item.targetMode || "";
+      this.draftText = item.outlineText || "";
+      this.$nextTick(() => { this.isRestoring = false; });
+    },
 
-function duplicateFinalToDraft(item) {
-  draftText.value = item.finalText || item.outlineText || "";
-}
+    restoreFinal(item) {
+      this.restoreDraft(item);
+      this.finalText = item.finalText || "";
+    },
 
-async function setPinned(item, value) {
-  await $fetch(`/api/blog/posts/${item.id}`, {
-    method: "PATCH",
-    body: { isPinned: value }
-  });
-  await loadPosts();
-}
+    duplicateFinalToDraft(item) {
+      this.draftText = item.finalText || item.outlineText || "";
+    },
 
-async function deletePost(item) {
-  await $fetch(`/api/blog/posts/${item.id}`, { method: "DELETE" });
-  await loadPosts();
-}
+    async setPinned(item, value) {
+      await this.apiFetch(`/api/blog/posts/${item.id}`, {
+        method: "PATCH",
+        body: { isPinned: value }
+      });
+      await this.loadPosts();
+    },
 
-async function deleteInput(item) {
-  await $fetch(`/api/blog/inputs/${item.id}`, { method: "DELETE" });
-  await loadInputs();
-}
+    async deletePost(item) {
+      await this.apiFetch(`/api/blog/posts/${item.id}`, { method: "DELETE" });
+      await this.loadPosts();
+    },
 
-onMounted(async () => {
-  try {
-    loadWordCountPrefs();
-    // Load all data in parallel for faster page load
-    await Promise.all([fetchLists(), loadInputs(), loadPosts(), loadReferences()]);
-    resizeAllTextareas();
-  } catch (error) {
-    const e = error;
-    startupError.value = String(e?.data?.message || e?.message || "Failed to load initial data");
+    async deleteInput(item) {
+      await this.apiFetch(`/api/blog/inputs/${item.id}`, { method: "DELETE" });
+      await this.loadInputs();
+    }
   }
-});
+};
 </script>
 
 <template>
@@ -471,112 +493,112 @@ onMounted(async () => {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ t('blog.badge') }}</span>
-          <h1>{{ t('blog.title') }}</h1>
-          <p>{{ t('blog.subtitle') }}</p>
+          <span class="header-badge">{{ $t('blog.badge') }}</span>
+          <h1>{{ $t('blog.title') }}</h1>
+          <p>{{ $t('blog.subtitle') }}</p>
         </div>
       </div>
     </header>
 
     <section class="stats-strip">
-      <article><span>{{ t('blog.savedInputs') }}</span><strong>{{ inputs.length }}</strong></article>
-      <article><span>{{ t('blog.drafts') }}</span><strong>{{ draftPosts.length }}</strong></article>
-      <article><span>{{ t('blog.finals') }}</span><strong>{{ finalPosts.length }}</strong></article>
+      <article><span>{{ $t('blog.savedInputs') }}</span><strong>{{ inputs.length }}</strong></article>
+      <article><span>{{ $t('blog.drafts') }}</span><strong>{{ draftPosts.length }}</strong></article>
+      <article><span>{{ $t('blog.finals') }}</span><strong>{{ finalPosts.length }}</strong></article>
     </section>
 
     <p v-if="startupError" class="error">Startup warning: {{ startupError }}</p>
 
     <section class="card form-card">
-      <h2>{{ t('blog.blogInputs') }}</h2>
+      <h2>{{ $t('blog.blogInputs') }}</h2>
       <div class="grid">
         <label>
-          {{ t('blog.topic') }}
-          <input v-model="form.topic" :placeholder="t('blog.topicPlaceholder')" />
+          {{ $t('blog.topic') }}
+          <input v-model="form.topic" :placeholder="$t('blog.topicPlaceholder')" />
         </label>
         <label>
-          {{ t('blog.audience') }}
+          {{ $t('blog.audience') }}
           <input v-model="form.audience" />
         </label>
         <label>
-          {{ t('blog.objective') }}
+          {{ $t('blog.objective') }}
           <input v-model="form.objective" />
         </label>
         <label>
-          {{ t('blog.tone') }}
+          {{ $t('blog.tone') }}
           <select v-model="form.tone">
             <option v-for="tone in tones" :key="tone" :value="tone">{{ tone }}</option>
           </select>
         </label>
         <label>
-          {{ t('blog.length') }}
+          {{ $t('blog.length') }}
           <select v-model="form.length">
             <option v-for="length in lengths" :key="length" :value="length">{{ length }}</option>
           </select>
         </label>
         <label>
-          {{ t('blog.wordCount') }}
-          <input v-model="form.wordCount" :placeholder="t('blog.wordCountPlaceholder')" />
+          {{ $t('blog.wordCount') }}
+          <input v-model="form.wordCount" :placeholder="$t('blog.wordCountPlaceholder')" />
         </label>
         <label>
-          {{ t('blog.cta') }}
+          {{ $t('blog.cta') }}
           <input v-model="form.cta" />
         </label>
         <label>
-          {{ t('blog.authorType') }}
+          {{ $t('blog.authorType') }}
           <select v-model="form.authorType">
             <option v-for="opt in authorTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </label>
         <label>
-          {{ t('blog.author') }}
+          {{ $t('blog.author') }}
           <select v-model="form.author">
-            <option value="">{{ t('blog.selectAuthor') }}</option>
+            <option value="">{{ $t('blog.selectAuthor') }}</option>
             <option v-for="opt in authorOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </label>
       </div>
 
-      <h3>{{ t('blog.principles') }}</h3>
+      <h3>{{ $t('blog.principles') }}</h3>
       <div class="principles">
         <article v-for="(p, index) in principles" :key="index" class="principle">
-          <h4>{{ t('blog.principle') }} {{ index + 1 }}</h4>
+          <h4>{{ $t('blog.principle') }} {{ index + 1 }}</h4>
           <textarea v-model="p.title" class="auto-resize" rows="1" @input="autoResize" />
-          <label v-for="(_, detailIndex) in p.details" :key="detailIndex">
-            {{ t('blog.detail') }} {{ detailIndex + 1 }}
+          <label v-for="(detail, detailIndex) in p.details" :key="detailIndex">
+            {{ $t('blog.detail') }} {{ detailIndex + 1 }}
             <textarea v-model="p.details[detailIndex]" class="auto-resize" rows="1" @input="autoResize" />
           </label>
         </article>
       </div>
 
-      <h3>{{ t('blog.references') }}</h3>
-      <p class="ref-hint">{{ t('blog.refHint') }}</p>
+      <h3>{{ $t('blog.references') }}</h3>
+      <p class="ref-hint">{{ $t('blog.refHint') }}</p>
 
       <div class="ref-list">
         <div v-for="ref in references" :key="ref.id" class="ref-item" :class="{ selected: selectedReferenceIds.includes(ref.id) }">
           <label class="ref-checkbox">
             <input type="checkbox" :checked="selectedReferenceIds.includes(ref.id)" @change="toggleReference(ref.id)" />
             <span class="ref-title">{{ ref.title }}</span>
-            <span class="ref-type">{{ ref.type === 'url' ? 'URL' : t('blog.doc') }}</span>
+            <span class="ref-type">{{ ref.type === 'url' ? 'URL' : $t('blog.doc') }}</span>
           </label>
-          <button class="ref-delete" @click="deleteReference(ref.id)">{{ t('common.delete') }}</button>
+          <button class="ref-delete" @click="deleteReference(ref.id)">{{ $t('common.delete') }}</button>
         </div>
-        <p v-if="references.length === 0" class="ref-empty">{{ t('blog.noReferences') }}</p>
+        <p v-if="references.length === 0" class="ref-empty">{{ $t('blog.noReferences') }}</p>
       </div>
 
       <button class="ref-toggle" @click="showRefForm = !showRefForm">
-        {{ showRefForm ? t('common.cancel') : t('blog.addReference') }}
+        {{ showRefForm ? $t('common.cancel') : $t('blog.addReference') }}
       </button>
 
       <div v-if="showRefForm" class="ref-form">
         <label>
-          {{ t('blog.refTitle') }}
-          <input v-model="newRef.title" :placeholder="t('blog.refTitlePlaceholder')" />
+          {{ $t('blog.refTitle') }}
+          <input v-model="newRef.title" :placeholder="$t('blog.refTitlePlaceholder')" />
         </label>
         <label>
-          {{ t('blog.refType') }}
+          {{ $t('blog.refType') }}
           <select v-model="newRef.type">
-            <option value="document">{{ t('blog.document') }}</option>
-            <option value="url">{{ t('blog.urlLink') }}</option>
+            <option value="document">{{ $t('blog.document') }}</option>
+            <option value="url">{{ $t('blog.urlLink') }}</option>
           </select>
         </label>
         <label v-if="newRef.type === 'url'">
@@ -584,28 +606,28 @@ onMounted(async () => {
           <input v-model="newRef.url" placeholder="https://..." />
         </label>
         <label v-if="newRef.type === 'document'">
-          {{ t('blog.content') }}
-          <textarea v-model="newRef.content" rows="6" :placeholder="t('blog.contentPlaceholder')" />
+          {{ $t('blog.content') }}
+          <textarea v-model="newRef.content" rows="6" :placeholder="$t('blog.contentPlaceholder')" />
         </label>
         <label>
-          {{ t('blog.topicOptional') }}
-          <input v-model="newRef.topic" :placeholder="t('blog.topicOptionalPlaceholder')" />
+          {{ $t('blog.topicOptional') }}
+          <input v-model="newRef.topic" :placeholder="$t('blog.topicOptionalPlaceholder')" />
         </label>
-        <button :disabled="busy || !newRef.title.trim()" @click="saveReference">{{ t('blog.saveReference') }}</button>
+        <button :disabled="busy || !newRef.title.trim()" @click="saveReference">{{ $t('blog.saveReference') }}</button>
       </div>
 
       <div class="actions">
-        <button :disabled="busy" @click="saveInputs">{{ t('blog.saveInputs') }}</button>
+        <button :disabled="busy" @click="saveInputs">{{ $t('blog.saveInputs') }}</button>
         <button :disabled="busy || !form.topic.trim()" @click="generateDraft">
           <span v-if="busy && generatingType === 'draft'" class="spinner"></span>
-          {{ busy && generatingType === 'draft' ? t('blog.generating') : t('blog.generateDraft') }}
+          {{ busy && generatingType === 'draft' ? $t('blog.generating') : $t('blog.generateDraft') }}
         </button>
         <button :disabled="busy || !draftText.trim()" @click="generateFinal">
           <span v-if="busy && generatingType === 'final'" class="spinner"></span>
-          {{ busy && generatingType === 'final' ? t('blog.generating') : t('blog.generateFinal') }}
+          {{ busy && generatingType === 'final' ? $t('blog.generating') : $t('blog.generateFinal') }}
         </button>
-        <button :disabled="busy || !draftText.trim()" @click="savePost('draft')">{{ t('blog.saveDraft') }}</button>
-        <button :disabled="busy || !finalText.trim()" @click="savePost('final')">{{ t('blog.saveFinal') }}</button>
+        <button :disabled="busy || !draftText.trim()" @click="savePost('draft')">{{ $t('blog.saveDraft') }}</button>
+        <button :disabled="busy || !finalText.trim()" @click="savePost('final')">{{ $t('blog.saveFinal') }}</button>
       </div>
 
       <p v-if="saveStatus" :class="saveStatus.type === 'success' ? 'status' : 'error'">{{ saveStatus.message }}</p>
@@ -615,7 +637,7 @@ onMounted(async () => {
 
     <section class="columns">
       <article class="card">
-        <h2>{{ t('blog.savedInputs') }}</h2>
+        <h2>{{ $t('blog.savedInputs') }}</h2>
         <div class="list">
           <div v-for="item in inputs" :key="item.id" class="list-item">
             <div>
@@ -623,51 +645,51 @@ onMounted(async () => {
               <p>{{ new Date(item.updatedAt).toLocaleString() }}</p>
             </div>
             <div class="row-actions">
-              <button @click="restoreFromInput(item)">{{ t('blog.restore') }}</button>
-              <button @click="deleteInput(item)">{{ t('common.delete') }}</button>
+              <button @click="restoreFromInput(item)">{{ $t('blog.restore') }}</button>
+              <button @click="deleteInput(item)">{{ $t('common.delete') }}</button>
             </div>
           </div>
         </div>
       </article>
 
       <article class="card">
-        <h2>{{ t('blog.draftOutlines') }}</h2>
+        <h2>{{ $t('blog.draftOutlines') }}</h2>
         <div class="filters">
-          <input v-model="draftSearch" :placeholder="t('blog.searchDrafts')" />
-          <label><input v-model="draftPinnedOnly" type="checkbox" /> {{ t('blog.pinnedOnly') }}</label>
+          <input v-model="draftSearch" :placeholder="$t('blog.searchDrafts')" />
+          <label><input v-model="draftPinnedOnly" type="checkbox" /> {{ $t('blog.pinnedOnly') }}</label>
         </div>
         <div class="list">
           <div v-for="item in filteredDrafts" :key="item.id" class="list-item">
             <div>
               <strong>{{ item.title }}</strong>
-              <p>{{ new Date(item.updatedAt).toLocaleString() }} • {{ item.isPinned ? t('blog.pinned') : t('blog.unpinned') }}</p>
+              <p>{{ new Date(item.updatedAt).toLocaleString() }} &bull; {{ item.isPinned ? $t('blog.pinned') : $t('blog.unpinned') }}</p>
             </div>
             <div class="row-actions wrap">
-              <button @click="restoreDraft(item)">{{ t('blog.restore') }}</button>
-              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? t('blog.unpin') : t('blog.pin') }}</button>
-              <button @click="deletePost(item)">{{ t('common.delete') }}</button>
+              <button @click="restoreDraft(item)">{{ $t('blog.restore') }}</button>
+              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? $t('blog.unpin') : $t('blog.pin') }}</button>
+              <button @click="deletePost(item)">{{ $t('common.delete') }}</button>
             </div>
           </div>
         </div>
       </article>
 
       <article class="card">
-        <h2>{{ t('blog.finalPosts') }}</h2>
+        <h2>{{ $t('blog.finalPosts') }}</h2>
         <div class="filters">
-          <input v-model="finalSearch" :placeholder="t('blog.searchFinals')" />
-          <label><input v-model="finalPinnedOnly" type="checkbox" /> {{ t('blog.pinnedOnly') }}</label>
+          <input v-model="finalSearch" :placeholder="$t('blog.searchFinals')" />
+          <label><input v-model="finalPinnedOnly" type="checkbox" /> {{ $t('blog.pinnedOnly') }}</label>
         </div>
         <div class="list">
           <div v-for="item in filteredFinals" :key="item.id" class="list-item">
             <div>
               <strong>{{ item.title }}</strong>
-              <p>{{ new Date(item.updatedAt).toLocaleString() }} • {{ item.isPinned ? t('blog.pinned') : t('blog.unpinned') }}</p>
+              <p>{{ new Date(item.updatedAt).toLocaleString() }} &bull; {{ item.isPinned ? $t('blog.pinned') : $t('blog.unpinned') }}</p>
             </div>
             <div class="row-actions wrap">
-              <button @click="restoreFinal(item)">{{ t('blog.restore') }}</button>
-              <button @click="duplicateFinalToDraft(item)">{{ t('blog.duplicateToDraft') }}</button>
-              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? t('blog.unpin') : t('blog.pin') }}</button>
-              <button @click="deletePost(item)">{{ t('common.delete') }}</button>
+              <button @click="restoreFinal(item)">{{ $t('blog.restore') }}</button>
+              <button @click="duplicateFinalToDraft(item)">{{ $t('blog.duplicateToDraft') }}</button>
+              <button @click="setPinned(item, !item.isPinned)">{{ item.isPinned ? $t('blog.unpin') : $t('blog.pin') }}</button>
+              <button @click="deletePost(item)">{{ $t('common.delete') }}</button>
             </div>
           </div>
         </div>
@@ -676,28 +698,28 @@ onMounted(async () => {
 
     <section class="card editor-card">
       <div class="editor-header">
-        <h2>{{ t('blog.draftOutline') }} <span v-if="draftWordCount > 0" class="word-count">{{ draftWordCount }} {{ t('blog.words') }}</span></h2>
+        <h2>{{ $t('blog.draftOutline') }} <span v-if="draftWordCount > 0" class="word-count">{{ draftWordCount }} {{ $t('blog.words') }}</span></h2>
         <button class="preview-toggle" :class="{ editing: !showPreview }" @click="showPreview = !showPreview">
-          {{ showPreview ? t('blog.editMode') : t('blog.saveChanges') }}
+          {{ showPreview ? $t('blog.editMode') : $t('blog.saveChanges') }}
         </button>
       </div>
       <textarea v-if="!showPreview" v-model="draftText" rows="14" />
       <div v-else class="markdown-preview" v-html="draftHtml" />
 
       <div v-if="draftText.trim()" class="ai-instructions-section">
-        <h3>{{ t('blog.aiInstructions') }}</h3>
-        <p class="ai-instructions-hint">{{ t('blog.aiInstructionsHint') }}</p>
+        <h3>{{ $t('blog.aiInstructions') }}</h3>
+        <p class="ai-instructions-hint">{{ $t('blog.aiInstructionsHint') }}</p>
         <textarea
           v-model="form.aiInstructions"
           rows="3"
-          :placeholder="t('blog.aiInstructionsPlaceholder')"
+          :placeholder="$t('blog.aiInstructionsPlaceholder')"
           class="ai-instructions-input"
         />
       </div>
 
-      <h2>{{ t('blog.finalPost') }} <span v-if="finalWordCount > 0" class="word-count" :class="{ 'word-count-short': isWordCountShort }">{{ finalWordCount }} {{ t('blog.words') }} <template v-if="isWordCountShort">({{ t('blog.target') }}: {{ form.wordCount }})</template></span></h2>
+      <h2>{{ $t('blog.finalPost') }} <span v-if="finalWordCount > 0" class="word-count" :class="{ 'word-count-short': isWordCountShort }">{{ finalWordCount }} {{ $t('blog.words') }} <template v-if="isWordCountShort">({{ $t('blog.target') }}: {{ form.wordCount }})</template></span></h2>
       <label>
-        {{ t('blog.polishLevel') }}
+        {{ $t('blog.polishLevel') }}
         <select v-model="form.polishLevel">
           <option v-for="level in polishLevels" :key="level" :value="level">{{ level }}</option>
         </select>
@@ -915,11 +937,6 @@ button:disabled {
   color: #6a0b6e;
 }
 
-.principle-title {
-  width: 100%;
-  margin-bottom: 0.4rem;
-}
-
 .auto-resize {
   width: 100%;
   min-height: 2rem;
@@ -1123,53 +1140,6 @@ button:disabled {
   max-height: 500px;
   overflow-y: auto;
   line-height: 1.6;
-}
-
-.markdown-preview :deep(h1) {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #6a0b6e;
-  margin: 0 0 1rem;
-  border-bottom: 2px solid #d015d5;
-  padding-bottom: 0.5rem;
-}
-
-.markdown-preview :deep(h2) {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #8a0e8e;
-  margin: 1.5rem 0 0.75rem;
-}
-
-.markdown-preview :deep(h3) {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 1rem 0 0.5rem;
-}
-
-.markdown-preview :deep(p) {
-  margin: 0.75rem 0;
-}
-
-.markdown-preview :deep(ul),
-.markdown-preview :deep(ol) {
-  margin: 0.75rem 0;
-  padding-left: 1.5rem;
-}
-
-.markdown-preview :deep(li) {
-  margin: 0.4rem 0;
-}
-
-.markdown-preview :deep(strong) {
-  font-weight: 600;
-  color: #6a0b6e;
-}
-
-.markdown-preview :deep(a) {
-  color: #d015d5;
-  text-decoration: underline;
 }
 
 @media (max-width: 980px) {

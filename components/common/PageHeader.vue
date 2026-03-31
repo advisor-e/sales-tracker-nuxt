@@ -1,13 +1,17 @@
-<script setup>
-defineProps({
-  badge: String,
-  title: String,
-  subtitle: String,
-  refreshLabel: String,
-  loading: Boolean
-});
+<script>
+export default {
+  name: 'PageHeader',
 
-defineEmits(['refresh']);
+  props: {
+    badge: String,
+    title: String,
+    subtitle: String,
+    refreshLabel: String,
+    loading: Boolean
+  },
+
+  emits: ['refresh']
+};
 </script>
 
 <template>

@@ -290,6 +290,24 @@
     "totalNeedsStage": "Gesamtbedarfsstufe",
     "totalNeedsStageDesc": "Für Gesamtbedarfsverkäufe, verfolgt den Fortschritt durch den 5-Stufen-Prozess.",
     "industry": "Branche",
-    "industryDesc": "Wird in Vertriebsaktivität und Empfehlungsgeber-Entwicklung für Branchensegmentierung verwendet."
+    "industryDesc": "Wird in Vertriebsaktivität und Empfehlungsgeber-Entwicklung für Branchensegmentierung verwendet.",
+    "languagesTitle": "Sprachen",
+    "languagesDesc": "Fügen Sie benutzerdefinierte Sprachen für Ihr Team hinzu. Integrierte Sprachen können nicht entfernt werden.",
+    "addLanguage": "Sprache hinzufügen",
+    "languageCode": "Sprachcode",
+    "languageCodePlaceholder": "z.B. nl, ja, zh",
+    "languageName": "Sprachname",
+    "languageNamePlaceholder": "z.B. Niederländisch, Japanisch",
+    "nativeName": "Nativer Name",
+    "nativeNamePlaceholder": "z.B. Nederlands, 日本語",
+    "translations": "Übersetzungen",
+    "generateFromEnglish": "Aus dem Englischen generieren",
+    "generating": "Wird generiert...",
+    "builtIn": "Integriert",
+    "custom": "Benutzerdefiniert",
+    "deleteLanguage": "Sprache löschen",
+    "confirmDeleteLanguage": "Sind Sie sicher, dass Sie diese Sprache löschen möchten? Dies kann nicht rückgängig gemacht werden.",
+    "languageAdded": "Sprache erfolgreich hinzugefügt",
+    "languageDeleted": "Sprache gelöscht"
   }
 }

@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { prisma } from "~/server/utils/db";
-import { requireUser } from "~/server/utils/auth";
+const { z } = require('zod')
+const { prisma } = require('../../utils/db')
+const { requireUser } = require('../../utils/auth')
 
 const schema = z.object({
   coiName: z.string().min(1).max(255),
@@ -18,11 +18,11 @@ const schema = z.object({
   totalReferrals: z.number().int().optional(),
   totalConverted: z.number().int().optional(),
   feeValue: z.number().optional()
-});
+})
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event);
-  const payload = schema.parse(await readBody(event));
+module.exports = async function(req, res) {
+  const user = await requireUser(req, res)
+  const payload = schema.parse(req.body)
 
   const item = await prisma.coiEntry.create({
     data: {
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
       totalConverted: payload.totalConverted ?? 0,
       feeValue: payload.feeValue ?? 0
     }
-  });
+  })
 
-  return { item: { ...item, feeValue: Number(item.feeValue || 0) } };
-});
+  return res.json({ item: { ...item, feeValue: Number(item.feeValue || 0) } })
+}

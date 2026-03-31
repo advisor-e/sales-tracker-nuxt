@@ -1,43 +1,54 @@
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n';
+<script>
+export default {
+  name: 'LanguageSwitcher',
 
-const { t, locale } = useI18n({ useScope: 'global' });
-const { $availableLocales, $setLocale } = useNuxtApp();
-
-const locales = computed(() =>
-  ($availableLocales?.value ?? []).map((loc: { code: string; nativeName: string }) => ({
-    code: loc.code,
-    name: loc.nativeName
-  }))
-);
-
-const currentLocale = computed({
-  get: () => locale.value,
-  set: (newLocale: string) => ($setLocale as (l: string) => void)(newLocale)
-});
+  computed: {
+    locales() {
+      const available = this.$availableLocales || [];
+      return available.map(loc => ({
+        code: loc.code,
+        name: loc.nativeName
+      }));
+    },
+    currentLocale: {
+      get() {
+        return this.$i18n.locale;
+      },
+      set(newLocale) {
+        if (this.$setLocale) {
+          this.$setLocale(newLocale);
+        }
+      }
+    }
+  }
+};
 </script>
 
 <template>
-  <ClientOnly>
-    <select
-      class="language-switcher"
-      v-model="currentLocale"
-      :key="currentLocale"
-      :aria-label="t('language.select')"
-    >
-      <option v-for="loc in locales" :key="loc.code" :value="loc.code">
-        {{ loc.name }}
-      </option>
-    </select>
-    <template #fallback>
-      <select class="language-switcher" disabled>
+  <div class="language-switcher-wrap">
+    <client-only>
+      <select
+        class="language-switcher"
+        v-model="currentLocale"
+        :key="currentLocale"
+        :aria-label="$t('language.select')"
+      >
+        <option v-for="loc in locales" :key="loc.code" :value="loc.code">
+          {{ loc.name }}
+        </option>
+      </select>
+      <select slot="placeholder" class="language-switcher" disabled>
         <option>...</option>
       </select>
-    </template>
-  </ClientOnly>
+    </client-only>
+  </div>
 </template>
 
 <style scoped>
+.language-switcher-wrap {
+  display: inline-block;
+}
+
 .language-switcher {
   padding: 0.4rem 0.6rem;
   border: 1px solid rgba(15, 122, 138, 0.3);

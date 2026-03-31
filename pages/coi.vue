@@ -1,186 +1,204 @@
-<script setup>
-import { useI18n } from 'vue-i18n';
+<script>
+export default {
+  name: 'CoiPage',
 
-const { t } = useI18n({ useScope: 'global' });
-
-const { fetchLists, getListItems } = useLists();
-
-// Summary data from pipeline
-const summaryItems = ref([]);
-const totals = ref({
-  relationships: 0,
-  totalReferrals: 0,
-  totalConverted: 0,
-  totalProposedValue: 0,
-  totalSecuredValue: 0,
-  conversionRate: 0
-});
-const loading = ref(false);
-const errorText = ref("");
-
-// COI Entries from database
-const coiEntries = ref([]);
-const loadingEntries = ref(false);
-const selectedIds = ref(new Set());
-const deletingSelected = ref(false);
-
-// Form state for adding new COI
-const newCoi = ref({
-  coiName: "",
-  email: "",
-  cell: "",
-  entity: "",
-  position: "",
-  industry: "",
-  leadRelationshipPartner: "",
-  relationshipSupport: ""
-});
-const savingCoi = ref(false);
-
-// Dropdown options
-const industryOptions = computed(() => getListItems("industry"));
-const partnerOptions = computed(() => getListItems("partner"));
-const staffOptions = computed(() => getListItems("leadStaff"));
-
-async function loadSummary() {
-  loading.value = true;
-  errorText.value = "";
-  try {
-    const res = await $fetch("/api/coi/summary");
-    summaryItems.value = res.items;
-    totals.value = res.totals;
-  } catch (error) {
-    const e = error;
-    const status = Number(e?.statusCode || 0);
-    if (status === 401) {
-      errorText.value = "Session expired. Redirecting to sign in...";
-      await navigateTo("/login");
-      return;
-    }
-    errorText.value = String(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to load COI summary");
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function loadCoiEntries() {
-  loadingEntries.value = true;
-  try {
-    const res = await $fetch("/api/coi");
-    coiEntries.value = res.items;
-  } catch (error) {
-    const e = error;
-    console.error("Failed to load COI entries:", e);
-  } finally {
-    loadingEntries.value = false;
-  }
-}
-
-async function addCoi() {
-  const name = newCoi.value.coiName.trim();
-  if (!name) return;
-
-  savingCoi.value = true;
-  try {
-    await $fetch("/api/coi", {
-      method: "POST",
-      body: {
-        coiName: name,
-        email: newCoi.value.email.trim() || null,
-        cell: newCoi.value.cell.trim() || null,
-        entity: newCoi.value.entity.trim() || null,
-        position: newCoi.value.position.trim() || null,
-        industry: newCoi.value.industry || null,
-        leadRelationshipPartner: newCoi.value.leadRelationshipPartner || null,
-        relationshipSupport: newCoi.value.relationshipSupport || null
-      }
-    });
-
-    // Reset form
-    newCoi.value = {
-      coiName: "",
-      email: "",
-      cell: "",
-      entity: "",
-      position: "",
-      industry: "",
-      leadRelationshipPartner: "",
-      relationshipSupport: ""
+  data() {
+    return {
+      summaryItems: [],
+      totals: {
+        relationships: 0,
+        totalReferrals: 0,
+        totalConverted: 0,
+        totalProposedValue: 0,
+        totalSecuredValue: 0,
+        conversionRate: 0
+      },
+      loading: false,
+      errorText: "",
+      coiEntries: [],
+      loadingEntries: false,
+      selectedIds: [],
+      deletingSelected: false,
+      newCoi: {
+        coiName: "",
+        email: "",
+        cell: "",
+        entity: "",
+        position: "",
+        industry: "",
+        leadRelationshipPartner: "",
+        relationshipSupport: ""
+      },
+      savingCoi: false
     };
+  },
 
-    // Reload entries
-    await loadCoiEntries();
-  } catch (error) {
-    const e = error;
-    alert(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to add COI");
-  } finally {
-    savingCoi.value = false;
+  computed: {
+    industryOptions() {
+      return this.$store.getters['lists/getListItems']('industry');
+    },
+    partnerOptions() {
+      return this.$store.getters['lists/getListItems']('partner');
+    },
+    staffOptions() {
+      return this.$store.getters['lists/getListItems']('leadStaff');
+    },
+    allSelected() {
+      return this.coiEntries.length > 0 && this.selectedIds.length === this.coiEntries.length;
+    }
+  },
+
+  methods: {
+    getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    },
+    async apiFetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...options.headers };
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        headers['x-csrf-token'] = this.getCsrfToken();
+      }
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || res.statusText);
+      }
+      return res.json();
+    },
+    async loadSummary() {
+      this.loading = true;
+      this.errorText = "";
+      try {
+        const res = await fetch("/api/coi/summary", { credentials: 'same-origin' }).then(r => r.json());
+        this.summaryItems = res.items;
+        this.totals = res.totals;
+      } catch (error) {
+        const status = Number(error?.statusCode || 0);
+        if (status === 401) {
+          this.errorText = "Session expired. Redirecting to sign in...";
+          this.$router.push('/login');
+          return;
+        }
+        this.errorText = String(error?.data?.statusMessage || error?.data?.message || error?.message || "Failed to load COI summary");
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadCoiEntries() {
+      this.loadingEntries = true;
+      try {
+        const res = await fetch("/api/coi", { credentials: 'same-origin' }).then(r => r.json());
+        this.coiEntries = res.items;
+      } catch (error) {
+        console.error("Failed to load COI entries:", error);
+      } finally {
+        this.loadingEntries = false;
+      }
+    },
+    async addCoi() {
+      const name = this.newCoi.coiName.trim();
+      if (!name) return;
+
+      this.savingCoi = true;
+      try {
+        await this.apiFetch("/api/coi", {
+          method: "POST",
+          body: {
+            coiName: name,
+            email: this.newCoi.email.trim() || null,
+            cell: this.newCoi.cell.trim() || null,
+            entity: this.newCoi.entity.trim() || null,
+            position: this.newCoi.position.trim() || null,
+            industry: this.newCoi.industry || null,
+            leadRelationshipPartner: this.newCoi.leadRelationshipPartner || null,
+            relationshipSupport: this.newCoi.relationshipSupport || null
+          }
+        });
+
+        this.newCoi = {
+          coiName: "",
+          email: "",
+          cell: "",
+          entity: "",
+          position: "",
+          industry: "",
+          leadRelationshipPartner: "",
+          relationshipSupport: ""
+        };
+
+        await this.loadCoiEntries();
+      } catch (error) {
+        alert(error?.message || "Failed to add COI");
+      } finally {
+        this.savingCoi = false;
+      }
+    },
+    toggleSelection(id) {
+      const idx = this.selectedIds.indexOf(id);
+      if (idx >= 0) {
+        this.selectedIds.splice(idx, 1);
+      } else {
+        this.selectedIds.push(id);
+      }
+    },
+    toggleSelectAll() {
+      if (this.selectedIds.length === this.coiEntries.length) {
+        this.selectedIds = [];
+      } else {
+        this.selectedIds = this.coiEntries.map(e => e.id);
+      }
+    },
+    async removeSelectedCois() {
+      const ids = this.selectedIds.slice();
+      if (ids.length === 0) return;
+
+      const names = this.coiEntries
+        .filter(e => ids.includes(e.id))
+        .map(e => e.coiName)
+        .join(", ");
+
+      if (!confirm(`Remove ${ids.length} COI${ids.length > 1 ? "s" : ""}?\n\n${names}`)) return;
+
+      this.deletingSelected = true;
+      try {
+        await Promise.all(ids.map(id => this.apiFetch(`/api/coi/${id}`, { method: "DELETE" })));
+        this.selectedIds = [];
+        await this.loadCoiEntries();
+      } catch (error) {
+        alert(error?.message || "Failed to remove COIs");
+      } finally {
+        this.deletingSelected = false;
+      }
+    },
+    async toggleProgress(entry, field) {
+      const newValue = !entry[field];
+      try {
+        await this.apiFetch(`/api/coi/${entry.id}`, {
+          method: "PATCH",
+          body: { [field]: newValue }
+        });
+        entry[field] = newValue ? 1 : 0;
+      } catch (error) {
+        alert(error?.message || "Failed to update progress");
+      }
+    }
+  },
+
+  mounted() {
+    Promise.all([
+      this.$store.dispatch('lists/fetchLists'),
+      this.loadSummary(),
+      this.loadCoiEntries()
+    ]);
   }
-}
-
-function toggleSelection(id) {
-  if (selectedIds.value.has(id)) {
-    selectedIds.value.delete(id);
-  } else {
-    selectedIds.value.add(id);
-  }
-  // Trigger reactivity
-  selectedIds.value = new Set(selectedIds.value);
-}
-
-function toggleSelectAll() {
-  if (selectedIds.value.size === coiEntries.value.length) {
-    selectedIds.value = new Set();
-  } else {
-    selectedIds.value = new Set(coiEntries.value.map(e => e.id));
-  }
-}
-
-const allSelected = computed(() => coiEntries.value.length > 0 && selectedIds.value.size === coiEntries.value.length);
-
-async function removeSelectedCois() {
-  const ids = Array.from(selectedIds.value);
-  if (ids.length === 0) return;
-
-  const names = coiEntries.value
-    .filter(e => selectedIds.value.has(e.id))
-    .map(e => e.coiName)
-    .join(", ");
-
-  if (!confirm(`Remove ${ids.length} COI${ids.length > 1 ? "s" : ""}?\n\n${names}`)) return;
-
-  deletingSelected.value = true;
-  try {
-    await Promise.all(ids.map(id => $fetch(`/api/coi/${id}`, { method: "DELETE" })));
-    selectedIds.value = new Set();
-    await loadCoiEntries();
-  } catch (error) {
-    const e = error;
-    alert(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to remove COIs");
-  } finally {
-    deletingSelected.value = false;
-  }
-}
-
-async function toggleProgress(entry, field) {
-  const newValue = !entry[field];
-  try {
-    await $fetch(`/api/coi/${entry.id}`, {
-      method: "PATCH",
-      body: { [field]: newValue }
-    });
-    // Update local state
-    entry[field] = newValue ? 1 : 0;
-  } catch (error) {
-    const e = error;
-    alert(e?.data?.statusMessage || e?.data?.message || e?.message || "Failed to update progress");
-  }
-}
-
-onMounted(async () => {
-  // Load all data in parallel for faster page load
-  await Promise.all([fetchLists(), loadSummary(), loadCoiEntries()]);
-});
+};
 </script>
 
 <template>
@@ -188,57 +206,57 @@ onMounted(async () => {
     <header class="page-header">
       <div class="header-content">
         <div class="header-text">
-          <span class="header-badge">{{ t('coi.badge') }}</span>
-          <h1>{{ t('coi.title') }}</h1>
-          <p>{{ t('coi.subtitle') }}</p>
+          <span class="header-badge">{{ $t('coi.badge') }}</span>
+          <h1>{{ $t('coi.title') }}</h1>
+          <p>{{ $t('coi.subtitle') }}</p>
         </div>
-        <button class="refresh-btn" @click="loadSummary(); loadCoiEntries();">{{ t('coi.refresh') }}</button>
+        <button class="refresh-btn" @click="loadSummary(); loadCoiEntries();">{{ $t('coi.refresh') }}</button>
       </div>
     </header>
 
     <section class="summary-strip">
-      <article><span>{{ t('coi.coiRelationships') }}</span><strong>{{ totals.relationships }}</strong></article>
-      <article><span>{{ t('coi.totalReferrals') }}</span><strong>{{ totals.totalReferrals }}</strong></article>
-      <article><span>{{ t('coi.converted') }}</span><strong>{{ totals.totalConverted }}</strong></article>
-      <article><span>{{ t('coi.conversionRate') }}</span><strong>{{ (totals.conversionRate * 100).toFixed(1) }}%</strong></article>
-      <article><span>{{ t('coi.proposedFeeValue') }}</span><strong>${{ totals.totalProposedValue.toLocaleString() }}</strong></article>
-      <article><span>{{ t('coi.securedFeeValue') }}</span><strong>${{ totals.totalSecuredValue.toLocaleString() }}</strong></article>
+      <article><span>{{ $t('coi.coiRelationships') }}</span><strong>{{ totals.relationships }}</strong></article>
+      <article><span>{{ $t('coi.totalReferrals') }}</span><strong>{{ totals.totalReferrals }}</strong></article>
+      <article><span>{{ $t('coi.converted') }}</span><strong>{{ totals.totalConverted }}</strong></article>
+      <article><span>{{ $t('coi.conversionRate') }}</span><strong>{{ (totals.conversionRate * 100).toFixed(1) }}%</strong></article>
+      <article><span>{{ $t('coi.proposedFeeValue') }}</span><strong>${{ totals.totalProposedValue.toLocaleString() }}</strong></article>
+      <article><span>{{ $t('coi.securedFeeValue') }}</span><strong>${{ totals.totalSecuredValue.toLocaleString() }}</strong></article>
     </section>
 
     <!-- Add COI Section -->
     <section class="card add-section">
-      <h2>{{ t('coi.addCoi') }}</h2>
-      <p class="section-desc">{{ t('coi.addCoiDesc') }}</p>
+      <h2>{{ $t('coi.addCoi') }}</h2>
+      <p class="section-desc">{{ $t('coi.addCoiDesc') }}</p>
 
       <form class="coi-form" @submit.prevent="addCoi">
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('coi.coiName') }} <span class="required">*</span></label>
-            <input v-model="newCoi.coiName" :placeholder="t('coi.placeholderName')" required />
+            <label>{{ $t('coi.coiName') }} <span class="required">*</span></label>
+            <input v-model="newCoi.coiName" :placeholder="$t('coi.placeholderName')" required />
           </div>
           <div class="form-group">
-            <label>{{ t('coi.email') }}</label>
-            <input v-model="newCoi.email" type="email" :placeholder="t('coi.placeholderEmail')" />
+            <label>{{ $t('coi.email') }}</label>
+            <input v-model="newCoi.email" type="email" :placeholder="$t('coi.placeholderEmail')" />
           </div>
           <div class="form-group">
-            <label>{{ t('coi.cellPhone') }}</label>
-            <input v-model="newCoi.cell" :placeholder="t('coi.placeholderPhone')" />
+            <label>{{ $t('coi.cellPhone') }}</label>
+            <input v-model="newCoi.cell" :placeholder="$t('coi.placeholderPhone')" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('coi.entityCompany') }}</label>
-            <input v-model="newCoi.entity" :placeholder="t('coi.placeholderCompany')" />
+            <label>{{ $t('coi.entityCompany') }}</label>
+            <input v-model="newCoi.entity" :placeholder="$t('coi.placeholderCompany')" />
           </div>
           <div class="form-group">
-            <label>{{ t('coi.position') }}</label>
-            <input v-model="newCoi.position" :placeholder="t('coi.placeholderPosition')" />
+            <label>{{ $t('coi.position') }}</label>
+            <input v-model="newCoi.position" :placeholder="$t('coi.placeholderPosition')" />
           </div>
           <div class="form-group">
-            <label>{{ t('coi.industry') }}</label>
+            <label>{{ $t('coi.industry') }}</label>
             <select v-model="newCoi.industry">
-              <option value="">{{ t('coi.selectIndustry') }}</option>
+              <option value="">{{ $t('coi.selectIndustry') }}</option>
               <option v-for="opt in industryOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
@@ -246,22 +264,22 @@ onMounted(async () => {
 
         <div class="form-row">
           <div class="form-group">
-            <label>{{ t('coi.leadPartner') }}</label>
+            <label>{{ $t('coi.leadPartner') }}</label>
             <select v-model="newCoi.leadRelationshipPartner">
-              <option value="">{{ t('coi.selectPartner') }}</option>
+              <option value="">{{ $t('coi.selectPartner') }}</option>
               <option v-for="opt in partnerOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>{{ t('coi.relationshipSupport') }}</label>
+            <label>{{ $t('coi.relationshipSupport') }}</label>
             <select v-model="newCoi.relationshipSupport">
-              <option value="">{{ t('coi.selectStaff') }}</option>
+              <option value="">{{ $t('coi.selectStaff') }}</option>
               <option v-for="opt in staffOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
           <div class="form-group btn-group">
             <button type="submit" class="btn-add" :disabled="!newCoi.coiName.trim() || savingCoi">
-              {{ savingCoi ? t('coi.saving') : t('coi.addCoiBtn') }}
+              {{ savingCoi ? $t('coi.saving') : $t('coi.addCoiBtn') }}
             </button>
           </div>
         </div>
@@ -272,20 +290,20 @@ onMounted(async () => {
     <section class="card">
       <div class="card-header-row">
         <div>
-          <h2>{{ t('coi.directory') }}</h2>
-          <p class="section-desc">{{ t('coi.directoryDesc') }}</p>
+          <h2>{{ $t('coi.directory') }}</h2>
+          <p class="section-desc">{{ $t('coi.directoryDesc') }}</p>
         </div>
         <button
-          v-if="selectedIds.size > 0"
+          v-if="selectedIds.length > 0"
           class="btn-remove-selected"
           :disabled="deletingSelected"
           @click="removeSelectedCois"
         >
-          {{ deletingSelected ? t('coi.removing') : t('coi.removeSelected', { count: selectedIds.size }) }}
+          {{ deletingSelected ? $t('coi.removing') : $t('coi.removeSelected', { count: selectedIds.length }) }}
         </button>
       </div>
 
-      <p v-if="loadingEntries">{{ t('coi.loadingEntries') }}</p>
+      <p v-if="loadingEntries">{{ $t('coi.loadingEntries') }}</p>
       <table v-else-if="coiEntries.length > 0">
         <thead>
           <tr>
@@ -294,31 +312,31 @@ onMounted(async () => {
                 type="checkbox"
                 :checked="allSelected"
                 @change="toggleSelectAll"
-                :title="t('coi.selectAll')"
+                :title="$t('coi.selectAll')"
               />
             </th>
-            <th>{{ t('coi.name') }}</th>
-            <th>{{ t('coi.entity') }}</th>
-            <th>{{ t('coi.industry') }}</th>
-            <th>{{ t('coi.email') }}</th>
-            <th>{{ t('coi.cell') }}</th>
-            <th>{{ t('coi.leadPartner') }}</th>
-            <th class="progress-col">{{ t('coi.couldWe') }}</th>
-            <th class="progress-col">{{ t('coi.howWouldWe') }}</th>
-            <th class="progress-col">{{ t('coi.willWe') }}</th>
-            <th class="progress-col">{{ t('coi.testReview') }}</th>
+            <th>{{ $t('coi.name') }}</th>
+            <th>{{ $t('coi.entity') }}</th>
+            <th>{{ $t('coi.industry') }}</th>
+            <th>{{ $t('coi.email') }}</th>
+            <th>{{ $t('coi.cell') }}</th>
+            <th>{{ $t('coi.leadPartner') }}</th>
+            <th class="progress-col">{{ $t('coi.couldWe') }}</th>
+            <th class="progress-col">{{ $t('coi.howWouldWe') }}</th>
+            <th class="progress-col">{{ $t('coi.willWe') }}</th>
+            <th class="progress-col">{{ $t('coi.testReview') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="entry in coiEntries"
             :key="entry.id"
-            :class="{ 'row-selected': selectedIds.has(entry.id) }"
+            :class="{ 'row-selected': selectedIds.includes(entry.id) }"
           >
             <td class="checkbox-col">
               <input
                 type="checkbox"
-                :checked="selectedIds.has(entry.id)"
+                :checked="selectedIds.includes(entry.id)"
                 @change="toggleSelection(entry.id)"
               />
             </td>
@@ -359,26 +377,26 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
-      <p v-else class="empty-table">{{ t('coi.noEntries') }}</p>
+      <p v-else class="empty-table">{{ $t('coi.noEntries') }}</p>
     </section>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
-    <p v-if="loading">{{ t('coi.loadingSummary') }}</p>
+    <p v-if="loading">{{ $t('coi.loadingSummary') }}</p>
 
     <!-- Performance Table -->
     <section class="card">
-      <h2>{{ t('coi.performanceTitle') }}</h2>
-      <p class="section-desc">{{ t('coi.performanceDesc') }}</p>
+      <h2>{{ $t('coi.performanceTitle') }}</h2>
+      <p class="section-desc">{{ $t('coi.performanceDesc') }}</p>
       <table v-if="summaryItems.length > 0">
         <thead>
           <tr>
-            <th>{{ t('coi.coiName') }}</th>
-            <th>{{ t('coi.referrals') }}</th>
-            <th>{{ t('coi.active') }}</th>
-            <th>{{ t('coi.converted') }}</th>
-            <th>{{ t('coi.conversionRate') }}</th>
-            <th>{{ t('coi.proposedFeeValue') }}</th>
-            <th>{{ t('coi.securedFeeValue') }}</th>
+            <th>{{ $t('coi.coiName') }}</th>
+            <th>{{ $t('coi.referrals') }}</th>
+            <th>{{ $t('coi.active') }}</th>
+            <th>{{ $t('coi.converted') }}</th>
+            <th>{{ $t('coi.conversionRate') }}</th>
+            <th>{{ $t('coi.proposedFeeValue') }}</th>
+            <th>{{ $t('coi.securedFeeValue') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -393,7 +411,7 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
-      <p v-else class="empty-table">{{ t('coi.noReferralData') }}</p>
+      <p v-else class="empty-table">{{ $t('coi.noReferralData') }}</p>
     </section>
   </section>
 </template>

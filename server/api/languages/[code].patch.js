@@ -1,35 +1,32 @@
-import { z } from "zod";
-import { prisma } from "~/server/utils/db";
-import { requireFirmManager } from "~/server/utils/auth";
+const { z } = require('zod')
+const { prisma } = require('../../utils/db')
+const { requireFirmManager } = require('../../utils/auth')
 
 const schema = z.object({
   name: z.string().min(1).max(100).optional(),
   nativeName: z.string().min(1).max(100).optional(),
   translations: z.record(z.any()).optional(),
   isEnabled: z.boolean().optional()
-});
+})
 
-export default defineEventHandler(async (event) => {
+module.exports = async function(req, res) {
   // Only Firm Managers can update languages
-  await requireFirmManager(event);
+  await requireFirmManager(req, res)
 
-  const code = getRouterParam(event, "code");
+  const code = req.params.code
   if (!code) {
-    throw createError({ statusCode: 400, statusMessage: "Language code required" });
+    return res.status(400).json({ error: 'Language code required' })
   }
 
-  const payload = schema.parse(await readBody(event));
+  const payload = schema.parse(req.body)
 
   // Find the custom language
   const existing = await prisma.customLanguage.findUnique({
     where: { code }
-  });
+  })
 
   if (!existing) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: `Custom language "${code}" not found`
-    });
+    return res.status(404).json({ error: `Custom language "${code}" not found` })
   }
 
   // Update the language
@@ -41,9 +38,9 @@ export default defineEventHandler(async (event) => {
       ...(payload.translations !== undefined && { translations: payload.translations }),
       ...(payload.isEnabled !== undefined && { isEnabled: payload.isEnabled })
     }
-  });
+  })
 
-  return {
+  return res.json({
     success: true,
     language: {
       code: language.code,
@@ -52,5 +49,5 @@ export default defineEventHandler(async (event) => {
       isBuiltIn: false,
       isEnabled: language.isEnabled
     }
-  };
-});
+  })
+}

@@ -1,26 +1,21 @@
-export default defineNuxtRouteMiddleware(async () => {
-  // This middleware is applied via definePageMeta on protected pages
-  // Use cached auth state from useAuth (already validated by global auth middleware)
-  const { isAuthenticated, user, checkAuth, isCacheValid } = useAuth();
-
-  // If cache is valid, use it (instant check - no API call)
-  if (isCacheValid()) {
-    if (!isAuthenticated.value) {
-      return navigateTo("/login");
+// Nuxt 2 middleware for firm_manager role protection
+export default async function({ store, redirect }) {
+  if (store.getters['auth/isCacheValid']) {
+    if (!store.getters['auth/isAuthenticated']) {
+      return redirect('/login')
     }
-    if (user.value?.role !== "firm_manager") {
-      return navigateTo("/dashboard");
+    if (store.getters['auth/user']?.role !== 'firm_manager') {
+      return redirect('/dashboard')
     }
-    return;
+    return
   }
 
-  // Otherwise verify auth (will cache the result)
-  const authenticated = await checkAuth();
+  const authenticated = await store.dispatch('auth/checkAuth')
   if (!authenticated) {
-    return navigateTo("/login");
+    return redirect('/login')
   }
 
-  if (user.value?.role !== "firm_manager") {
-    return navigateTo("/dashboard");
+  if (store.getters['auth/user']?.role !== 'firm_manager') {
+    return redirect('/dashboard')
   }
-});
+}

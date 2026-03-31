@@ -1,10 +1,19 @@
-import { defineEventHandler } from "h3";
-import { ensureCSRFToken, validateCSRF } from "../utils/csrf";
+// Nuxt 2 serverMiddleware - Express style
+const cookieParser = require('cookie-parser')
+const { ensureCSRFToken, validateCSRF } = require('../utils/csrf')
 
-export default defineEventHandler((event) => {
-  // Ensure CSRF token cookie exists
-  ensureCSRFToken(event);
+const parseCookies = cookieParser()
 
-  // Validate CSRF for state-changing requests
-  validateCSRF(event);
-});
+module.exports = function csrfMiddleware(req, res, next) {
+  // Parse cookies if not already parsed
+  if (!req.cookies) {
+    parseCookies(req, res, () => {})
+  }
+  try {
+    ensureCSRFToken(req, res)
+    validateCSRF(req, res)
+    next()
+  } catch (err) {
+    if (err.message !== 'RESPONSE_SENT') next(err)
+  }
+}
